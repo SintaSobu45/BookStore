@@ -1,4 +1,7 @@
 
+using BookStore.Server.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace BookStore.Server
 {
     public class Program
@@ -14,7 +17,23 @@ namespace BookStore.Server
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+
+            // Database Connection
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(
+                    builder.Configuration.GetConnectionString("DefaultConnection")
+                ));
+
+
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider
+                    .GetRequiredService<ApplicationDbContext>();
+
+                DbInitializer.Initialize(context);
+            }
 
             app.UseDefaultFiles();
             app.UseStaticFiles();
