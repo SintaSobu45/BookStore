@@ -4,6 +4,7 @@ using BookStore.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookStore.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260730091925_AddAuthorTable")]
+    partial class AddAuthorTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,16 +70,11 @@ namespace BookStore.Server.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<int>("PublisherId")
-                        .HasColumnType("int");
-
                     b.HasKey("BookId");
 
                     b.HasIndex("AuthorId");
 
                     b.HasIndex("CategoryId");
-
-                    b.HasIndex("PublisherId");
 
                     b.ToTable("Books");
                 });
@@ -110,37 +108,6 @@ namespace BookStore.Server.Migrations
                     b.HasKey("CategoryId");
 
                     b.ToTable("Categories");
-                });
-
-            modelBuilder.Entity("BookStore.Server.Models.Publisher", b =>
-                {
-                    b.Property<int>("PublisherId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PublisherId"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("PublisherName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("PublisherId");
-
-                    b.ToTable("Publishers");
                 });
 
             modelBuilder.Entity("BookStore.Server.Models.Role", b =>
@@ -232,17 +199,9 @@ namespace BookStore.Server.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("BookStore.Server.Models.Publisher", "Publisher")
-                        .WithMany("Books")
-                        .HasForeignKey("PublisherId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Author");
 
                     b.Navigation("Category");
-
-                    b.Navigation("Publisher");
                 });
 
             modelBuilder.Entity("BookStore.Server.Models.User", b =>
@@ -262,11 +221,6 @@ namespace BookStore.Server.Migrations
                 });
 
             modelBuilder.Entity("BookStore.Server.Models.Category", b =>
-                {
-                    b.Navigation("Books");
-                });
-
-            modelBuilder.Entity("BookStore.Server.Models.Publisher", b =>
                 {
                     b.Navigation("Books");
                 });

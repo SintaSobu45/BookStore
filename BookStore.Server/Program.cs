@@ -78,6 +78,10 @@ namespace BookStore.Server
 
             // Repository
             builder.Services.AddScoped<AccountRepository>();
+            builder.Services.AddScoped<CategoryRepository>();
+            builder.Services.AddScoped<AuthorRepository>();
+            builder.Services.AddScoped<PublisherRepository>();
+
 
             // Helpers
             builder.Services.AddScoped<PasswordHasher>();
@@ -85,6 +89,9 @@ namespace BookStore.Server
 
             // Service
             builder.Services.AddScoped<AccountService>();
+            builder.Services.AddScoped<CategoryService>();
+            builder.Services.AddScoped<AuthorService>();
+            builder.Services.AddScoped<PublisherService>();
 
             // JWT Authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
