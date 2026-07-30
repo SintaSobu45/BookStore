@@ -1,5 +1,5 @@
-﻿using BookStore.Server.Models;
-using Microsoft.AspNetCore.Identity;
+﻿using BookStore.Server.Helpers;
+using BookStore.Server.Models;
 
 namespace BookStore.Server.Data
 {
@@ -24,11 +24,9 @@ namespace BookStore.Server.Data
                 context.SaveChanges();
             }
 
-
             // Get Admin Role
             var adminRole = context.Roles
                 .First(r => r.RoleName == "Admin");
-
 
             // Create Admin User if it doesn't exist
             if (!context.Users.Any(u => u.Email == "admin@bookstore.com"))
@@ -44,15 +42,13 @@ namespace BookStore.Server.Data
                     CreatedDate = DateTime.UtcNow
                 };
 
-
                 // Hash Admin Password
-                var passwordHasher = new PasswordHasher<User>();
+                var passwordHasher = new PasswordHasher();
 
                 admin.PasswordHash = passwordHasher.HashPassword(
                     admin,
                     "Admin@123"
                 );
-
 
                 context.Users.Add(admin);
 

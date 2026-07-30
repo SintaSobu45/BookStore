@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookStore.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260729102709_seedingAdmin")]
-    partial class seedingAdmin
+    [Migration("20260730054523_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -90,9 +90,6 @@ namespace BookStore.Server.Migrations
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("RoleId1")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
@@ -100,22 +97,16 @@ namespace BookStore.Server.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.HasIndex("RoleId1");
-
                     b.ToTable("Users");
                 });
 
             modelBuilder.Entity("BookStore.Server.Models.User", b =>
                 {
                     b.HasOne("BookStore.Server.Models.Role", "Role")
-                        .WithMany()
+                        .WithMany("Users")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("BookStore.Server.Models.Role", null)
-                        .WithMany("Users")
-                        .HasForeignKey("RoleId1");
 
                     b.Navigation("Role");
                 });

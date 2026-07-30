@@ -40,8 +40,7 @@ namespace BookStore.Server.Migrations
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RoleId1 = table.Column<int>(type: "int", nullable: true)
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -52,22 +51,12 @@ namespace BookStore.Server.Migrations
                         principalTable: "Roles",
                         principalColumn: "RoleId",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Users_Roles_RoleId1",
-                        column: x => x.RoleId1,
-                        principalTable: "Roles",
-                        principalColumn: "RoleId");
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_RoleId",
                 table: "Users",
                 column: "RoleId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_RoleId1",
-                table: "Users",
-                column: "RoleId1");
         }
 
         /// <inheritdoc />

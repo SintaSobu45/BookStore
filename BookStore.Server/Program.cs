@@ -1,6 +1,12 @@
-
 using BookStore.Server.Data;
+using BookStore.Server.Helpers;
+using BookStore.Server.Repositories;
+using BookStore.Server.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 namespace BookStore.Server
 {
@@ -10,13 +16,59 @@ namespace BookStore.Server
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
+            // Add Controllers
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
 
+            // CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("ReactPolicy", policy =>
+                {
+                    policy.WithOrigins(
+                            "https://localhost:5173",
+                            "http://localhost:5173"
+                        )
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
+
+            // Swagger
+            builder.Services.AddEndpointsApiExplorer();
+
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "BookStore API",
+                    Version = "v1"
+                });
+
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Enter JWT Token as: Bearer {your_token}"
+                });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
 
             // Database Connection
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -24,9 +76,41 @@ namespace BookStore.Server
                     builder.Configuration.GetConnectionString("DefaultConnection")
                 ));
 
+            // Repository
+            builder.Services.AddScoped<AccountRepository>();
+
+            // Helpers
+            builder.Services.AddScoped<PasswordHasher>();
+            builder.Services.AddScoped<JwtHelper>();
+
+            // Service
+            builder.Services.AddScoped<AccountService>();
+
+            // JWT Authentication
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+
+                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                        ValidAudience = builder.Configuration["Jwt:Audience"],
+
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+                        )
+                    };
+                });
+
+            builder.Services.AddAuthorization();
 
             var app = builder.Build();
 
+            // Initialize Database
             using (var scope = app.Services.CreateScope())
             {
                 var context = scope.ServiceProvider
@@ -38,7 +122,7 @@ namespace BookStore.Server
             app.UseDefaultFiles();
             app.UseStaticFiles();
 
-            // Configure the HTTP request pipeline.
+            // Configure HTTP Request Pipeline
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -47,8 +131,12 @@ namespace BookStore.Server
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            // Enable CORS
+            app.UseCors("ReactPolicy");
 
+            // Authentication must come before Authorization
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.MapControllers();
 

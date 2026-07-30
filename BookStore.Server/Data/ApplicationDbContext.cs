@@ -24,10 +24,10 @@ namespace BookStore.Server.Data
 
             // User - Role Relationship
             modelBuilder.Entity<User>()
-                .HasOne(u => u.Role)
-                .WithMany()
-                .HasForeignKey(u => u.RoleId)
-                .OnDelete(DeleteBehavior.Restrict);
+    .HasOne(u => u.Role)
+    .WithMany(r => r.Users)
+    .HasForeignKey(u => u.RoleId)
+    .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

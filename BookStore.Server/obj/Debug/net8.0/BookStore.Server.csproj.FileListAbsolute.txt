@@ -148,3 +148,4 @@ D:\Gseven Tech\OfficeProjects\BookStore\BookStore.Server\obj\Debug\net8.0\refint
 D:\Gseven Tech\OfficeProjects\BookStore\BookStore.Server\obj\Debug\net8.0\BookStore.Server.pdb
 D:\Gseven Tech\OfficeProjects\BookStore\BookStore.Server\obj\Debug\net8.0\BookStore.Server.genruntimeconfig.cache
 D:\Gseven Tech\OfficeProjects\BookStore\BookStore.Server\obj\Debug\net8.0\ref\BookStore.Server.dll
+D:\Gseven Tech\OfficeProjects\BookStore\BookStore.Server\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
