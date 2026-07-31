@@ -14,10 +14,13 @@ namespace BookStore.Server.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
+
         public DbSet<Category> Categories { get; set; }
-        public DbSet<Book> Books { get; set; }
         public DbSet<Author> Authors { get; set; }
         public DbSet<Publisher> Publishers { get; set; }
+
+        public DbSet<Book> Books { get; set; }
+        public DbSet<BookImage> BookImages { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -53,6 +56,13 @@ namespace BookStore.Server.Data
                 .WithMany(p => p.Books)
                 .HasForeignKey(b => b.PublisherId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Book - BookImage Relationship
+            modelBuilder.Entity<BookImage>()
+                .HasOne(bi => bi.Book)
+                .WithMany(b => b.BookImages)
+                .HasForeignKey(bi => bi.BookId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -1,0 +1,36 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace BookStore.Server.DTOs.Book
+{
+    public class UpdateBookRequest
+    {
+        [Required]
+        [StringLength(200)]
+        public string Title { get; set; } = string.Empty;
+
+        [StringLength(20)]
+        public string? ISBN { get; set; }
+
+        [Required]
+        public decimal Price { get; set; }
+
+        [Required]
+        public int StockQuantity { get; set; }
+
+        public DateTime? PublishedDate { get; set; }
+
+        [StringLength(2000)]
+        public string? Description { get; set; }
+
+        [Required]
+        public int CategoryId { get; set; }
+
+        [Required]
+        public int AuthorId { get; set; }
+
+        [Required]
+        public int PublisherId { get; set; }
+
+        public bool IsActive { get; set; }
+    }
+}

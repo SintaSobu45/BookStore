@@ -81,17 +81,25 @@ namespace BookStore.Server
             builder.Services.AddScoped<CategoryRepository>();
             builder.Services.AddScoped<AuthorRepository>();
             builder.Services.AddScoped<PublisherRepository>();
+            builder.Services.AddScoped<BookRepository>();
+            builder.Services.AddScoped<BookImageRepository>();
+          
 
 
             // Helpers
             builder.Services.AddScoped<PasswordHasher>();
             builder.Services.AddScoped<JwtHelper>();
+            builder.Services.Configure<CloudinarySettings>(
+             builder.Configuration.GetSection("CloudinarySettings"));
 
             // Service
             builder.Services.AddScoped<AccountService>();
             builder.Services.AddScoped<CategoryService>();
             builder.Services.AddScoped<AuthorService>();
             builder.Services.AddScoped<PublisherService>();
+            builder.Services.AddScoped<BookService>();
+            builder.Services.AddScoped<CloudinaryService>();
+            builder.Services.AddScoped<BookImageService>();
 
             // JWT Authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
