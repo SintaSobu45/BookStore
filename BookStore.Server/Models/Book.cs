@@ -50,6 +50,7 @@ namespace BookStore.Server.Models
 
         public ICollection<BookImage> BookImages { get; set; } = new List<BookImage>();
 
-        //public ICollection<Review> Reviews { get; set; } = new List<Review>();
+      
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }

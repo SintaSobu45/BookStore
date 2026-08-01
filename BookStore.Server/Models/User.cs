@@ -40,5 +40,7 @@ namespace BookStore.Server.Models
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedDate { get; set; }
+
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }

@@ -83,7 +83,9 @@ namespace BookStore.Server
             builder.Services.AddScoped<PublisherRepository>();
             builder.Services.AddScoped<BookRepository>();
             builder.Services.AddScoped<BookImageRepository>();
-          
+            builder.Services.AddScoped<ReviewRepository>();
+            
+
 
 
             // Helpers
@@ -100,6 +102,7 @@ namespace BookStore.Server
             builder.Services.AddScoped<BookService>();
             builder.Services.AddScoped<CloudinaryService>();
             builder.Services.AddScoped<BookImageService>();
+            builder.Services.AddScoped<ReviewService>();
 
             // JWT Authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
