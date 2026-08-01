@@ -18,13 +18,21 @@
 
         public bool IsActive { get; set; }
 
+        // IDs (Useful for Edit)
+        public int CategoryId { get; set; }
+
+        public int AuthorId { get; set; }
+
+        public int PublisherId { get; set; }
+
+        // Names (Useful for Listing)
         public string CategoryName { get; set; } = string.Empty;
 
         public string AuthorName { get; set; } = string.Empty;
 
         public string PublisherName { get; set; } = string.Empty;
 
-        // Will be populated after Cloudinary integration
+        // Image
         public string? ImageUrl { get; set; }
     }
 }

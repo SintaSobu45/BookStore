@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
 
 namespace BookStore.Server.DTOs.Book
 {
@@ -32,5 +33,8 @@ namespace BookStore.Server.DTOs.Book
         public int PublisherId { get; set; }
 
         public bool IsActive { get; set; }
+
+        // NEW
+        public IFormFile? Image { get; set; }
     }
 }

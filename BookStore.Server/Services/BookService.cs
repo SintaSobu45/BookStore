@@ -20,19 +20,19 @@ namespace BookStore.Server.Services
             _bookImageService = bookImageService;
         }
 
-        // Get All
+        // Get All Books
         public async Task<List<BookResponse>> GetAllAsync()
         {
             return await _bookRepository.GetAllAsync();
         }
 
-        // Get By Id
-        public async Task<Book?> GetByIdAsync(int id)
+        // Get Book By Id
+        public async Task<BookResponse?> GetByIdAsync(int id)
         {
-            return await _bookRepository.GetByIdAsync(id);
+            return await _bookRepository.GetResponseByIdAsync(id);
         }
 
-        // Add
+        // Add Book
         public async Task<BookResponse?> AddAsync(AddBookRequest request)
         {
             var book = new Book
@@ -50,8 +50,10 @@ namespace BookStore.Server.Services
                 CreatedDate = DateTime.UtcNow
             };
 
+            // Save Book
             book = await _bookRepository.AddAsync(book);
 
+            // Upload Image
             if (request.Image != null)
             {
                 var uploadResult = await _cloudinaryService.UploadImageAsync(request.Image);
@@ -72,14 +74,15 @@ namespace BookStore.Server.Services
             return await _bookRepository.GetResponseByIdAsync(book.BookId);
         }
 
-        // Update
-        public async Task<Book?> UpdateAsync(int id, UpdateBookRequest request)
+        // Update Book
+        public async Task<BookResponse?> UpdateAsync(int id, UpdateBookRequest request)
         {
             var book = await _bookRepository.GetByIdAsync(id);
 
             if (book == null)
                 return null;
 
+            // Update Book Details
             book.Title = request.Title;
             book.ISBN = request.ISBN;
             book.Price = request.Price;
@@ -92,10 +95,39 @@ namespace BookStore.Server.Services
             book.IsActive = request.IsActive;
             book.UpdatedDate = DateTime.UtcNow;
 
-            return await _bookRepository.UpdateAsync(book);
+            await _bookRepository.UpdateAsync(book);
+
+            // Replace Image (if new image selected)
+            if (request.Image != null)
+            {
+                // Delete old image record
+                var oldImage = await _bookImageService.GetPrimaryImageAsync(book.BookId);
+
+                if (oldImage != null)
+                {
+                    await _bookImageService.DeleteAsync(oldImage);
+                }
+
+                // Upload new image
+                var uploadResult = await _cloudinaryService.UploadImageAsync(request.Image);
+
+                if (uploadResult != null)
+                {
+                    var newImage = new BookImage
+                    {
+                        BookId = book.BookId,
+                        ImageUrl = uploadResult.ImageUrl,
+                        IsPrimary = true
+                    };
+
+                    await _bookImageService.AddAsync(newImage);
+                }
+            }
+
+            return await _bookRepository.GetResponseByIdAsync(book.BookId);
         }
 
-        // Delete
+        // Delete Book
         public async Task<bool> DeleteAsync(int id)
         {
             var book = await _bookRepository.GetByIdAsync(id);

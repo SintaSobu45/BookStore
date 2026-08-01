@@ -32,9 +32,15 @@ namespace BookStore.Server.Repositories
                     PublishedDate = b.PublishedDate,
                     Description = b.Description,
                     IsActive = b.IsActive,
+
+                    CategoryId = b.CategoryId,
+                    AuthorId = b.AuthorId,
+                    PublisherId = b.PublisherId,
+
                     CategoryName = b.Category!.CategoryName,
                     AuthorName = b.Author!.AuthorName,
                     PublisherName = b.Publisher!.PublisherName,
+
                     ImageUrl = b.BookImages
                         .Where(i => i.IsPrimary)
                         .Select(i => i.ImageUrl)
@@ -70,9 +76,15 @@ namespace BookStore.Server.Repositories
                     PublishedDate = b.PublishedDate,
                     Description = b.Description,
                     IsActive = b.IsActive,
+
+                    CategoryId = b.CategoryId,
+                    AuthorId = b.AuthorId,
+                    PublisherId = b.PublisherId,
+
                     CategoryName = b.Category!.CategoryName,
                     AuthorName = b.Author!.AuthorName,
                     PublisherName = b.Publisher!.PublisherName,
+
                     ImageUrl = b.BookImages
                         .Where(i => i.IsPrimary)
                         .Select(i => i.ImageUrl)
@@ -86,6 +98,7 @@ namespace BookStore.Server.Repositories
         {
             _context.Books.Add(book);
             await _context.SaveChangesAsync();
+
             return book;
         }
 
@@ -94,6 +107,7 @@ namespace BookStore.Server.Repositories
         {
             _context.Books.Update(book);
             await _context.SaveChangesAsync();
+
             return book;
         }
 
@@ -102,10 +116,11 @@ namespace BookStore.Server.Repositories
         {
             _context.Books.Remove(book);
             await _context.SaveChangesAsync();
+
             return true;
         }
 
-        // Exists
+        // Check if Book Exists
         public async Task<bool> ExistsAsync(int id)
         {
             return await _context.Books

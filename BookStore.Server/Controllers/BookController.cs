@@ -54,7 +54,7 @@ namespace BookStore.Server.Controllers
 
         // PUT: api/Book/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, UpdateBookRequest request)
+        public async Task<IActionResult> Update(int id, [FromForm] UpdateBookRequest request)
         {
             var book = await _bookService.UpdateAsync(id, request);
 
