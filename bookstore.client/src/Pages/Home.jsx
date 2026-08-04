@@ -6,7 +6,7 @@ function Home() {
     <>
     <div className='container d-flex justify-content-center align-items-center'>
 
-        hi
+        Welcome To Book Store
 
     </div>
     </>
