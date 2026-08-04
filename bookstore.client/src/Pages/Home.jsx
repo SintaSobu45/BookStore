@@ -6,7 +6,7 @@ function Home() {
     <>
     <div className='container d-flex justify-content-center align-items-center'>
 
-        Hello Sinta
+              Welcome To Malayalam Book Store
 
     </div>
     </>
