@@ -1,0 +1,2 @@
+D:\the old book\BookStoreWebSite\bookstore.client\obj\Debug\bookstore.client.esproj.CoreCompileInputs.cache
+D:\Gseven Tech\OfficeProjects\BookStore\bookstore.client\obj\Debug\bookstore.client.esproj.CoreCompileInputs.cache

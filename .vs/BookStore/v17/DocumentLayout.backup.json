@@ -3,14 +3,6 @@
   "WorkspaceRootPath": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{5C0070B4-49F6-906F-3F34-875F1CBF5335}|bookstore.client\\bookstore.client.esproj|d:\\gseven tech\\officeprojects\\bookstore\\bookstore.client\\src\\pages\\admin\\author.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{5C0070B4-49F6-906F-3F34-875F1CBF5335}|bookstore.client\\bookstore.client.esproj|solutionrelative:bookstore.client\\src\\pages\\admin\\author.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{5C0070B4-49F6-906F-3F34-875F1CBF5335}|bookstore.client\\bookstore.client.esproj|d:\\gseven tech\\officeprojects\\bookstore\\bookstore.client\\src\\app.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{5C0070B4-49F6-906F-3F34-875F1CBF5335}|bookstore.client\\bookstore.client.esproj|solutionrelative:bookstore.client\\src\\app.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A93484D2-1FAD-47D1-BAFD-9618E034A44E}|BookStore.Server\\BookStore.Server.csproj|d:\\gseven tech\\officeprojects\\bookstore\\bookstore.server\\controllers\\authorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A93484D2-1FAD-47D1-BAFD-9618E034A44E}|BookStore.Server\\BookStore.Server.csproj|solutionrelative:bookstore.server\\controllers\\authorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -122,37 +114,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 15,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Author.jsx",
-              "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\bookstore.client\\src\\Pages\\admin\\Author.jsx",
-              "RelativeDocumentMoniker": "bookstore.client\\src\\Pages\\admin\\Author.jsx",
-              "ToolTip": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\bookstore.client\\src\\Pages\\admin\\Author.jsx",
-              "RelativeToolTip": "bookstore.client\\src\\Pages\\admin\\Author.jsx",
-              "ViewState": "AgIAAM8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2026-08-04T06:04:13.628Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "App.jsx",
-              "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\bookstore.client\\src\\App.jsx",
-              "RelativeDocumentMoniker": "bookstore.client\\src\\App.jsx",
-              "ToolTip": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\bookstore.client\\src\\App.jsx",
-              "RelativeToolTip": "bookstore.client\\src\\App.jsx",
-              "ViewState": "AgIAABgAAAAAAAAAAAAAABsAAAA6AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2026-08-04T06:03:52.438Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
               "Title": "appsettings.json",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\appsettings.json",
               "RelativeDocumentMoniker": "BookStore.Server\\appsettings.json",
@@ -164,7 +130,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 6,
               "Title": "BookImageRepository.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Repositories\\BookImageRepository.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Repositories\\BookImageRepository.cs",
@@ -176,7 +142,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 5,
               "Title": "BookImageService.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Services\\BookImageService.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Services\\BookImageService.cs",
@@ -188,7 +154,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 7,
               "Title": "UpdateBookRequest.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\DTOs\\Book\\UpdateBookRequest.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\DTOs\\Book\\UpdateBookRequest.cs",
@@ -200,7 +166,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 12,
               "Title": "AccountController.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Controllers\\AccountController.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Controllers\\AccountController.cs",
@@ -212,7 +178,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 2,
               "Title": "ReviewController.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Controllers\\ReviewController.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Controllers\\ReviewController.cs",
@@ -224,7 +190,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 10,
               "Title": "ReviewService.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Services\\ReviewService.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Services\\ReviewService.cs",
@@ -236,7 +202,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 11,
               "Title": "ReviewRepository.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Repositories\\ReviewRepository.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Repositories\\ReviewRepository.cs",
@@ -248,7 +214,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 14,
               "Title": "ReviewResponse.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\DTOs\\Review\\ReviewResponse.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\DTOs\\Review\\ReviewResponse.cs",
@@ -260,7 +226,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 15,
               "Title": "UpdateReviewRequest.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\DTOs\\Review\\UpdateReviewRequest.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\DTOs\\Review\\UpdateReviewRequest.cs",
@@ -272,7 +238,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 16,
               "Title": "AddReviewRequest.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\DTOs\\Review\\AddReviewRequest.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\DTOs\\Review\\AddReviewRequest.cs",
@@ -284,7 +250,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 26,
+              "DocumentIndex": 24,
               "Title": "20260731102331_AddReviewTable.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Migrations\\20260731102331_AddReviewTable.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Migrations\\20260731102331_AddReviewTable.cs",
@@ -296,7 +262,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 18,
               "Title": "User.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Models\\User.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Models\\User.cs",
@@ -308,7 +274,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 20,
               "Title": "Review.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Models\\Review.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Models\\Review.cs",
@@ -320,7 +286,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 24,
+              "DocumentIndex": 22,
               "Title": "CategoryController.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Controllers\\CategoryController.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Controllers\\CategoryController.cs",
@@ -332,20 +298,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "AuthorController.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Controllers\\AuthorController.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Controllers\\AuthorController.cs",
               "ToolTip": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Controllers\\AuthorController.cs",
               "RelativeToolTip": "BookStore.Server\\Controllers\\AuthorController.cs",
-              "ViewState": "AgIAACEAAAAAAAAAAAAYwAoAAAAyAAAAAAAAAA==",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAoAAAAyAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-07-31T06:02:39.564Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 3,
               "Title": "BookController.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Controllers\\BookController.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Controllers\\BookController.cs",
@@ -357,7 +323,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 4,
               "Title": "BookService.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Services\\BookService.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Services\\BookService.cs",
@@ -369,7 +335,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 8,
               "Title": "BookRepository.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Repositories\\BookRepository.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Repositories\\BookRepository.cs",
@@ -381,7 +347,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 9,
               "Title": "BookResponse.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\DTOs\\Book\\BookResponse.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\DTOs\\Book\\BookResponse.cs",
@@ -393,7 +359,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 21,
               "Title": "AddBookRequest.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\DTOs\\Book\\AddBookRequest.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\DTOs\\Book\\AddBookRequest.cs",
@@ -405,7 +371,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 27,
+              "DocumentIndex": 25,
               "Title": "20260731052416_AddBookAndBookImage.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Migrations\\20260731052416_AddBookAndBookImage.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Migrations\\20260731052416_AddBookAndBookImage.cs",
@@ -417,7 +383,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 25,
+              "DocumentIndex": 23,
               "Title": "BookImage.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Models\\BookImage.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Models\\BookImage.cs",
@@ -429,7 +395,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
+              "DocumentIndex": 19,
               "Title": "Book.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Models\\Book.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Models\\Book.cs",
@@ -441,7 +407,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 13,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Program.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Program.cs",
@@ -453,7 +419,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 17,
               "Title": "ApplicationDbContext.cs",
               "DocumentMoniker": "D:\\Gseven Tech\\OfficeProjects\\BookStore\\BookStore.Server\\Data\\ApplicationDbContext.cs",
               "RelativeDocumentMoniker": "BookStore.Server\\Data\\ApplicationDbContext.cs",
