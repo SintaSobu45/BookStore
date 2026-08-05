@@ -33,6 +33,22 @@ namespace BookStore.Server.Models
         public string Phone { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(500)]
+        public string Address { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100)]
+        public string City { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100)]
+        public string State { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(10)]
+        public string Pincode { get; set; } = string.Empty;
+
+        [Required]
         public string PasswordHash { get; set; } = string.Empty;
 
         public bool IsActive { get; set; } = true;

@@ -45,6 +45,12 @@ namespace BookStore.Server.Services
                 LastName = request.LastName,
                 Email = request.Email,
                 Phone = request.Phone,
+
+                Address = request.Address,
+                City = request.City,
+                State = request.State,
+                Pincode = request.Pincode,
+
                 RoleId = userRole.RoleId,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow
