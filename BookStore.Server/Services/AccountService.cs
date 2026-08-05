@@ -24,7 +24,7 @@ namespace BookStore.Server.Services
         // Register User
         public async Task<bool> RegisterAsync(RegisterRequest request)
         {
-            // Check Email Exists
+            // Check if email already exists
             if (await _repository.EmailExistsAsync(request.Email))
             {
                 return false;
@@ -45,12 +45,6 @@ namespace BookStore.Server.Services
                 LastName = request.LastName,
                 Email = request.Email,
                 Phone = request.Phone,
-
-                Address = request.Address,
-                City = request.City,
-                State = request.State,
-                Pincode = request.Pincode,
-
                 RoleId = userRole.RoleId,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow
@@ -95,7 +89,7 @@ namespace BookStore.Server.Services
                 UserId = user.UserId,
                 FullName = $"{user.FirstName} {user.LastName}",
                 Email = user.Email,
-                Role = user.Role?.RoleName ?? "",
+                Role = user.Role?.RoleName ?? string.Empty,
                 Token = token
             };
         }
