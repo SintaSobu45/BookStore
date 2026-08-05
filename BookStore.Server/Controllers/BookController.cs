@@ -26,6 +26,41 @@ namespace BookStore.Server.Controllers
             return Ok(books);
         }
 
+        // GET: api/Book/search?keyword=harry
+        [HttpGet("search")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Search(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+                return BadRequest("Search keyword is required.");
+
+            var books = await _bookService.SearchAsync(keyword);
+
+            return Ok(books);
+        }
+
+        // GET: api/Book/filter
+        [HttpGet("filter")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Filter(
+            int? categoryId,
+            int? authorId,
+            int? publisherId,
+            decimal? minPrice,
+            decimal? maxPrice,
+            string? sortBy)
+        {
+            var books = await _bookService.FilterAsync(
+                categoryId,
+                authorId,
+                publisherId,
+                minPrice,
+                maxPrice,
+                sortBy);
+
+            return Ok(books);
+        }
+
         // GET: api/Book/5
         [HttpGet("{id}")]
         [AllowAnonymous]

@@ -26,6 +26,31 @@ namespace BookStore.Server.Services
             return await _bookRepository.GetAllAsync();
         }
 
+        // Search Books
+        public async Task<List<BookResponse>> SearchAsync(string keyword)
+        {
+            return await _bookRepository.SearchAsync(keyword);
+        }
+
+
+        public async Task<List<BookResponse>> FilterAsync(
+    int? categoryId,
+    int? authorId,
+    int? publisherId,
+    decimal? minPrice,
+    decimal? maxPrice,
+    string? sortBy)
+        {
+            return await _bookRepository.FilterAsync(
+                categoryId,
+                authorId,
+                publisherId,
+                minPrice,
+                maxPrice,
+                sortBy);
+        }
+
+
         // Get Book By Id
         public async Task<BookResponse?> GetByIdAsync(int id)
         {
