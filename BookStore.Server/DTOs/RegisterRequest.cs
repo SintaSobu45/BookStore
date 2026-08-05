@@ -18,25 +18,8 @@ namespace BookStore.Server.DTOs
         public string Email { get; set; } = string.Empty;
 
         [Required]
-        [Phone]
-        [StringLength(15)]
+        [RegularExpression(@"^[6-9]\d{9}$", ErrorMessage = "Phone number must be 10 digits and start with 6, 7, 8, or 9.")]
         public string Phone { get; set; } = string.Empty;
-
-        [Required]
-        [StringLength(500)]
-        public string Address { get; set; } = string.Empty;
-
-        [Required]
-        [StringLength(100)]
-        public string City { get; set; } = string.Empty;
-
-        [Required]
-        [StringLength(100)]
-        public string State { get; set; } = string.Empty;
-
-        [Required]
-        [StringLength(10)]
-        public string Pincode { get; set; } = string.Empty;
 
         [Required]
         [MinLength(6)]
