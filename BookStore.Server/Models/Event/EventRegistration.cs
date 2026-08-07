@@ -1,37 +1,37 @@
 ﻿using BookStore.Server.Models;
+using BookStore.Server.Models.Event;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace BookStore.Server.Models.Event
+public class EventRegistration
 {
-    public class EventRegistration
-    {
-        [Key]
-        public int RegistrationId { get; set; }
+    [Key]
+    public int RegistrationId { get; set; }
 
-        [Required]
-        public int UserId { get; set; }
+    public int UserId { get; set; }
 
-        [Required]
-        public int EventId { get; set; }
+    public int EventId { get; set; }
 
-        [Required]
-        [Range(1, 10)]
-        public int NumberOfSeats { get; set; }
+    public int NumberOfSeats { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal TotalAmount { get; set; }
 
-        public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
+    // Extra books requested by contributor
+    public int AdditionalBookCopies { get; set; } = 0;
 
-        [Required]
-        [StringLength(50)]
-        public string Status { get; set; } = "Registered";
 
-        [ForeignKey(nameof(UserId))]
-        public User? User { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal TotalAmount { get; set; }
 
-        [ForeignKey(nameof(EventId))]
-        public Event? Event { get; set; }
-    }
+
+    [StringLength(50)]
+    public string Status { get; set; } = "Registered";
+
+
+    public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
+
+
+    // Navigation
+    public User User { get; set; }
+
+    public Event Event { get; set; }
 }

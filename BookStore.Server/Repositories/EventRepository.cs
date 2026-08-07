@@ -27,6 +27,7 @@ namespace BookStore.Server.Repositories
                     EventDate = e.EventDate,
                     Venue = e.Venue,
                     EntryFee = e.EntryFee,
+                    BookPrice = e.BookPrice,
                     MaxSeats = e.MaxSeats,
                     AvailableSeats = e.AvailableSeats,
                     IsActive = e.IsActive,
@@ -39,6 +40,7 @@ namespace BookStore.Server.Repositories
                 .ToListAsync();
         }
 
+
         // Get Event Entity By Id
         public async Task<Event?> GetByIdAsync(int id)
         {
@@ -46,6 +48,7 @@ namespace BookStore.Server.Repositories
                 .Include(e => e.EventImages)
                 .FirstOrDefaultAsync(e => e.EventId == id);
         }
+
 
         // Get Event Response By Id
         public async Task<EventResponse?> GetResponseByIdAsync(int id)
@@ -61,6 +64,7 @@ namespace BookStore.Server.Repositories
                     EventDate = e.EventDate,
                     Venue = e.Venue,
                     EntryFee = e.EntryFee,
+                    BookPrice = e.BookPrice,
                     MaxSeats = e.MaxSeats,
                     AvailableSeats = e.AvailableSeats,
                     IsActive = e.IsActive,
@@ -73,6 +77,7 @@ namespace BookStore.Server.Repositories
                 .FirstOrDefaultAsync();
         }
 
+
         // Add Event
         public async Task<Event> AddAsync(Event eventItem)
         {
@@ -81,6 +86,7 @@ namespace BookStore.Server.Repositories
 
             return eventItem;
         }
+
 
         // Update Event
         public async Task<Event?> UpdateAsync(Event eventItem)
@@ -91,6 +97,7 @@ namespace BookStore.Server.Repositories
             return eventItem;
         }
 
+
         // Delete Event
         public async Task<bool> DeleteAsync(Event eventItem)
         {
@@ -99,6 +106,7 @@ namespace BookStore.Server.Repositories
 
             return true;
         }
+
 
         // Check Event Exists
         public async Task<bool> ExistsAsync(int id)

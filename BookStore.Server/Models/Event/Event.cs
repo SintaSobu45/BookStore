@@ -23,8 +23,13 @@ namespace BookStore.Server.Models.Event
         [StringLength(200)]
         public string Venue { get; set; } = string.Empty;
 
+        // Event Registration Fee
         [Column(TypeName = "decimal(18,2)")]
         public decimal EntryFee { get; set; }
+
+        // Price of one book copy
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal BookPrice { get; set; }
 
         [Required]
         public int MaxSeats { get; set; }

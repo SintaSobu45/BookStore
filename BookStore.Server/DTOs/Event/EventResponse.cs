@@ -14,6 +14,8 @@
 
         public decimal EntryFee { get; set; }
 
+        public decimal BookPrice { get; set; }
+
         public int MaxSeats { get; set; }
 
         public int AvailableSeats { get; set; }
