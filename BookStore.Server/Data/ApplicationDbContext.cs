@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using BookStore.Server.Models;
+﻿using BookStore.Server.Models;
+using BookStore.Server.Models.Event;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.Server.Data
 {
@@ -22,6 +23,13 @@ namespace BookStore.Server.Data
         public DbSet<Book> Books { get; set; }
         public DbSet<BookImage> BookImages { get; set; }
         public DbSet<Review> Reviews { get; set; }
+
+
+        public DbSet<Event> Events { get; set; }
+
+        public DbSet<EventImage> EventImages { get; set; }
+
+        public DbSet<EventRegistration> EventRegistrations { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -76,6 +84,27 @@ namespace BookStore.Server.Data
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.User)
                 .WithMany(u => u.Reviews)
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Event -> EventImage
+            modelBuilder.Entity<Event>()
+                .HasMany(e => e.EventImages)
+                .WithOne(i => i.Event)
+                .HasForeignKey(i => i.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Event -> EventRegistration
+            modelBuilder.Entity<Event>()
+                .HasMany(e => e.EventRegistrations)
+                .WithOne(r => r.Event)
+                .HasForeignKey(r => r.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // User -> EventRegistration
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.EventRegistrations)
+                .WithOne(r => r.User)
                 .HasForeignKey(r => r.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using BookStore.Server.Models.Event;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BookStore.Server.Models
@@ -53,5 +54,7 @@ namespace BookStore.Server.Models
         public DateTime? UpdatedDate { get; set; }
 
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+        public ICollection<EventRegistration> EventRegistrations { get; set; } = new List<EventRegistration>();
     }
 }

@@ -86,7 +86,12 @@ namespace BookStore.Server
             builder.Services.AddScoped<ReviewRepository>();
 
             builder.Services.AddScoped<ProfileRepository>();
-         
+
+            builder.Services.AddScoped<EventRepository>();
+            builder.Services.AddScoped<EventImageRepository>();
+
+            builder.Services.AddScoped<EventRegistrationRepository>();
+   
 
 
 
@@ -107,6 +112,10 @@ namespace BookStore.Server
             builder.Services.AddScoped<ReviewService>();
 
             builder.Services.AddScoped<ProfileService>();
+
+            builder.Services.AddScoped<EventService>();
+            builder.Services.AddScoped<EventImageService>();
+            builder.Services.AddScoped<EventRegistrationService>();
 
             // JWT Authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
