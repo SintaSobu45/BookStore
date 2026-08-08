@@ -14,21 +14,22 @@ public class EventRegistration
 
     public int NumberOfSeats { get; set; }
 
+    // Total number of book copies requested
+    public int BookCopies { get; set; } = 0;
 
-    // Extra books requested by contributor
-    public int AdditionalBookCopies { get; set; } = 0;
+    // Free book copies given to approved contributors
+    public int FreeBookCopies { get; set; } = 0;
 
+    // Additional book copies that need payment
+    public int PaidBookCopies { get; set; } = 0;
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal TotalAmount { get; set; }
 
-
     [StringLength(50)]
     public string Status { get; set; } = "Registered";
 
-
     public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
-
 
     // Navigation
     public User User { get; set; }

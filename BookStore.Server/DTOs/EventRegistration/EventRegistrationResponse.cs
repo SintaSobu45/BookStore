@@ -10,19 +10,22 @@
 
         public string Phone { get; set; } = string.Empty;
 
-
         public string EventName { get; set; } = string.Empty;
 
         public DateTime EventDate { get; set; }
 
         public string Venue { get; set; } = string.Empty;
 
-
         public int NumberOfSeats { get; set; }
 
-        // Extra book copies requested by contributor
-        public int AdditionalBookCopies { get; set; }
+        // Total book copies requested
+        public int BookCopies { get; set; }
 
+        // Free copies given to approved contributors
+        public int FreeBookCopies { get; set; }
+
+        // Additional copies that require payment
+        public int PaidBookCopies { get; set; }
 
         public decimal TotalAmount { get; set; }
 

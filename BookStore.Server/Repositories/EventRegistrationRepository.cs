@@ -67,8 +67,14 @@ namespace BookStore.Server.Repositories
                     NumberOfSeats = r.NumberOfSeats,
 
 
-                    // Extra books requested
-                    AdditionalBookCopies = r.AdditionalBookCopies,
+                    // Total book copies requested
+                    BookCopies = r.BookCopies,
+
+                    // Free copies for approved contributors
+                    FreeBookCopies = r.FreeBookCopies,
+
+                    // Additional paid copies
+                    PaidBookCopies = r.PaidBookCopies,
 
 
                     TotalAmount = r.TotalAmount,

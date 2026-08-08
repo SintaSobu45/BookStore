@@ -28,5 +28,9 @@ namespace BookStore.Server.Models
 
         // Navigation Property
         public ICollection<Book> Books { get; set; } = new List<Book>();
+
+       
+
+        public ICollection<StoryPoetry> StoryPoetries { get; set; } = new List<StoryPoetry>();
     }
 }
