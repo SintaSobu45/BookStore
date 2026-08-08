@@ -43,6 +43,7 @@ namespace BookStore.Server.Services
                 EventName = request.EventName,
                 Description = request.Description,
                 EventDate = request.EventDate,
+                EventTime = request.EventTime,
                 Venue = request.Venue,
 
                 // Fees
@@ -97,6 +98,7 @@ namespace BookStore.Server.Services
             eventItem.EventName = request.EventName;
             eventItem.Description = request.Description;
             eventItem.EventDate = request.EventDate;
+            eventItem.EventTime = request.EventTime;
             eventItem.Venue = request.Venue;
 
             // Fees

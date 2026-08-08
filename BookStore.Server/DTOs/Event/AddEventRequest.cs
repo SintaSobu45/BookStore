@@ -17,6 +17,9 @@ namespace BookStore.Server.DTOs.Event
         public DateTime EventDate { get; set; }
 
         [Required]
+        public TimeSpan EventTime { get; set; }
+
+        [Required]
         [StringLength(200)]
         public string Venue { get; set; } = string.Empty;
 
