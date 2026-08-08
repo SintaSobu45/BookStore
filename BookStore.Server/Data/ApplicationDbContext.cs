@@ -31,6 +31,8 @@ namespace BookStore.Server.Data
 
         public DbSet<EventRegistration> EventRegistrations { get; set; }
 
+        public DbSet<StoryPoetry> StoryPoetries { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -106,6 +108,20 @@ namespace BookStore.Server.Data
                 .HasMany(u => u.EventRegistrations)
                 .WithOne(r => r.User)
                 .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // User -> StoryPoetry
+            modelBuilder.Entity<StoryPoetry>()
+                .HasOne(s => s.User)
+                .WithMany(u => u.StoryPoetries)
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Category -> StoryPoetry
+            modelBuilder.Entity<StoryPoetry>()
+                .HasOne(s => s.Category)
+                .WithMany(c => c.StoryPoetries)
+                .HasForeignKey(s => s.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

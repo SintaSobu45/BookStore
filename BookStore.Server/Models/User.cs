@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
+
 namespace BookStore.Server.Models
 {
     public class User
@@ -56,5 +57,8 @@ namespace BookStore.Server.Models
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
 
         public ICollection<EventRegistration> EventRegistrations { get; set; } = new List<EventRegistration>();
+
+        public ICollection<StoryPoetry> StoryPoetries { get; set; }
+      = new List<StoryPoetry>();
     }
 }

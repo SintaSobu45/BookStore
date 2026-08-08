@@ -13,16 +13,20 @@ namespace BookStore.Server.Controllers
     {
         private readonly EventRegistrationService _eventRegistrationService;
 
-        public EventRegistrationController(EventRegistrationService eventRegistrationService)
+        public EventRegistrationController(
+            EventRegistrationService eventRegistrationService)
         {
             _eventRegistrationService = eventRegistrationService;
         }
 
+
         // POST: api/EventRegistration
         [HttpPost]
-        public async Task<IActionResult> Register(AddEventRegistrationRequest request)
+        public async Task<IActionResult> Register(
+            [FromBody] AddEventRegistrationRequest request)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            var userIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier);
 
             if (userIdClaim == null)
             {
@@ -34,7 +38,11 @@ namespace BookStore.Server.Controllers
 
             int userId = int.Parse(userIdClaim.Value);
 
-            var result = await _eventRegistrationService.RegisterAsync(userId, request);
+
+            var result =
+                await _eventRegistrationService
+                    .RegisterAsync(userId, request);
+
 
             if (result != "Event registration successful.")
             {
@@ -44,17 +52,20 @@ namespace BookStore.Server.Controllers
                 });
             }
 
+
             return Ok(new
             {
                 Message = result
             });
         }
 
+
         // GET: api/EventRegistration/MyRegistrations
         [HttpGet("MyRegistrations")]
         public async Task<IActionResult> MyRegistrations()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            var userIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier);
 
             if (userIdClaim == null)
             {
@@ -66,7 +77,11 @@ namespace BookStore.Server.Controllers
 
             int userId = int.Parse(userIdClaim.Value);
 
-            var registrations = await _eventRegistrationService.GetMyRegistrationsAsync(userId);
+
+            var registrations =
+                await _eventRegistrationService
+                    .GetMyRegistrationsAsync(userId);
+
 
             return Ok(registrations);
         }
