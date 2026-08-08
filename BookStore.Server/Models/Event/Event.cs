@@ -20,6 +20,9 @@ namespace BookStore.Server.Models.Event
         public DateTime EventDate { get; set; }
 
         [Required]
+        public TimeSpan EventTime { get; set; }
+
+        [Required]
         [StringLength(200)]
         public string Venue { get; set; } = string.Empty;
 

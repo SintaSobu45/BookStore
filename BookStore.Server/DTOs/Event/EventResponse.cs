@@ -10,6 +10,8 @@
 
         public DateTime EventDate { get; set; }
 
+        public TimeSpan EventTime { get; set; }
+
         public string Venue { get; set; } = string.Empty;
 
         public decimal EntryFee { get; set; }
