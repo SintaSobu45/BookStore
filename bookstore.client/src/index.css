@@ -1,5 +1,23 @@
-*{
-  margin: 0px;
-  padding: 0px;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
+}
+
+/* Navbar Custom Styles */
+.custom-navbar {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.subtitle-tracking {
+  letter-spacing: 0.14em;
+}
+
+.nav-link-custom {
+  position: relative;
 }

@@ -2,7 +2,7 @@ import { API_BASE_URL } from './api'
 
 // Get all authors
 export const getAuthors = async () => {
-  const response = await fetch(`${API_BASE_URL}/Author`)
+  const response = await fetch(`${API_BASE_URL}/api/Author`)
 
   if (!response.ok) {
     throw new Error('Failed to fetch authors')
@@ -13,7 +13,7 @@ export const getAuthors = async () => {
 
 // Get author by ID
 export const getAuthorById = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/Author/${id}`)
+  const response = await fetch(`${API_BASE_URL}/api/Author/${id}`)
 
   if (!response.ok) {
     throw new Error('Author not found')
@@ -24,7 +24,7 @@ export const getAuthorById = async (id) => {
 
 // Create author
 export const createAuthor = async (authorData) => {
-  const response = await fetch(`${API_BASE_URL}/Author`, {
+  const response = await fetch(`${API_BASE_URL}/api/Author`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -43,7 +43,7 @@ export const createAuthor = async (authorData) => {
 
 // Update author
 export const updateAuthor = async (id, authorData) => {
-  const response = await fetch(`${API_BASE_URL}/Author/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/api/Author/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json'
@@ -62,7 +62,7 @@ export const updateAuthor = async (id, authorData) => {
 
 // Delete author
 export const deleteAuthor = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/Author/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/api/Author/${id}`, {
     method: 'DELETE'
   })
 

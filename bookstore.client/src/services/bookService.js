@@ -2,7 +2,7 @@ import { API_BASE_URL } from './api'
 
 // Get all books
 export const getBooks = async () => {
-  const response = await fetch(`${API_BASE_URL}/Book`)
+  const response = await fetch(`${API_BASE_URL}/api/Book`)
 
   if (!response.ok) {
     throw new Error('Failed to fetch books')
@@ -13,7 +13,7 @@ export const getBooks = async () => {
 
 // Get book by ID
 export const getBookById = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/Book/${id}`)
+  const response = await fetch(`${API_BASE_URL}/api/Book/${id}`)
 
   if (!response.ok) {
     throw new Error('Book not found')
@@ -24,7 +24,7 @@ export const getBookById = async (id) => {
 
 // Add book
 export const createBook = async (bookData) => {
-  const response = await fetch(`${API_BASE_URL}/Book`, {
+  const response = await fetch(`${API_BASE_URL}/api/Book`, {
     method: 'POST',
     body: bookData
   })
@@ -41,29 +41,29 @@ export const createBook = async (bookData) => {
 }
 
 // Update book
-export const updateBook = async (id, bookData) => {
-  const response = await fetch(`${API_BASE_URL}/Book/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(bookData)
-  })
+export const updateBook = async (id, formData) => {
+  const token = localStorage.getItem("token");
 
-  const data = await response.json()
+  const response = await fetch(`${API_BASE_URL}/api/Book/${id}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(
-      data.message || 'Failed to update book'
-    )
+    throw new Error(data.message || "Failed to update book");
   }
 
-  return data
-}
+  return data;
+};
 
 // Delete book
 export const deleteBook = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/Book/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/api/Book/${id}`, {
     method: 'DELETE'
   })
 

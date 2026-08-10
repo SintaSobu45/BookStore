@@ -100,7 +100,7 @@ function Categories() {
           categoryName: categoryName.trim(),
           description: description.trim() || null,
         },
-        token
+        token,
       );
 
       setShowAddModal(false);
@@ -139,7 +139,7 @@ function Categories() {
           description: description.trim() || null,
           isActive: isActive,
         },
-        token
+        token,
       );
 
       setShowEditModal(false);
@@ -183,149 +183,421 @@ function Categories() {
   };
 
   return (
-    <div className="container-fluid p-4">
-
+    <div className="w-full">
       {/* ================= HEADER ================= */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h2 className="fw-bold mb-1">Categories</h2>
-          <p className="text-muted mb-0">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Categories
+          </h2>
+
+          <p className="text-sm sm:text-base text-gray-500 mt-1">
             Manage your bookstore categories
           </p>
         </div>
 
         <button
-          className="btn btn-primary"
           onClick={openAddModal}
+          className="
+          inline-flex
+          items-center
+          justify-center
+          gap-2
+          px-5
+          py-2.5
+          bg-gray-900
+          hover:bg-gray-800
+          text-white
+          rounded-xl
+          font-semibold
+          text-sm
+          transition-all
+          duration-200
+          shadow-sm
+          hover:shadow-md
+          active:scale-95
+          w-full
+          sm:w-auto
+        "
         >
-          + Add Category
+          <span className="text-lg leading-none">+</span>
+          Add Category
         </button>
       </div>
 
       {/* ================= SUCCESS MESSAGE ================= */}
+
       {success && (
-        <div className="alert alert-success">
+        <div
+          className="
+        mb-5
+        flex
+        items-center
+        gap-3
+        px-4
+        py-3
+        rounded-xl
+        border
+        border-green-200
+        bg-green-50
+        text-green-700
+        text-sm
+        font-medium
+      "
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100">
+            ✓
+          </span>
+
           {success}
         </div>
       )}
 
       {/* ================= ERROR MESSAGE ================= */}
+
       {error && !showAddModal && !showEditModal && (
-        <div className="alert alert-danger">
+        <div
+          className="
+        mb-5
+        flex
+        items-center
+        gap-3
+        px-4
+        py-3
+        rounded-xl
+        border
+        border-red-200
+        bg-red-50
+        text-red-700
+        text-sm
+        font-medium
+      "
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100">
+            !
+          </span>
+
           {error}
         </div>
       )}
 
       {/* ================= CATEGORY TABLE ================= */}
-      <div className="card border-0 shadow-sm">
-        <div className="card-body">
 
-          {loading ? (
-            <div className="text-center py-5">
-              <div
-                className="spinner-border text-primary"
-                role="status"
-              ></div>
+      <div
+        className="
+      bg-white
+      rounded-2xl
+      border
+      border-gray-200
+      shadow-sm
+      overflow-hidden
+    "
+      >
+        {loading ? (
+          /* Loading */
 
-              <p className="mt-3 text-muted">
-                Loading categories...
-              </p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div
+              className="
+            w-10
+            h-10
+            border-4
+            border-gray-200
+            border-t-gray-900
+            rounded-full
+            animate-spin
+          "
+            />
+
+            <p className="mt-4 text-sm text-gray-500">Loading categories...</p>
+          </div>
+        ) : categories.length === 0 ? (
+          /* Empty State */
+
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <div
+              className="
+            w-16
+            h-16
+            rounded-2xl
+            bg-gray-100
+            flex
+            items-center
+            justify-center
+            text-3xl
+            mb-4
+          "
+            >
+              📂
             </div>
-          ) : categories.length === 0 ? (
-            <div className="text-center py-5">
-              <h5>No categories found</h5>
 
-              <p className="text-muted">
-                Add your first bookstore category.
-              </p>
+            <h5 className="text-lg font-bold text-gray-900">
+              No categories found
+            </h5>
 
-              <button
-                className="btn btn-primary"
-                onClick={openAddModal}
-              >
-                + Add Category
-              </button>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0">
+            <p className="text-sm text-gray-500 mt-1 mb-5">
+              Add your first bookstore category.
+            </p>
 
-                <thead className="table-light">
-                  <tr>
-                    <th>#</th>
-                    <th>Category Name</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Created Date</th>
-                    <th className="text-end">Actions</th>
-                  </tr>
-                </thead>
+            <button
+              onClick={openAddModal}
+              className="
+              px-5
+              py-2.5
+              bg-gray-900
+              hover:bg-gray-800
+              text-white
+              rounded-xl
+              text-sm
+              font-semibold
+              transition
+              active:scale-95
+            "
+            >
+              + Add Category
+            </button>
+          </div>
+        ) : (
+          /* Category List */
 
-                <tbody>
-                  {categories.map((category, index) => (
-                    <tr key={category.categoryId}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th
+                    className="
+                  px-5
+                  py-4
+                  text-left
+                  font-semibold
+                  text-gray-500
+                  whitespace-nowrap
+                "
+                  >
+                    #
+                  </th>
 
-                      <td>
-                        {index + 1}
-                      </td>
+                  <th
+                    className="
+                  px-5
+                  py-4
+                  text-left
+                  font-semibold
+                  text-gray-500
+                  whitespace-nowrap
+                "
+                  >
+                    Category
+                  </th>
 
-                      <td>
-                        <span className="fw-semibold">
+                  <th
+                    className="
+                  px-5
+                  py-4
+                  text-left
+                  font-semibold
+                  text-gray-500
+                  whitespace-nowrap
+                "
+                  >
+                    Description
+                  </th>
+
+                  <th
+                    className="
+                  px-5
+                  py-4
+                  text-left
+                  font-semibold
+                  text-gray-500
+                  whitespace-nowrap
+                "
+                  >
+                    Status
+                  </th>
+
+                  <th
+                    className="
+                  px-5
+                  py-4
+                  text-left
+                  font-semibold
+                  text-gray-500
+                  whitespace-nowrap
+                "
+                  >
+                    Created
+                  </th>
+
+                  <th
+                    className="
+                  px-5
+                  py-4
+                  text-right
+                  font-semibold
+                  text-gray-500
+                  whitespace-nowrap
+                "
+                  >
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-100">
+                {categories.map((category, index) => (
+                  <tr
+                    key={category.categoryId}
+                    className="
+                    hover:bg-gray-50/70
+                    transition-colors
+                  "
+                  >
+                    {/* Number */}
+
+                    <td className="px-5 py-4 text-gray-400 font-medium">
+                      {index + 1}
+                    </td>
+
+                    {/* Category Name */}
+
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="
+                        w-9
+                        h-9
+                        rounded-lg
+                        bg-gray-100
+                        flex
+                        items-center
+                        justify-center
+                        shrink-0
+                      "
+                        >
+                          📂
+                        </div>
+
+                        <span className="font-semibold text-gray-900">
                           {category.categoryName}
                         </span>
-                      </td>
+                      </div>
+                    </td>
 
-                      <td>
-                        <span className="text-muted">
-                          {category.description || "No description"}
+                    {/* Description */}
+
+                    <td className="px-5 py-4 max-w-sm">
+                      <p className="text-gray-500 line-clamp-2">
+                        {category.description || "No description"}
+                      </p>
+                    </td>
+
+                    {/* Status */}
+
+                    <td className="px-5 py-4">
+                      {category.isActive ? (
+                        <span
+                          className="
+                        inline-flex
+                        items-center
+                        gap-1.5
+                        px-2.5
+                        py-1
+                        rounded-full
+                        bg-green-50
+                        text-green-700
+                        border
+                        border-green-100
+                        text-xs
+                        font-semibold
+                      "
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                          Active
                         </span>
-                      </td>
+                      ) : (
+                        <span
+                          className="
+                        inline-flex
+                        items-center
+                        gap-1.5
+                        px-2.5
+                        py-1
+                        rounded-full
+                        bg-gray-100
+                        text-gray-600
+                        border
+                        border-gray-200
+                        text-xs
+                        font-semibold
+                      "
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                          Inactive
+                        </span>
+                      )}
+                    </td>
 
-                      <td>
-                        {category.isActive ? (
-                          <span className="badge bg-success">
-                            Active
-                          </span>
-                        ) : (
-                          <span className="badge bg-secondary">
-                            Inactive
-                          </span>
-                        )}
-                      </td>
+                    {/* Created Date */}
 
-                      <td>
-                        {new Date(
-                          category.createdDate
-                        ).toLocaleDateString()}
-                      </td>
+                    <td className="px-5 py-4 text-gray-500 whitespace-nowrap">
+                      {new Date(category.createdDate).toLocaleDateString()}
+                    </td>
 
-                      <td className="text-end">
+                    {/* Actions */}
 
+                    <td className="px-5 py-4">
+                      <div className="flex justify-end gap-2">
                         <button
-                          className="btn btn-sm btn-outline-primary me-2"
                           onClick={() => openEditModal(category)}
+                          className="
+                          px-3
+                          py-1.5
+                          rounded-lg
+                          border
+                          border-gray-200
+                          bg-white
+                          text-gray-700
+                          text-xs
+                          font-semibold
+                          hover:bg-gray-900
+                          hover:text-white
+                          hover:border-gray-900
+                          transition-all
+                        "
                         >
                           Edit
                         </button>
 
                         <button
-                          className="btn btn-sm btn-outline-danger"
                           onClick={() => openDeleteModal(category)}
+                          className="
+                          px-3
+                          py-1.5
+                          rounded-lg
+                          border
+                          border-red-200
+                          bg-white
+                          text-red-600
+                          text-xs
+                          font-semibold
+                          hover:bg-red-600
+                          hover:text-white
+                          hover:border-red-600
+                          transition-all
+                        "
                         >
                           Delete
                         </button>
-
-                      </td>
-
-                    </tr>
-                  ))}
-                </tbody>
-
-              </table>
-            </div>
-          )}
-
-        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* ================================================= */}
@@ -333,95 +605,97 @@ function Categories() {
       {/* ================================================= */}
 
       {showAddModal && (
-        <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-
-            <div className="modal-content">
-
-              <div className="modal-header">
-                <h5 className="modal-title fw-bold">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">
                   Add Category
-                </h5>
+                </h3>
 
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowAddModal(false)}
-                ></button>
+                <p className="text-xs text-gray-500 mt-1">
+                  Create a new bookstore category
+                </p>
               </div>
 
-              <form onSubmit={handleCreate}>
-
-                <div className="modal-body">
-
-                  {error && (
-                    <div className="alert alert-danger">
-                      {error}
-                    </div>
-                  )}
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">
-                      Category Name
-                    </label>
-
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Enter category name"
-                      value={categoryName}
-                      onChange={(e) =>
-                        setCategoryName(e.target.value)
-                      }
-                      maxLength={100}
-                    />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">
-                      Description
-                    </label>
-
-                    <textarea
-                      className="form-control"
-                      rows="4"
-                      placeholder="Enter category description"
-                      value={description}
-                      onChange={(e) =>
-                        setDescription(e.target.value)
-                      }
-                      maxLength={500}
-                    ></textarea>
-                  </div>
-
-                </div>
-
-                <div className="modal-footer">
-
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowAddModal(false)}
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                  >
-                    Create Category
-                  </button>
-
-                </div>
-
-              </form>
-
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
+
+            {/* Form */}
+            <form onSubmit={handleCreate}>
+              <div className="px-6 py-5">
+                {/* Error */}
+                {error && (
+                  <div className="mb-4 px-3 py-2.5 rounded-lg bg-red-50 border border-red-100 text-sm text-red-600">
+                    {error}
+                  </div>
+                )}
+
+                {/* Category Name */}
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Category Name
+                  </label>
+
+                  <input
+                    type="text"
+                    placeholder="e.g. Fiction"
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    maxLength={100}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Description
+                    <span className="text-gray-400 font-normal ml-1">
+                      (optional)
+                    </span>
+                  </label>
+
+                  <textarea
+                    rows={3}
+                    placeholder="Briefly describe this category..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    maxLength={500}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none resize-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition"
+                  />
+
+                  <div className="text-right text-xs text-gray-400 mt-1">
+                    {description.length}/500
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition cursor-pointer"
+                >
+                  Create Category
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -432,111 +706,297 @@ function Categories() {
 
       {showEditModal && selectedCategory && (
         <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          className="
+          fixed
+          inset-0
+          z-50
+          flex
+          items-center
+          justify-center
+          bg-black/50
+          backdrop-blur-sm
+          p-4
+        "
         >
-          <div className="modal-dialog modal-dialog-centered">
+          <div
+            className="
+          w-full
+          max-w-lg
+          bg-white
+          rounded-2xl
+          shadow-2xl
+          overflow-hidden
+          max-h-[90vh]
+          overflow-y-auto
+        "
+          >
+            {/* Header */}
 
-            <div className="modal-content">
-
-              <div className="modal-header">
-                <h5 className="modal-title fw-bold">
+            <div
+              className="
+            flex
+            items-center
+            justify-between
+            px-6
+            py-5
+            border-b
+            border-gray-100
+          "
+            >
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">
                   Edit Category
-                </h5>
+                </h3>
 
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowEditModal(false)}
-                ></button>
+                <p className="text-xs text-gray-500 mt-1">
+                  Update category information
+                </p>
               </div>
 
-              <form onSubmit={handleUpdate}>
+              <button
+                type="button"
+                onClick={() => setShowEditModal(false)}
+                className="
+                w-9
+                h-9
+                rounded-lg
+                flex
+                items-center
+                justify-center
+                text-gray-400
+                hover:bg-gray-100
+                hover:text-gray-700
+                transition
+              "
+              >
+                ✕
+              </button>
+            </div>
 
-                <div className="modal-body">
-
-                  {error && (
-                    <div className="alert alert-danger">
-                      {error}
-                    </div>
-                  )}
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">
-                      Category Name
-                    </label>
-
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={categoryName}
-                      onChange={(e) =>
-                        setCategoryName(e.target.value)
-                      }
-                      maxLength={100}
-                    />
+            <form onSubmit={handleUpdate}>
+              <div className="px-6 py-5">
+                {error && (
+                  <div
+                    className="
+                  mb-4
+                  px-4
+                  py-3
+                  rounded-xl
+                  bg-red-50
+                  border
+                  border-red-200
+                  text-red-700
+                  text-sm
+                "
+                  >
+                    {error}
                   </div>
+                )}
 
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">
-                      Description
-                    </label>
+                {/* Name */}
 
-                    <textarea
-                      className="form-control"
-                      rows="4"
-                      value={description}
-                      onChange={(e) =>
-                        setDescription(e.target.value)
-                      }
-                      maxLength={500}
-                    ></textarea>
-                  </div>
+                <div className="mb-5">
+                  <label
+                    className="
+                  block
+                  text-sm
+                  font-semibold
+                  text-gray-700
+                  mb-2
+                "
+                  >
+                    Category Name
+                  </label>
 
-                  <div className="form-check form-switch">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="categoryStatus"
-                      checked={isActive}
-                      onChange={(e) =>
-                        setIsActive(e.target.checked)
-                      }
-                    />
-
-                    <label
-                      className="form-check-label"
-                      htmlFor="categoryStatus"
-                    >
-                      Active
-                    </label>
-                  </div>
-
+                  <input
+                    type="text"
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    maxLength={100}
+                    className="
+                    w-full
+                    px-4
+                    py-3
+                    rounded-xl
+                    border
+                    border-gray-200
+                    bg-gray-50
+                    text-sm
+                    text-gray-900
+                    outline-none
+                    transition
+                    focus:bg-white
+                    focus:border-gray-900
+                    focus:ring-2
+                    focus:ring-gray-900/10
+                  "
+                  />
                 </div>
 
-                <div className="modal-footer">
+                {/* Description */}
+
+                <div className="mb-5">
+                  <label
+                    className="
+                  block
+                  text-sm
+                  font-semibold
+                  text-gray-700
+                  mb-2
+                "
+                  >
+                    Description
+                  </label>
+
+                  <textarea
+                    rows="4"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    maxLength={500}
+                    className="
+                    w-full
+                    px-4
+                    py-3
+                    rounded-xl
+                    border
+                    border-gray-200
+                    bg-gray-50
+                    text-sm
+                    text-gray-900
+                    outline-none
+                    resize-none
+                    transition
+                    focus:bg-white
+                    focus:border-gray-900
+                    focus:ring-2
+                    focus:ring-gray-900/10
+                  "
+                  />
+
+                  <p className="text-xs text-gray-400 mt-2 text-right">
+                    {description.length}/500
+                  </p>
+                </div>
+
+                {/* Active Toggle */}
+
+                <div
+                  className="
+                flex
+                items-center
+                justify-between
+                p-4
+                rounded-xl
+                bg-gray-50
+                border
+                border-gray-200
+              "
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Category Status
+                    </p>
+
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enable or disable this category
+                    </p>
+                  </div>
 
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowEditModal(false)}
+                    onClick={() => setIsActive(!isActive)}
+                    className={`
+                    relative
+                    inline-flex
+                    h-6
+                    w-11
+                    shrink-0
+                    cursor-pointer
+                    rounded-full
+                    transition-colors
+                    duration-200
+                    ${isActive ? "bg-gray-900" : "bg-gray-300"}
+                  `}
                   >
-                    Cancel
+                    <span
+                      className={`
+                      pointer-events-none
+                      inline-block
+                      h-5
+                      w-5
+                      mt-0.5
+                      transform
+                      rounded-full
+                      bg-white
+                      shadow
+                      transition-transform
+                      duration-200
+                      ${isActive ? "translate-x-5" : "translate-x-0.5"}
+                    `}
+                    />
                   </button>
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                  >
-                    Save Changes
-                  </button>
-
                 </div>
+              </div>
 
-              </form>
+              {/* Footer */}
 
-            </div>
+              <div
+                className="
+              flex
+              flex-col-reverse
+              sm:flex-row
+              sm:justify-end
+              gap-2
+              px-6
+              py-4
+              bg-gray-50
+              border-t
+              border-gray-100
+            "
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="
+                  w-full
+                  sm:w-auto
+                  px-5
+                  py-2.5
+                  rounded-xl
+                  border
+                  border-gray-200
+                  bg-white
+                  text-gray-700
+                  text-sm
+                  font-semibold
+                  hover:bg-gray-100
+                  transition
+                "
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="
+                  w-full
+                  sm:w-auto
+                  px-5
+                  py-2.5
+                  rounded-xl
+                  bg-gray-900
+                  hover:bg-gray-800
+                  text-white
+                  text-sm
+                  font-semibold
+                  transition
+                  active:scale-95
+                "
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -547,67 +1007,178 @@ function Categories() {
 
       {showDeleteModal && selectedCategory && (
         <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          className="
+          fixed
+          inset-0
+          z-50
+          flex
+          items-center
+          justify-center
+          bg-black/50
+          backdrop-blur-sm
+          p-4
+        "
         >
-          <div className="modal-dialog modal-dialog-centered">
+          <div
+            className="
+          w-full
+          max-w-md
+          bg-white
+          rounded-2xl
+          shadow-2xl
+          overflow-hidden
+        "
+          >
+            {/* Header */}
 
-            <div className="modal-content">
-
-              <div className="modal-header">
-                <h5 className="modal-title fw-bold">
-                  Delete Category
-                </h5>
-
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowDeleteModal(false)}
-                ></button>
-              </div>
-
-              <div className="modal-body">
-
-                <p className="mb-2">
-                  Are you sure you want to delete this category?
-                </p>
-
-                <div className="alert alert-warning mb-0">
-                  <strong>
-                    {selectedCategory.categoryName}
-                  </strong>
-                  <br />
-                  This action cannot be undone.
+            <div
+              className="
+            flex
+            items-center
+            justify-between
+            px-6
+            py-5
+            border-b
+            border-gray-100
+          "
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="
+                w-10
+                h-10
+                rounded-xl
+                bg-red-50
+                text-red-600
+                flex
+                items-center
+                justify-center
+                text-lg
+              "
+                >
+                  !
                 </div>
 
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Delete Category
+                  </h3>
+
+                  <p className="text-xs text-gray-500">
+                    This action cannot be undone
+                  </p>
+                </div>
               </div>
 
-              <div className="modal-footer">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="
+                w-9
+                h-9
+                rounded-lg
+                flex
+                items-center
+                justify-center
+                text-gray-400
+                hover:bg-gray-100
+                hover:text-gray-700
+                transition
+              "
+              >
+                ✕
+              </button>
+            </div>
 
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Cancel
-                </button>
+            {/* Body */}
 
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={handleDelete}
-                >
-                  Delete Category
-                </button>
+            <div className="px-6 py-6">
+              <p className="text-sm text-gray-600 leading-6">
+                Are you sure you want to delete this category?
+              </p>
 
+              <div
+                className="
+              mt-4
+              p-4
+              rounded-xl
+              bg-red-50
+              border
+              border-red-100
+            "
+              >
+                <p className="text-sm font-bold text-red-800">
+                  {selectedCategory.categoryName}
+                </p>
+
+                <p className="text-xs text-red-600 mt-1">
+                  All associated category data may be affected.
+                </p>
               </div>
+            </div>
 
+            {/* Footer */}
+
+            <div
+              className="
+            flex
+            flex-col-reverse
+            sm:flex-row
+            sm:justify-end
+            gap-2
+            px-6
+            py-4
+            bg-gray-50
+            border-t
+            border-gray-100
+          "
+            >
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="
+                w-full
+                sm:w-auto
+                px-5
+                py-2.5
+                rounded-xl
+                border
+                border-gray-200
+                bg-white
+                text-gray-700
+                text-sm
+                font-semibold
+                hover:bg-gray-100
+                transition
+              "
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="
+                w-full
+                sm:w-auto
+                px-5
+                py-2.5
+                rounded-xl
+                bg-red-600
+                hover:bg-red-700
+                text-white
+                text-sm
+                font-semibold
+                transition
+                active:scale-95
+              "
+              >
+                Delete Category
+              </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
