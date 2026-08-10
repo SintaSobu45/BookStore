@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "./api";
 
-const CATEGORY_URL = `${API_BASE_URL}/Category`;
+const CATEGORY_URL = `${API_BASE_URL}/api/Category`;
 
 export const getCategories = async () => {
   const response = await fetch(CATEGORY_URL);
@@ -13,7 +13,7 @@ export const getCategories = async () => {
 };
 
 export const getCategoryById = async (id) => {
-  const response = await fetch(`${CATEGORY_URL}/${id}`);
+  const response = await fetch(`${CATEGORY_URL}/api/${id}`);
 
   if (!response.ok) {
     throw new Error("Category not found");

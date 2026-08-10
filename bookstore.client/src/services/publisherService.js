@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "./api";
 
-const PUBLISHER_URL = `${API_BASE_URL}/Publisher`;
+const PUBLISHER_URL = `${API_BASE_URL}/api/Publisher`;
 
 // GET all publishers
 export const getPublishers = async () => {

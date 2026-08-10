@@ -1,14 +1,25 @@
 import React from 'react'
+import Navbar from '../Components/Navbar'
+import HeroSection from '../Components/HeroSection'
+import BookSections from '../Components/BookSections'
+import TopCategories from '../Components/TopCategories'
+import EventsAndNewsletter from '../Components/Events'
+import Footer from '../Components/Footer'
 
 
 function Home() {
   return (
     <>
-    <div className='container d-flex justify-content-center align-items-center'>
 
-              Welcome To Malayalam Book Store
+    <Navbar/>
+    
+    <HeroSection/>
+    <BookSections/>
+    <TopCategories/>
+    <EventsAndNewsletter/>
 
-    </div>
+    <Footer/>
+
     </>
   )
 }

@@ -1,171 +1,229 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-
+import React, { useEffect, useState } from "react";
+import { getBooks } from "../../services/bookService";
+import { getAuthors } from "../../services/authorService";
+import { getCategories } from "../../services/categoryService";
+import { getPublishers } from "../../services/publisherService";
 
 function AdminDashboard() {
+  const [stats, setStats] = useState({
+    revenue: 25000,
+    books: 0,
+    categories: 0,
+    authors: 0,
+    publishers: 0,
+  });
+
+  const [recentBooks, setRecentBooks] = useState([]);
+  const [topBooks, setTopBooks] = useState([]);
+  const [inventory, setInventory] = useState({
+    inStock: 0,
+    lowStock: 0,
+    outStock: 0,
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const books = await getBooks();
+      const authors = await getAuthors();
+      const categories = await getCategories();
+      const publishers = await getPublishers();
+
+      setStats({
+        revenue: 25000,
+        books: books.length,
+        categories: categories.length,
+        authors: authors.length,
+        publishers: publishers.length,
+      });
+
+      setRecentBooks(
+        [...books]
+          .sort(
+            (a, b) =>
+              new Date(b.publishedDate) - new Date(a.publishedDate)
+          )
+          .slice(0, 5)
+      );
+
+      setTopBooks(
+        [...books]
+          .sort((a, b) => b.price - a.price)
+          .slice(0, 5)
+      );
+
+      setInventory({
+        inStock: books.filter((b) => b.stockQuantity > 10).length,
+        lowStock: books.filter(
+          (b) => b.stockQuantity <= 10 && b.stockQuantity > 0
+        ).length,
+        outStock: books.filter((b) => b.stockQuantity === 0).length,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const cards = [
+    {
+      title: "Revenue",
+      value: `₹${stats.revenue.toLocaleString()}`,
+      color: "bg-green-500 text-white",
+    },
+    {
+      title: "Books",
+      value: stats.books,
+      color: "bg-white",
+    },
+    {
+      title: "Categories",
+      value: stats.categories,
+      color: "bg-white",
+    },
+    {
+      title: "Authors",
+      value: stats.authors,
+      color: "bg-white",
+    },
+    {
+      title: "Publishers",
+      value: stats.publishers,
+      color: "bg-white",
+    },
+  ];
+
   return (
-    <div className="min-vh-100 bg-light">
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-gray-500">
+          Welcome back, Admin 👋
+        </p>
+      </div>
 
-      {/* Top Navbar */}
-      <nav className="navbar navbar-dark bg-dark px-4">
-        <span className="navbar-brand fw-bold">
-          Malayalam Book Store
-        </span>
-
-        <div className="text-white">
-          Admin
-        </div>
-      </nav>
-
-      <div className="container-fluid">
-        <div className="row">
-
-          {/* Sidebar */}
-          <div className="col-md-3 col-lg-2 bg-dark min-vh-100 p-3">
-
-            <h5 className="text-white mb-4">
-              Admin Panel
-            </h5>
-
-            <div className="d-grid gap-2">
-
-              <Link className='btn btn-secondary text-start' to={'/admin'}>
-                Dashboard
-              </Link>
-
-              <Link className='btn btn-dark text-start' to={'/admin/books'}>
-                Books
-              </Link>
-
-              <Link className='btn btn-dark text-start' to={'/admin/categories'}>
-                Categories
-              </Link>
-
-              <Link className='btn btn-dark text-start' to={'/admin/publishers'}>
-                Publishers
-              </Link>
-
-              <hr className="border-secondary" />
-
-              <button className="btn btn-danger text-start">
-                Logout
-              </button>
-
-            </div>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {cards.map((card, i) => (
+          <div
+            key={i}
+            className={`rounded-xl p-5 shadow-sm border ${card.color}`}
+          >
+            <p
+              className={`text-sm ${
+                i === 0 ? "text-white/80" : "text-gray-500"
+              }`}
+            >
+              {card.title}
+            </p>
+            <h2 className="text-3xl font-bold mt-2">
+              {card.value}
+            </h2>
           </div>
+        ))}
+      </div>
 
-          {/* Main Content */}
-          <main className="col-md-9 col-lg-10 p-4">
-
-            <div className="mb-4">
-              <h2 className="fw-bold">
-                Dashboard
-              </h2>
-
-              <p className="text-muted">
-                Welcome to the admin panel.
-              </p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl shadow-sm border p-5">
+          <h3 className="font-semibold mb-4">
+            Inventory Status
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span>In Stock</span>
+              <span className="font-bold text-green-600">
+                {inventory.inStock}
+              </span>
             </div>
-
-            {/* Statistics */}
-            <div className="row g-4 mb-4">
-
-              {/* Books */}
-              <div className="col-md-4">
-
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-
-                    <h6 className="text-muted">
-                      Total Books
-                    </h6>
-
-                    <h2 className="fw-bold mb-0">
-                      0
-                    </h2>
-
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Categories */}
-              <div className="col-md-4">
-
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-
-                    <h6 className="text-muted">
-                      Total Categories
-                    </h6>
-
-                    <h2 className="fw-bold mb-0">
-                      0
-                    </h2>
-
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Publishers */}
-              <div className="col-md-4">
-
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-
-                    <h6 className="text-muted">
-                      Total Publishers
-                    </h6>
-
-                    <h2 className="fw-bold mb-0">
-                      0
-                    </h2>
-
-                  </div>
-                </div>
-
-              </div>
-
+            <div className="flex justify-between items-center">
+              <span>Low Stock</span>
+              <span className="font-bold text-yellow-600">
+                {inventory.lowStock}
+              </span>
             </div>
-
-            {/* Quick Actions */}
-            <div className="card border-0 shadow-sm">
-
-              <div className="card-body">
-
-                <h5 className="fw-bold mb-3">
-                  Quick Actions
-                </h5>
-
-                <div className="d-flex gap-2 flex-wrap">
-
-                  <button className="btn btn-dark">
-                    Add Book
-                  </button>
-
-                  <button className="btn btn-outline-dark">
-                    Add Category
-                  </button>
-
-                  <button className="btn btn-outline-dark">
-                    Add Publisher
-                  </button>
-
-                </div>
-
-              </div>
-
+            <div className="flex justify-between items-center">
+              <span>Out of Stock</span>
+              <span className="font-bold text-red-600">
+                {inventory.outStock}
+              </span>
             </div>
+          </div>
+        </div>
 
-          </main>
-
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border p-5">
+          <h3 className="font-semibold mb-4">
+            Recently Added Books
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="py-2">Book</th>
+                  <th>Author</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentBooks.map((book) => (
+                  <tr
+                    key={book.bookId}
+                    className="border-b hover:bg-gray-50"
+                  >
+                    <td className="py-3 flex items-center gap-3">
+                      <img
+                        src={book.imageUrl}
+                        alt={book.title}
+                        className="w-10 h-14 object-cover rounded"
+                      />
+                      <span className="font-medium">
+                        {book.title}
+                      </span>
+                    </td>
+                    <td>{book.authorName}</td>
+                    <td className="font-semibold">
+                      ₹{book.price}
+                    </td>
+                    <td>{book.stockQuantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
+      <div className="bg-white rounded-xl shadow-sm border p-5">
+        <h3 className="font-semibold mb-4">
+          Top 5 Expensive Books
+        </h3>
+        <div className="space-y-3">
+          {topBooks.map((book, index) => (
+            <div
+              key={book.bookId}
+              className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-bold">
+                  {index + 1}
+                </div>
+                <div>
+                  <p className="font-medium">{book.title}</p>
+                  <p className="text-sm text-gray-500">
+                    {book.categoryName}
+                  </p>
+                </div>
+              </div>
+              <span className="font-bold text-green-600">
+                ₹{book.price}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
-  )
+  );
 }
 
-export default AdminDashboard
+export default AdminDashboard;

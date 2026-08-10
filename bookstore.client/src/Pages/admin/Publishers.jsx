@@ -199,561 +199,1016 @@ function Publishers() {
     }
   };
 
-  return (
-    <div className="container-fluid p-4">
+return (
+  <div className="w-full">
 
-      {/* ================= HEADER ================= */}
+    {/* ================= HEADER ================= */}
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          Publishers
+        </h2>
 
-        <div>
-          <h2 className="fw-bold mb-1">
-            Publishers
-          </h2>
+        <p className="text-gray-500 mt-1 text-sm sm:text-base">
+          Manage your bookstore publishers
+        </p>
+      </div>
 
-          <p className="text-muted mb-0">
-            Manage your bookstore publishers
+      <button
+        onClick={openAddModal}
+        className="
+          inline-flex items-center justify-center
+          bg-gray-900
+          hover:bg-gray-800
+          text-white
+          px-5 py-2.5
+          rounded-xl
+          font-semibold
+          text-sm
+          shadow-sm
+          hover:shadow-md
+          transition-all
+          duration-200
+          cursor-pointer
+          whitespace-nowrap
+        "
+      >
+        + Add Publisher
+      </button>
+
+    </div>
+
+
+    {/* ================= SUCCESS MESSAGE ================= */}
+    {success && (
+      <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+        {success}
+      </div>
+    )}
+
+
+    {/* ================= ERROR MESSAGE ================= */}
+    {error &&
+      !showAddModal &&
+      !showEditModal && (
+        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+
+    {/* ================= TABLE CARD ================= */}
+
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+
+      {loading ? (
+
+        /* ================= LOADING ================= */
+
+        <div className="flex flex-col items-center justify-center py-20">
+
+          <div
+            className="
+              w-10 h-10
+              border-4
+              border-gray-200
+              border-t-gray-900
+              rounded-full
+              animate-spin
+            "
+          />
+
+          <p className="mt-4 text-sm text-gray-500">
+            Loading publishers...
           </p>
+
         </div>
 
-        <button
-          className="btn btn-primary"
-          onClick={openAddModal}
-        >
-          + Add Publisher
-        </button>
+      ) : publishers.length === 0 ? (
 
-      </div>
+        /* ================= EMPTY STATE ================= */
 
-      {/* ================= SUCCESS ================= */}
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
 
-      {success && (
-        <div className="alert alert-success">
-          {success}
-        </div>
-      )}
-
-      {/* ================= ERROR ================= */}
-
-      {error &&
-        !showAddModal &&
-        !showEditModal && (
-          <div className="alert alert-danger">
-            {error}
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center text-3xl mb-4">
+            🏢
           </div>
-        )}
 
-      {/* ================= TABLE ================= */}
+          <h3 className="text-lg font-bold text-gray-900">
+            No publishers found
+          </h3>
 
-      <div className="card border-0 shadow-sm">
+          <p className="text-sm text-gray-500 mt-1 mb-5">
+            Add your first publisher to get started.
+          </p>
 
-        <div className="card-body">
+          <button
+            onClick={openAddModal}
+            className="
+              bg-gray-900
+              hover:bg-gray-800
+              text-white
+              px-5 py-2.5
+              rounded-xl
+              text-sm
+              font-semibold
+              transition
+              cursor-pointer
+            "
+          >
+            + Add Publisher
+          </button>
 
-          {loading ? (
+        </div>
 
-            <div className="text-center py-5">
+      ) : (
 
-              <div
-                className="spinner-border text-primary"
-                role="status"
-              ></div>
+        /* ================= TABLE ================= */
 
-              <p className="mt-3 text-muted">
-                Loading publishers...
-              </p>
+        <div className="overflow-x-auto">
 
-            </div>
+          <table className="w-full min-w-[1100px] text-sm">
 
-          ) : publishers.length === 0 ? (
+            {/* TABLE HEADER */}
 
-            <div className="text-center py-5">
+            <thead className="bg-gray-50 border-b border-gray-200">
 
-              <h5>
-                No publishers found
-              </h5>
+              <tr>
 
-              <p className="text-muted">
-                Add your first publisher.
-              </p>
+                <th className="px-5 py-4 text-left font-semibold text-gray-600 w-16">
+                  #
+                </th>
 
-              <button
-                className="btn btn-primary"
-                onClick={openAddModal}
-              >
-                + Add Publisher
-              </button>
+                <th className="px-5 py-4 text-left font-semibold text-gray-600 min-w-[200px]">
+                  Publisher Name
+                </th>
 
-            </div>
+                <th className="px-5 py-4 text-left font-semibold text-gray-600 min-w-[400px]">
+                  Description
+                </th>
 
-          ) : (
+                <th className="px-5 py-4 text-left font-semibold text-gray-600 w-32">
+                  Status
+                </th>
 
-            <div className="table-responsive">
+                <th className="px-5 py-4 text-left font-semibold text-gray-600 w-36">
+                  Created Date
+                </th>
 
-              <table className="table table-hover align-middle mb-0">
+                <th className="px-5 py-4 text-left font-semibold text-gray-600 w-36">
+                  Updated Date
+                </th>
 
-                <thead className="table-light">
+                <th className="px-5 py-4 text-right font-semibold text-gray-600 w-44">
+                  Actions
+                </th>
 
-                  <tr>
+              </tr>
 
-                    <th>#</th>
+            </thead>
 
-                    <th>Publisher Name</th>
 
-                    <th>Description</th>
+            {/* TABLE BODY */}
 
-                    <th>Status</th>
+            <tbody className="divide-y divide-gray-100">
 
-                    <th>Created Date</th>
+              {publishers.map((publisher, index) => (
 
-                    <th>Updated Date</th>
+                <tr
+                  key={publisher.publisherId}
+                  className="
+                    hover:bg-gray-50/80
+                    transition-colors
+                    duration-150
+                  "
+                >
 
-                    <th className="text-end">
-                      Actions
-                    </th>
+                  {/* Number */}
 
-                  </tr>
+                  <td className="px-5 py-5 text-gray-400 font-medium">
+                    {index + 1}
+                  </td>
 
-                </thead>
 
-                <tbody>
+                  {/* Publisher Name */}
 
-                  {publishers.map((publisher, index) => (
+                  <td className="px-5 py-5">
 
-                    <tr key={publisher.publisherId}>
+                    <div className="flex items-center gap-3">
 
-                      <td>
-                        {index + 1}
-                      </td>
+                      <div
+                        className="
+                          w-10 h-10
+                          rounded-xl
+                          bg-gray-100
+                          flex items-center justify-center
+                          text-lg
+                          shrink-0
+                        "
+                      >
+                        🏢
+                      </div>
 
-                      <td>
+                      <div className="min-w-0">
 
-                        <span className="fw-semibold">
+                        <p className="font-semibold text-gray-900 truncate">
                           {publisher.publisherName}
-                        </span>
+                        </p>
 
-                      </td>
+                      </div>
 
-                      <td>
-
-                        <span className="text-muted">
-                          {publisher.description ||
-                            "No description"}
-                        </span>
-
-                      </td>
-
-                      <td>
-
-                        {publisher.isActive ? (
-
-                          <span className="badge bg-success">
-                            Active
-                          </span>
-
-                        ) : (
-
-                          <span className="badge bg-secondary">
-                            Inactive
-                          </span>
-
-                        )}
-
-                      </td>
-
-                      <td>
-
-                        {publisher.createdDate
-                          ? new Date(
-                              publisher.createdDate
-                            ).toLocaleDateString()
-                          : "-"}
-
-                      </td>
-
-                      <td>
-
-                        {publisher.updatedDate
-                          ? new Date(
-                              publisher.updatedDate
-                            ).toLocaleDateString()
-                          : "-"}
-
-                      </td>
-
-                      <td className="text-end">
-
-                        <button
-                          className="btn btn-sm btn-outline-primary me-2"
-                          onClick={() =>
-                            openEditModal(publisher)
-                          }
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() =>
-                            openDeleteModal(publisher)
-                          }
-                        >
-                          Delete
-                        </button>
-
-                      </td>
-
-                    </tr>
-
-                  ))}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-          )}
-
-        </div>
-
-      </div>
-
-      {/* ================================================= */}
-      {/* ADD PUBLISHER MODAL */}
-      {/* ================================================= */}
-
-      {showAddModal && (
-
-        <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          style={{
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-        >
-
-          <div className="modal-dialog modal-dialog-centered">
-
-            <div className="modal-content">
-
-              <div className="modal-header">
-
-                <h5 className="modal-title fw-bold">
-                  Add Publisher
-                </h5>
-
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() =>
-                    setShowAddModal(false)
-                  }
-                ></button>
-
-              </div>
-
-              <form onSubmit={handleCreate}>
-
-                <div className="modal-body">
-
-                  {error && (
-                    <div className="alert alert-danger">
-                      {error}
                     </div>
-                  )}
 
-                  <div className="mb-3">
+                  </td>
 
-                    <label className="form-label fw-semibold">
-                      Publisher Name
-                    </label>
 
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Enter publisher name"
-                      value={publisherName}
-                      onChange={(e) =>
-                        setPublisherName(e.target.value)
-                      }
-                      maxLength={100}
-                    />
+                  {/* Description */}
 
-                  </div>
+                  <td className="px-5 py-5">
 
-                  <div className="mb-3">
-
-                    <label className="form-label fw-semibold">
-                      Description
-                    </label>
-
-                    <textarea
-                      className="form-control"
-                      rows="4"
-                      placeholder="Enter publisher description"
-                      value={description}
-                      onChange={(e) =>
-                        setDescription(e.target.value)
-                      }
-                      maxLength={500}
-                    ></textarea>
-
-                  </div>
-
-                </div>
-
-                <div className="modal-footer">
-
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() =>
-                      setShowAddModal(false)
-                    }
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                  >
-                    Create Publisher
-                  </button>
-
-                </div>
-
-              </form>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      )}
-
-      {/* ================================================= */}
-      {/* EDIT PUBLISHER MODAL */}
-      {/* ================================================= */}
-
-      {showEditModal && selectedPublisher && (
-
-        <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          style={{
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-        >
-
-          <div className="modal-dialog modal-dialog-centered">
-
-            <div className="modal-content">
-
-              <div className="modal-header">
-
-                <h5 className="modal-title fw-bold">
-                  Edit Publisher
-                </h5>
-
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() =>
-                    setShowEditModal(false)
-                  }
-                ></button>
-
-              </div>
-
-              <form onSubmit={handleUpdate}>
-
-                <div className="modal-body">
-
-                  {error && (
-                    <div className="alert alert-danger">
-                      {error}
-                    </div>
-                  )}
-
-                  <div className="mb-3">
-
-                    <label className="form-label fw-semibold">
-                      Publisher Name
-                    </label>
-
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={publisherName}
-                      onChange={(e) =>
-                        setPublisherName(e.target.value)
-                      }
-                      maxLength={100}
-                    />
-
-                  </div>
-
-                  <div className="mb-3">
-
-                    <label className="form-label fw-semibold">
-                      Description
-                    </label>
-
-                    <textarea
-                      className="form-control"
-                      rows="4"
-                      value={description}
-                      onChange={(e) =>
-                        setDescription(e.target.value)
-                      }
-                      maxLength={500}
-                    ></textarea>
-
-                  </div>
-
-                  <div className="form-check form-switch">
-
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="publisherStatus"
-                      checked={isActive}
-                      onChange={(e) =>
-                        setIsActive(e.target.checked)
-                      }
-                    />
-
-                    <label
-                      className="form-check-label"
-                      htmlFor="publisherStatus"
+                    <p
+                      className="
+                        text-gray-600
+                        leading-relaxed
+                        max-w-[420px]
+                        whitespace-normal
+                        break-words
+                      "
                     >
-                      Active
-                    </label>
+                      {publisher.description || (
+                        <span className="text-gray-400 italic">
+                          No description
+                        </span>
+                      )}
+                    </p>
 
-                  </div>
+                  </td>
 
-                </div>
 
-                <div className="modal-footer">
+                  {/* Status */}
 
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() =>
-                      setShowEditModal(false)
-                    }
-                  >
-                    Cancel
-                  </button>
+                  <td className="px-5 py-5">
 
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                  >
-                    Save Changes
-                  </button>
+                    {publisher.isActive ? (
 
-                </div>
+                      <span
+                        className="
+                          inline-flex
+                          items-center
+                          gap-1.5
+                          px-3 py-1.5
+                          rounded-full
+                          bg-green-50
+                          text-green-700
+                          border border-green-100
+                          text-xs
+                          font-semibold
+                        "
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        Active
+                      </span>
 
-              </form>
+                    ) : (
 
-            </div>
+                      <span
+                        className="
+                          inline-flex
+                          items-center
+                          gap-1.5
+                          px-3 py-1.5
+                          rounded-full
+                          bg-gray-100
+                          text-gray-600
+                          border border-gray-200
+                          text-xs
+                          font-semibold
+                        "
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                        Inactive
+                      </span>
 
-          </div>
+                    )}
 
-        </div>
+                  </td>
 
-      )}
 
-      {/* ================================================= */}
-      {/* DELETE MODAL */}
-      {/* ================================================= */}
+                  {/* Created Date */}
 
-      {showDeleteModal && selectedPublisher && (
+                  <td className="px-5 py-5 text-gray-500 whitespace-nowrap">
 
-        <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          style={{
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-        >
+                    {publisher.createdDate
+                      ? new Date(
+                          publisher.createdDate
+                        ).toLocaleDateString()
+                      : "-"}
 
-          <div className="modal-dialog modal-dialog-centered">
+                  </td>
 
-            <div className="modal-content">
 
-              <div className="modal-header">
+                  {/* Updated Date */}
 
-                <h5 className="modal-title fw-bold">
-                  Delete Publisher
-                </h5>
+                  <td className="px-5 py-5 text-gray-500 whitespace-nowrap">
 
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() =>
-                    setShowDeleteModal(false)
-                  }
-                ></button>
+                    {publisher.updatedDate
+                      ? new Date(
+                          publisher.updatedDate
+                        ).toLocaleDateString()
+                      : "-"}
 
-              </div>
+                  </td>
 
-              <div className="modal-body">
 
-                <p className="mb-2">
-                  Are you sure you want to delete this
-                  publisher?
-                </p>
+                  {/* Actions */}
 
-                <div className="alert alert-warning mb-0">
+                  <td className="px-5 py-5">
 
-                  <strong>
-                    {selectedPublisher.publisherName}
-                  </strong>
+                    <div className="flex items-center justify-end gap-2">
 
-                  <br />
+                      <button
+                        onClick={() =>
+                          openEditModal(publisher)
+                        }
+                        className="
+                          px-3.5 py-2
+                          rounded-lg
+                          border border-blue-200
+                          text-blue-600
+                          hover:bg-blue-50
+                          hover:border-blue-300
+                          text-xs
+                          font-semibold
+                          transition
+                          cursor-pointer
+                        "
+                      >
+                        Edit
+                      </button>
 
-                  This action cannot be undone.
+                      <button
+                        onClick={() =>
+                          openDeleteModal(publisher)
+                        }
+                        className="
+                          px-3.5 py-2
+                          rounded-lg
+                          border border-red-200
+                          text-red-600
+                          hover:bg-red-50
+                          hover:border-red-300
+                          text-xs
+                          font-semibold
+                          transition
+                          cursor-pointer
+                        "
+                      >
+                        Delete
+                      </button>
 
-                </div>
+                    </div>
 
-              </div>
+                  </td>
 
-              <div className="modal-footer">
+                </tr>
 
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() =>
-                    setShowDeleteModal(false)
-                  }
-                >
-                  Cancel
-                </button>
+              ))}
 
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={handleDelete}
-                >
-                  Delete Publisher
-                </button>
+            </tbody>
 
-              </div>
-
-            </div>
-
-          </div>
+          </table>
 
         </div>
 
       )}
 
     </div>
-  );
+
+
+    {/* ================================================= */}
+    {/* ADD PUBLISHER MODAL */}
+    {/* ================================================= */}
+
+    {showAddModal && (
+
+      <div
+        className="
+          fixed inset-0
+          z-50
+          flex items-center justify-center
+          bg-black/50
+          backdrop-blur-sm
+          p-4
+        "
+        onClick={() => setShowAddModal(false)}
+      >
+
+        <div
+          className="
+            w-full
+            max-w-md
+            bg-white
+            rounded-2xl
+            shadow-2xl
+            overflow-hidden
+          "
+          onClick={(e) => e.stopPropagation()}
+        >
+
+          {/* Modal Header */}
+
+          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+
+            <div>
+
+              <h3 className="text-lg font-bold text-gray-900">
+                Add Publisher
+              </h3>
+
+              <p className="text-xs text-gray-500 mt-1">
+                Add a new publisher to your bookstore
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAddModal(false)}
+              className="
+                w-8 h-8
+                rounded-lg
+                flex items-center justify-center
+                text-gray-400
+                hover:bg-gray-100
+                hover:text-gray-700
+                transition
+                cursor-pointer
+              "
+            >
+              ✕
+            </button>
+
+          </div>
+
+
+          {/* Form */}
+
+          <form onSubmit={handleCreate}>
+
+            <div className="px-6 py-5">
+
+              {error && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {error}
+                </div>
+              )}
+
+              {/* Publisher Name */}
+
+              <div className="mb-4">
+
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Publisher Name
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Enter publisher name"
+                  value={publisherName}
+                  onChange={(e) =>
+                    setPublisherName(e.target.value)
+                  }
+                  maxLength={100}
+                  className="
+                    w-full
+                    px-3.5 py-2.5
+                    rounded-xl
+                    border border-gray-200
+                    bg-gray-50
+                    text-sm
+                    text-gray-900
+                    outline-none
+                    focus:bg-white
+                    focus:border-gray-900
+                    focus:ring-2
+                    focus:ring-gray-900/10
+                    transition
+                  "
+                />
+
+              </div>
+
+
+              {/* Description */}
+
+              <div>
+
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Description
+                </label>
+
+                <textarea
+                  rows="4"
+                  placeholder="Enter publisher description"
+                  value={description}
+                  onChange={(e) =>
+                    setDescription(e.target.value)
+                  }
+                  maxLength={500}
+                  className="
+                    w-full
+                    px-3.5 py-2.5
+                    rounded-xl
+                    border border-gray-200
+                    bg-gray-50
+                    text-sm
+                    text-gray-900
+                    outline-none
+                    resize-none
+                    focus:bg-white
+                    focus:border-gray-900
+                    focus:ring-2
+                    focus:ring-gray-900/10
+                    transition
+                  "
+                />
+
+                <p className="text-xs text-gray-400 mt-1.5 text-right">
+                  {description.length}/500
+                </p>
+
+              </div>
+
+            </div>
+
+
+            {/* Modal Footer */}
+
+            <div className="flex items-center justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-100">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowAddModal(false)
+                }
+                className="
+                  px-4 py-2.5
+                  rounded-xl
+                  border border-gray-200
+                  bg-white
+                  text-gray-700
+                  text-sm
+                  font-semibold
+                  hover:bg-gray-100
+                  transition
+                  cursor-pointer
+                "
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                className="
+                  px-4 py-2.5
+                  rounded-xl
+                  bg-gray-900
+                  text-white
+                  text-sm
+                  font-semibold
+                  hover:bg-gray-800
+                  shadow-sm
+                  transition
+                  cursor-pointer
+                "
+              >
+                Create Publisher
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+
+    )}
+
+
+    {/* ================================================= */}
+    {/* EDIT PUBLISHER MODAL */}
+    {/* ================================================= */}
+
+    {showEditModal && selectedPublisher && (
+
+      <div
+        className="
+          fixed inset-0
+          z-50
+          flex items-center justify-center
+          bg-black/50
+          backdrop-blur-sm
+          p-4
+        "
+        onClick={() => setShowEditModal(false)}
+      >
+
+        <div
+          className="
+            w-full
+            max-w-md
+            bg-white
+            rounded-2xl
+            shadow-2xl
+            overflow-hidden
+          "
+          onClick={(e) => e.stopPropagation()}
+        >
+
+          {/* Header */}
+
+          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+
+            <div>
+
+              <h3 className="text-lg font-bold text-gray-900">
+                Edit Publisher
+              </h3>
+
+              <p className="text-xs text-gray-500 mt-1">
+                Update publisher information
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowEditModal(false)}
+              className="
+                w-8 h-8
+                rounded-lg
+                flex items-center justify-center
+                text-gray-400
+                hover:bg-gray-100
+                hover:text-gray-700
+                transition
+                cursor-pointer
+              "
+            >
+              ✕
+            </button>
+
+          </div>
+
+
+          {/* Form */}
+
+          <form onSubmit={handleUpdate}>
+
+            <div className="px-6 py-5">
+
+              {error && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {error}
+                </div>
+              )}
+
+              {/* Publisher Name */}
+
+              <div className="mb-4">
+
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Publisher Name
+                </label>
+
+                <input
+                  type="text"
+                  value={publisherName}
+                  onChange={(e) =>
+                    setPublisherName(e.target.value)
+                  }
+                  maxLength={100}
+                  className="
+                    w-full
+                    px-3.5 py-2.5
+                    rounded-xl
+                    border border-gray-200
+                    bg-gray-50
+                    text-sm
+                    text-gray-900
+                    outline-none
+                    focus:bg-white
+                    focus:border-gray-900
+                    focus:ring-2
+                    focus:ring-gray-900/10
+                    transition
+                  "
+                />
+
+              </div>
+
+
+              {/* Description */}
+
+              <div className="mb-4">
+
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Description
+                </label>
+
+                <textarea
+                  rows="4"
+                  value={description}
+                  onChange={(e) =>
+                    setDescription(e.target.value)
+                  }
+                  maxLength={500}
+                  className="
+                    w-full
+                    px-3.5 py-2.5
+                    rounded-xl
+                    border border-gray-200
+                    bg-gray-50
+                    text-sm
+                    text-gray-900
+                    outline-none
+                    resize-none
+                    focus:bg-white
+                    focus:border-gray-900
+                    focus:ring-2
+                    focus:ring-gray-900/10
+                    transition
+                  "
+                />
+
+                <p className="text-xs text-gray-400 mt-1.5 text-right">
+                  {description.length}/500
+                </p>
+
+              </div>
+
+
+              {/* Active */}
+
+              <label className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 cursor-pointer">
+
+                <div>
+
+                  <p className="text-sm font-semibold text-gray-800">
+                    Publisher Status
+                  </p>
+
+                  <p className="text-xs text-gray-500">
+                    Enable or disable this publisher
+                  </p>
+
+                </div>
+
+                <div className="relative">
+
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) =>
+                      setIsActive(e.target.checked)
+                    }
+                    className="sr-only peer"
+                  />
+
+                  <div className="
+                    w-11 h-6
+                    bg-gray-300
+                    rounded-full
+                    peer
+                    peer-checked:bg-gray-900
+                    transition
+                  " />
+
+                  <div className="
+                    absolute
+                    top-1 left-1
+                    w-4 h-4
+                    bg-white
+                    rounded-full
+                    shadow
+                    transition
+                    peer-checked:translate-x-5
+                  " />
+
+                </div>
+
+              </label>
+
+            </div>
+
+
+            {/* Footer */}
+
+            <div className="flex items-center justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-100">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowEditModal(false)
+                }
+                className="
+                  px-4 py-2.5
+                  rounded-xl
+                  border border-gray-200
+                  bg-white
+                  text-gray-700
+                  text-sm
+                  font-semibold
+                  hover:bg-gray-100
+                  transition
+                  cursor-pointer
+                "
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                className="
+                  px-4 py-2.5
+                  rounded-xl
+                  bg-gray-900
+                  text-white
+                  text-sm
+                  font-semibold
+                  hover:bg-gray-800
+                  shadow-sm
+                  transition
+                  cursor-pointer
+                "
+              >
+                Save Changes
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+
+    )}
+
+
+    {/* ================================================= */}
+    {/* DELETE MODAL */}
+    {/* ================================================= */}
+
+    {showDeleteModal && selectedPublisher && (
+
+      <div
+        className="
+          fixed inset-0
+          z-50
+          flex items-center justify-center
+          bg-black/50
+          backdrop-blur-sm
+          p-4
+        "
+        onClick={() => setShowDeleteModal(false)}
+      >
+
+        <div
+          className="
+            w-full
+            max-w-sm
+            bg-white
+            rounded-2xl
+            shadow-2xl
+            overflow-hidden
+          "
+          onClick={(e) => e.stopPropagation()}
+        >
+
+          {/* Header */}
+
+          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+
+            <div>
+
+              <h3 className="text-lg font-bold text-gray-900">
+                Delete Publisher
+              </h3>
+
+              <p className="text-xs text-gray-500 mt-1">
+                This action cannot be undone
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setShowDeleteModal(false)
+              }
+              className="
+                w-8 h-8
+                rounded-lg
+                flex items-center justify-center
+                text-gray-400
+                hover:bg-gray-100
+                hover:text-gray-700
+                transition
+                cursor-pointer
+              "
+            >
+              ✕
+            </button>
+
+          </div>
+
+
+          {/* Body */}
+
+          <div className="px-6 py-6">
+
+            <div className="flex items-start gap-3">
+
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                ⚠️
+              </div>
+
+              <div>
+
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Are you sure you want to delete this publisher?
+                </p>
+
+                <p className="font-bold text-gray-900 mt-2">
+                  {selectedPublisher.publisherName}
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          {/* Footer */}
+
+          <div className="flex items-center justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-100">
+
+            <button
+              type="button"
+              onClick={() =>
+                setShowDeleteModal(false)
+              }
+              className="
+                px-4 py-2.5
+                rounded-xl
+                border border-gray-200
+                bg-white
+                text-gray-700
+                text-sm
+                font-semibold
+                hover:bg-gray-100
+                transition
+                cursor-pointer
+              "
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="
+                px-4 py-2.5
+                rounded-xl
+                bg-red-600
+                text-white
+                text-sm
+                font-semibold
+                hover:bg-red-700
+                shadow-sm
+                transition
+                cursor-pointer
+              "
+            >
+              Delete Publisher
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    )}
+
+  </div>
+);
+
+
 }
 
 export default Publishers;

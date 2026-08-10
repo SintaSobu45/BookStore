@@ -1,7 +1,7 @@
 import { API_BASE_URL } from './api'
 
 export const loginUser = async (loginData) => {
-  const response = await fetch(`${API_BASE_URL}/Account/login`, {
+  const response = await fetch(`${API_BASE_URL}/api/Account/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -19,7 +19,7 @@ export const loginUser = async (loginData) => {
 }
 
 export const registerUser = async (registerData) => {
-  const response = await fetch(`${API_BASE_URL}/Account/register`, {
+  const response = await fetch(`${API_BASE_URL}/api/Account/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
