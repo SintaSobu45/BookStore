@@ -50,5 +50,8 @@ namespace BookStore.Server.Models.Event
         public ICollection<EventImage> EventImages { get; set; } = new List<EventImage>();
 
         public ICollection<EventRegistration> EventRegistrations { get; set; } = new List<EventRegistration>();
+
+        public ICollection<EventContributor> EventContributors { get; set; }
+    = new List<EventContributor>();
     }
 }

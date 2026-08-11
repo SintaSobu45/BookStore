@@ -93,7 +93,10 @@ namespace BookStore.Server
             builder.Services.AddScoped<EventRegistrationRepository>();
 
             builder.Services.AddScoped<StoryPoetryRepository>();
-         
+
+            builder.Services.AddScoped<EventContributorRepository>();
+       
+
 
 
 
@@ -121,6 +124,8 @@ namespace BookStore.Server
             builder.Services.AddScoped<EventRegistrationService>();
 
             builder.Services.AddScoped<StoryPoetryService>();
+
+            builder.Services.AddScoped<EventContributorService>();
 
             // JWT Authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

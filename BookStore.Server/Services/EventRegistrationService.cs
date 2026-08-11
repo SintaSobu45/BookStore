@@ -1,31 +1,35 @@
-﻿using BookStore.Server.Data;
-using BookStore.Server.DTOs.EventRegistration;
+﻿using BookStore.Server.DTOs.EventRegistration;
 using BookStore.Server.Models.Event;
 using BookStore.Server.Repositories;
-using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.Server.Services
 {
     public class EventRegistrationService
     {
         private readonly EventRegistrationRepository _repository;
-        private readonly ApplicationDbContext _context;
+        private readonly EventContributorRepository _eventContributorRepository;
 
         public EventRegistrationService(
             EventRegistrationRepository repository,
-            ApplicationDbContext context)
+            EventContributorRepository eventContributorRepository)
         {
             _repository = repository;
-            _context = context;
+            _eventContributorRepository = eventContributorRepository;
         }
 
 
-        // Register Event
+        // =========================================================
+        // REGISTER EVENT
+        // =========================================================
+
         public async Task<string> RegisterAsync(
             int userId,
             AddEventRegistrationRequest request)
         {
-            // Check Duplicate Registration
+            // -----------------------------------------------------
+            // 1. Check Duplicate Registration
+            // -----------------------------------------------------
+
             if (await _repository.AlreadyRegisteredAsync(
                 userId,
                 request.EventId))
@@ -34,9 +38,13 @@ namespace BookStore.Server.Services
             }
 
 
-            // Get Event
-            var eventItem = await _repository.GetEventAsync(
-                request.EventId);
+            // -----------------------------------------------------
+            // 2. Get Event
+            // -----------------------------------------------------
+
+            var eventItem =
+                await _repository.GetEventAsync(
+                    request.EventId);
 
             if (eventItem == null)
             {
@@ -44,49 +52,68 @@ namespace BookStore.Server.Services
             }
 
 
-            // Check Active
+            // -----------------------------------------------------
+            // 3. Check Active
+            // -----------------------------------------------------
+
             if (!eventItem.IsActive)
             {
                 return "Event is not active.";
             }
 
 
-            // Check Seats
-            if (request.NumberOfSeats > eventItem.AvailableSeats)
+            // -----------------------------------------------------
+            // 4. Check Available Seats
+            // -----------------------------------------------------
+
+            if (request.NumberOfSeats >
+                eventItem.AvailableSeats)
             {
                 return "Requested seats are not available.";
             }
 
 
-            // Check whether user has an Approved Story/Poetry
-            bool isApprovedContributor =
-                await _context.StoryPoetries
-                    .AnyAsync(s =>
-                        s.UserId == userId &&
-                        s.Status == "Approved");
+            // -----------------------------------------------------
+            // 5. Check Event Contributor
+            // -----------------------------------------------------
+
+            bool isEventContributor =
+                await _eventContributorRepository
+                    .IsContributorAsync(
+                        userId,
+                        request.EventId);
 
 
-            // Normal users cannot request book copies
-            if (!isApprovedContributor &&
+            // -----------------------------------------------------
+            // 6. Normal users cannot request books
+            // -----------------------------------------------------
+
+            if (!isEventContributor &&
                 request.BookCopies > 0)
             {
-                return "Only approved Story/Poetry contributors can request book copies.";
+                return
+                    "Only event contributors can request book copies.";
             }
 
 
-            // Calculate free and paid copies
+            // -----------------------------------------------------
+            // 7. Calculate Free and Paid Copies
+            // -----------------------------------------------------
+
             int freeBookCopies = 0;
+
             int paidBookCopies = 0;
 
 
-            if (isApprovedContributor)
+            if (isEventContributor)
             {
-                // First 2 copies are free
-                freeBookCopies = Math.Min(
-                    request.BookCopies,
-                    2);
+                // First 2 copies are FREE
+                freeBookCopies =
+                    Math.Min(
+                        request.BookCopies,
+                        2);
 
-                // Remaining copies are paid
+                // Remaining copies are PAID
                 paidBookCopies =
                     Math.Max(
                         request.BookCopies - 2,
@@ -94,57 +121,77 @@ namespace BookStore.Server.Services
             }
 
 
-            // Calculate Event Fee
+            // -----------------------------------------------------
+            // 8. Calculate Event Fee
+            // -----------------------------------------------------
+
             decimal eventAmount =
                 eventItem.EntryFee *
                 request.NumberOfSeats;
 
 
-            // Calculate Extra Book Fee
+            // -----------------------------------------------------
+            // 9. Calculate Extra Book Fee
+            // -----------------------------------------------------
+
             decimal bookAmount =
                 eventItem.BookPrice *
                 paidBookCopies;
 
 
-            // Final Amount
+            // -----------------------------------------------------
+            // 10. Calculate Final Amount
+            // -----------------------------------------------------
+
             decimal totalAmount =
                 eventAmount +
                 bookAmount;
 
 
-            // Create Registration
-            var registration = new EventRegistration
-            {
-                UserId = userId,
+            // -----------------------------------------------------
+            // 11. Create Registration
+            // -----------------------------------------------------
 
-                EventId = request.EventId,
+            var registration =
+                new EventRegistration
+                {
+                    UserId =
+                        userId,
 
-                NumberOfSeats =
-                    request.NumberOfSeats,
+                    EventId =
+                        request.EventId,
 
-                BookCopies =
-                    request.BookCopies,
+                    NumberOfSeats =
+                        request.NumberOfSeats,
 
-                FreeBookCopies =
-                    freeBookCopies,
+                    BookCopies =
+                        request.BookCopies,
 
-                PaidBookCopies =
-                    paidBookCopies,
+                    FreeBookCopies =
+                        freeBookCopies,
 
-                TotalAmount =
-                    totalAmount,
+                    PaidBookCopies =
+                        paidBookCopies,
 
-                RegistrationDate =
-                    DateTime.UtcNow,
+                    TotalAmount =
+                        totalAmount,
 
-                Status = "Registered"
-            };
+                    RegistrationDate =
+                        DateTime.UtcNow,
+
+                    Status =
+                        "Registered"
+                };
 
 
-            await _repository.AddAsync(registration);
+            await _repository.AddAsync(
+                registration);
 
 
-            // Reduce Available Seats
+            // -----------------------------------------------------
+            // 12. Reduce Available Seats
+            // -----------------------------------------------------
+
             eventItem.AvailableSeats -=
                 request.NumberOfSeats;
 
@@ -152,11 +199,15 @@ namespace BookStore.Server.Services
             await _repository.SaveChangesAsync();
 
 
-            return "Event registration successful.";
+            return
+                "Event registration successful.";
         }
 
 
-        // My Registrations
+        // =========================================================
+        // MY REGISTRATIONS
+        // =========================================================
+
         public async Task<List<EventRegistrationResponse>>
             GetMyRegistrationsAsync(int userId)
         {
