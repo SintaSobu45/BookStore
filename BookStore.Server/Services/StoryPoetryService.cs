@@ -57,6 +57,8 @@ namespace BookStore.Server.Services
                     ? result.User.FirstName + " " + result.User.LastName
                     : string.Empty,
 
+                ProfileImageUrl = result.User?.ProfileImageUrl,
+
                 Title = result.Title,
 
                 Type = result.Type,
@@ -104,6 +106,8 @@ namespace BookStore.Server.Services
                     ? storyPoetry.User.FirstName + " "
                       + storyPoetry.User.LastName
                     : string.Empty,
+
+                ProfileImageUrl = storyPoetry.User?.ProfileImageUrl,
 
                 Title = storyPoetry.Title,
 

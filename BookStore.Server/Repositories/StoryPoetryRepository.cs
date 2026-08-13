@@ -48,6 +48,10 @@ namespace BookStore.Server.Repositories
                         ? s.User.FirstName + " " + s.User.LastName
                         : string.Empty,
 
+                    ProfileImageUrl = s.User != null
+                        ? s.User.ProfileImageUrl
+                        : null,
+
                     Title = s.Title,
 
                     Type = s.Type,
@@ -90,6 +94,10 @@ namespace BookStore.Server.Repositories
                     UserName = s.User != null
                         ? s.User.FirstName + " " + s.User.LastName
                         : string.Empty,
+
+                    ProfileImageUrl = s.User != null
+                        ? s.User.ProfileImageUrl
+                        : null,
 
                     Title = s.Title,
 
