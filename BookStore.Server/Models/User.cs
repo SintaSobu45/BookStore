@@ -2,7 +2,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-
 namespace BookStore.Server.Models
 {
     public class User
@@ -30,9 +29,14 @@ namespace BookStore.Server.Models
         public string Email { get; set; } = string.Empty;
 
         [Required]
-        [RegularExpression(@"^[6-9]\d{9}$", ErrorMessage = "Phone number must be 10 digits and start with 6, 7, 8, or 9.")]
+        [RegularExpression(
+            @"^[6-9]\d{9}$",
+            ErrorMessage = "Phone number must be 10 digits and start with 6, 7, 8, or 9."
+        )]
         public string Phone { get; set; } = string.Empty;
 
+
+        public string? ProfileImageUrl { get; set; }
         [StringLength(500)]
         public string? Address { get; set; }
 
@@ -54,11 +58,16 @@ namespace BookStore.Server.Models
 
         public DateTime? UpdatedDate { get; set; }
 
-        public ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public ICollection<Review> Reviews { get; set; }
+            = new List<Review>();
 
-        public ICollection<EventRegistration> EventRegistrations { get; set; } = new List<EventRegistration>();
+        public ICollection<EventRegistration> EventRegistrations { get; set; }
+            = new List<EventRegistration>();
 
         public ICollection<StoryPoetry> StoryPoetries { get; set; }
-      = new List<StoryPoetry>();
+            = new List<StoryPoetry>();
+
+        public ICollection<Payment> Payments { get; set; }
+            = new List<Payment>();
     }
 }

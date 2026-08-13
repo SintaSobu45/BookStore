@@ -26,6 +26,7 @@ namespace BookStore.Server.Repositories
                     LastName = u.LastName,
                     Email = u.Email,
                     Phone = u.Phone,
+                    ProfileImageUrl = u.ProfileImageUrl,
                     Address = u.Address,
                     City = u.City,
                     State = u.State,

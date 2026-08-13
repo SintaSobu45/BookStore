@@ -53,6 +53,28 @@ namespace BookStore.Server.Controllers
             });
         }
 
+        // Upload Profile Image
+        [HttpPost("image")]
+        public async Task<IActionResult> UploadProfileImage(IFormFile image)
+        {
+            var userId = GetUserIdFromToken();
+
+            if (image == null || image.Length == 0)
+                return BadRequest("Please select an image.");
+
+            var profile = await _profileService
+                .UploadProfileImageAsync(userId, image);
+
+            if (profile == null)
+                return NotFound("User not found");
+
+            return Ok(new
+            {
+                message = "Profile image uploaded successfully",
+                profile = profile
+            });
+        }
+
 
         // Get UserId from JWT Token
         private int GetUserIdFromToken()
