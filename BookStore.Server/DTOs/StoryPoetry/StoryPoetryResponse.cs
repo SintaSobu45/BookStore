@@ -10,6 +10,10 @@
 
         public string? ProfileImageUrl { get; set; }
 
+        public string Email { get; set; } = string.Empty;
+
+        public string Phone { get; set; } = string.Empty;
+
         public string Title { get; set; } = string.Empty;
 
         public string Type { get; set; } = string.Empty;
@@ -29,5 +33,6 @@
         public DateTime CreatedDate { get; set; }
 
         public DateTime? UpdatedDate { get; set; }
+
     }
 }
