@@ -35,6 +35,8 @@ namespace BookStore.Server.Data
 
         public DbSet<EventContributor> EventContributors { get; set; }
 
+        public DbSet<Payment> Payments { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -155,6 +157,31 @@ namespace BookStore.Server.Data
                     ec.UserId
                 })
                 .IsUnique();
+
+            // User -> Payment
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.User)
+                .WithMany(u => u.Payments)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // StoryPoetry -> Payment
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.StoryPoetry)
+                .WithMany()
+                .HasForeignKey(p => p.StoryPoetryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // EventRegistration -> Payment
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.EventRegistration)
+                .WithMany()
+                .HasForeignKey(p => p.EventRegistrationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
         }
     }
 }
