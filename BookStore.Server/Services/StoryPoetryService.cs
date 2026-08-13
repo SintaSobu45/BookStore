@@ -59,6 +59,10 @@ namespace BookStore.Server.Services
 
                 ProfileImageUrl = result.User?.ProfileImageUrl,
 
+                Email = result.User?.Email ?? string.Empty,
+
+                Phone = result.User?.Phone ?? string.Empty,
+
                 Title = result.Title,
 
                 Type = result.Type,
@@ -108,6 +112,10 @@ namespace BookStore.Server.Services
                     : string.Empty,
 
                 ProfileImageUrl = storyPoetry.User?.ProfileImageUrl,
+
+                Email = storyPoetry.User?.Email ?? string.Empty,
+
+                Phone = storyPoetry.User?.Phone ?? string.Empty,
 
                 Title = storyPoetry.Title,
 
@@ -307,6 +315,8 @@ namespace BookStore.Server.Services
 
             await _storyPoetryRepository
                 .DeleteAsync(storyPoetry);
+
+
 
 
             return true;
