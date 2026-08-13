@@ -52,6 +52,17 @@ namespace BookStore.Server.Repositories
                         ? s.User.ProfileImageUrl
                         : null,
 
+                    Email = s.User != null
+    ? s.User.Email
+    : string.Empty,
+
+                    Phone = s.User != null
+    ? s.User.Phone
+    : string.Empty,
+
+
+
+
                     Title = s.Title,
 
                     Type = s.Type,
@@ -155,6 +166,8 @@ namespace BookStore.Server.Repositories
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+
+
         }
     }
 }
