@@ -18,15 +18,6 @@
 
         public int NumberOfSeats { get; set; }
 
-        // Total book copies requested
-        public int BookCopies { get; set; }
-
-        // Free copies given to approved contributors
-        public int FreeBookCopies { get; set; }
-
-        // Additional copies that require payment
-        public int PaidBookCopies { get; set; }
-
         public decimal TotalAmount { get; set; }
 
         public string Status { get; set; } = string.Empty;

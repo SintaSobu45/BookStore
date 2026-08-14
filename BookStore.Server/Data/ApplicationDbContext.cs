@@ -33,7 +33,7 @@ namespace BookStore.Server.Data
 
         public DbSet<StoryPoetry> StoryPoetries { get; set; }
 
-        public DbSet<EventContributor> EventContributors { get; set; }
+    
 
         public DbSet<Payment> Payments { get; set; }
 
@@ -121,42 +121,12 @@ namespace BookStore.Server.Data
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Category -> StoryPoetry
-            modelBuilder.Entity<StoryPoetry>()
-                .HasOne(s => s.Category)
-                .WithMany(c => c.StoryPoetries)
-                .HasForeignKey(s => s.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict);
 
-            // Event -> EventContributor
-            modelBuilder.Entity<EventContributor>()
-                .HasOne(ec => ec.Event)
-                .WithMany(e => e.EventContributors)
-                .HasForeignKey(ec => ec.EventId)
-                .OnDelete(DeleteBehavior.Cascade);
+         
 
-            // User -> EventContributor
-            modelBuilder.Entity<EventContributor>()
-                .HasOne(ec => ec.User)
-                .WithMany()
-                .HasForeignKey(ec => ec.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
 
-            // StoryPoetry -> EventContributor
-            modelBuilder.Entity<EventContributor>()
-                .HasOne(ec => ec.StoryPoetry)
-                .WithMany()
-                .HasForeignKey(ec => ec.StoryPoetryId)
-                .OnDelete(DeleteBehavior.Restrict);
+           
 
-            // Prevent duplicate contributor for same event
-            modelBuilder.Entity<EventContributor>()
-                .HasIndex(ec => new
-                {
-                    ec.EventId,
-                    ec.UserId
-                })
-                .IsUnique();
 
             // User -> Payment
             modelBuilder.Entity<Payment>()

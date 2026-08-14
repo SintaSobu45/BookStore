@@ -30,63 +30,21 @@ namespace BookStore.Server.Services
 
                 Type = request.Type,
 
-                // Connected to Category table
-                CategoryId = request.CategoryId,
-
                 Content = request.Content,
-
-                // New submission always starts as Pending
-                Status = "Pending",
 
                 CreatedDate = DateTime.UtcNow
             };
 
-            var created = await _storyPoetryRepository
-                .AddAsync(storyPoetry);
+            var created =
+                await _storyPoetryRepository
+                    .AddAsync(storyPoetry);
 
-            var result = await _storyPoetryRepository
-                .GetByIdAsync(created.StoryPoetryId);
+            var result =
+                await _storyPoetryRepository
+                    .GetByIdAsync(created.StoryPoetryId);
 
-            return new StoryPoetryResponse
-            {
-                StoryPoetryId = result!.StoryPoetryId,
-
-                UserId = result.UserId,
-
-                UserName = result.User != null
-                    ? result.User.FirstName + " " + result.User.LastName
-                    : string.Empty,
-
-                ProfileImageUrl = result.User?.ProfileImageUrl,
-
-                Email = result.User?.Email ?? string.Empty,
-
-                Phone = result.User?.Phone ?? string.Empty,
-
-                Title = result.Title,
-
-                Type = result.Type,
-
-                CategoryId = result.CategoryId,
-
-                CategoryName = result.Category != null
-                    ? result.Category.CategoryName
-                    : string.Empty,
-
-                Content = result.Content,
-
-                Status = result.Status,
-
-                ReviewedDate = result.ReviewedDate,
-
-                AdminRemarks = result.AdminRemarks,
-
-                CreatedDate = result.CreatedDate,
-
-                UpdatedDate = result.UpdatedDate
-            };
+            return MapToResponse(result!);
         }
-
 
         // =========================================================
         // GET STORY / POETRY BY ID
@@ -95,56 +53,17 @@ namespace BookStore.Server.Services
         public async Task<StoryPoetryResponse?> GetByIdAsync(int id)
         {
             var storyPoetry =
-                await _storyPoetryRepository.GetByIdAsync(id);
+                await _storyPoetryRepository
+                    .GetByIdAsync(id);
 
             if (storyPoetry == null)
                 return null;
 
-            return new StoryPoetryResponse
-            {
-                StoryPoetryId = storyPoetry.StoryPoetryId,
-
-                UserId = storyPoetry.UserId,
-
-                UserName = storyPoetry.User != null
-                    ? storyPoetry.User.FirstName + " "
-                      + storyPoetry.User.LastName
-                    : string.Empty,
-
-                ProfileImageUrl = storyPoetry.User?.ProfileImageUrl,
-
-                Email = storyPoetry.User?.Email ?? string.Empty,
-
-                Phone = storyPoetry.User?.Phone ?? string.Empty,
-
-                Title = storyPoetry.Title,
-
-                Type = storyPoetry.Type,
-
-                CategoryId = storyPoetry.CategoryId,
-
-                CategoryName = storyPoetry.Category != null
-                    ? storyPoetry.Category.CategoryName
-                    : string.Empty,
-
-                Content = storyPoetry.Content,
-
-                Status = storyPoetry.Status,
-
-                ReviewedDate = storyPoetry.ReviewedDate,
-
-                AdminRemarks = storyPoetry.AdminRemarks,
-
-                CreatedDate = storyPoetry.CreatedDate,
-
-                UpdatedDate = storyPoetry.UpdatedDate
-            };
+            return MapToResponse(storyPoetry);
         }
-
 
         // =========================================================
         // GET ALL STORY / POETRY
-        // ADMIN USE
         // =========================================================
 
         public async Task<List<StoryPoetryResponse>> GetAllAsync()
@@ -152,7 +71,6 @@ namespace BookStore.Server.Services
             return await _storyPoetryRepository
                 .GetAllAsync();
         }
-
 
         // =========================================================
         // GET MY STORY / POETRY
@@ -165,7 +83,6 @@ namespace BookStore.Server.Services
                 .GetByUserIdAsync(userId);
         }
 
-
         // =========================================================
         // UPDATE STORY / POETRY
         // =========================================================
@@ -176,115 +93,36 @@ namespace BookStore.Server.Services
             int userId)
         {
             var storyPoetry =
-                await _storyPoetryRepository.GetByIdAsync(id);
+                await _storyPoetryRepository
+                    .GetByIdAsync(id);
 
             if (storyPoetry == null)
                 return null;
 
-
             // Only owner can update
             if (storyPoetry.UserId != userId)
+            {
                 throw new UnauthorizedAccessException(
                     "You can only update your own submission.");
+            }
 
+            storyPoetry.Title =
+                request.Title;
 
-            // Only Pending submissions can be edited
-            if (storyPoetry.Status != "Pending")
-                throw new InvalidOperationException(
-                    "Only pending submissions can be updated.");
+            storyPoetry.Type =
+                request.Type;
 
+            storyPoetry.Content =
+                request.Content;
 
-            storyPoetry.Title = request.Title;
-
-            storyPoetry.Type = request.Type;
-
-            // Update Category using CategoryId
-            storyPoetry.CategoryId = request.CategoryId;
-
-            storyPoetry.Content = request.Content;
-
-            storyPoetry.UpdatedDate = DateTime.UtcNow;
-
+            storyPoetry.UpdatedDate =
+                DateTime.UtcNow;
 
             await _storyPoetryRepository
                 .UpdateAsync(storyPoetry);
-
 
             return await GetByIdAsync(id);
         }
-
-
-        // =========================================================
-        // APPROVE STORY / POETRY
-        // =========================================================
-
-        public async Task<bool> ApproveAsync(
-            int id,
-            string? adminRemarks)
-        {
-            var storyPoetry =
-                await _storyPoetryRepository.GetByIdAsync(id);
-
-            if (storyPoetry == null)
-                return false;
-
-
-            // Only Pending submissions can be approved
-            if (storyPoetry.Status != "Pending")
-                throw new InvalidOperationException(
-                    "Only pending submissions can be approved or rejected.");
-
-
-            storyPoetry.Status = "Approved";
-
-            storyPoetry.ReviewedDate = DateTime.UtcNow;
-
-            storyPoetry.AdminRemarks = adminRemarks;
-
-
-            await _storyPoetryRepository
-                .UpdateAsync(storyPoetry);
-
-
-            return true;
-        }
-
-
-        // =========================================================
-        // REJECT STORY / POETRY
-        // =========================================================
-
-        public async Task<bool> RejectAsync(
-            int id,
-            string? adminRemarks)
-        {
-            var storyPoetry =
-                await _storyPoetryRepository.GetByIdAsync(id);
-
-            if (storyPoetry == null)
-                return false;
-
-
-            // Only Pending submissions can be rejected
-            if (storyPoetry.Status != "Pending")
-                throw new InvalidOperationException(
-                    "Only pending submissions can be approved or rejected.");
-
-
-            storyPoetry.Status = "Rejected";
-
-            storyPoetry.ReviewedDate = DateTime.UtcNow;
-
-            storyPoetry.AdminRemarks = adminRemarks;
-
-
-            await _storyPoetryRepository
-                .UpdateAsync(storyPoetry);
-
-
-            return true;
-        }
-
 
         // =========================================================
         // DELETE STORY / POETRY
@@ -295,31 +133,70 @@ namespace BookStore.Server.Services
             int userId)
         {
             var storyPoetry =
-                await _storyPoetryRepository.GetByIdAsync(id);
+                await _storyPoetryRepository
+                    .GetByIdAsync(id);
 
             if (storyPoetry == null)
                 return false;
 
-
             // Only owner can delete
             if (storyPoetry.UserId != userId)
+            {
                 throw new UnauthorizedAccessException(
                     "You can only delete your own submission.");
-
-
-            // Only Pending submissions can be deleted
-            if (storyPoetry.Status != "Pending")
-                throw new InvalidOperationException(
-                    "Only pending submissions can be deleted.");
-
+            }
 
             await _storyPoetryRepository
                 .DeleteAsync(storyPoetry);
 
-
-
-
             return true;
+        }
+
+        // =========================================================
+        // MAP ENTITY TO RESPONSE DTO
+        // =========================================================
+
+        private static StoryPoetryResponse MapToResponse(
+            StoryPoetry storyPoetry)
+        {
+            return new StoryPoetryResponse
+            {
+                StoryPoetryId =
+                    storyPoetry.StoryPoetryId,
+
+                UserId =
+                    storyPoetry.UserId,
+
+                UserName =
+                    storyPoetry.User != null
+                        ? storyPoetry.User.FirstName + " " +
+                          storyPoetry.User.LastName
+                        : string.Empty,
+
+                ProfileImageUrl =
+                    storyPoetry.User?.ProfileImageUrl,
+
+                Email =
+                    storyPoetry.User?.Email ?? string.Empty,
+
+                Phone =
+                    storyPoetry.User?.Phone ?? string.Empty,
+
+                Title =
+                    storyPoetry.Title,
+
+                Type =
+                    storyPoetry.Type,
+
+                Content =
+                    storyPoetry.Content,
+
+                CreatedDate =
+                    storyPoetry.CreatedDate,
+
+                UpdatedDate =
+                    storyPoetry.UpdatedDate
+            };
         }
     }
 }

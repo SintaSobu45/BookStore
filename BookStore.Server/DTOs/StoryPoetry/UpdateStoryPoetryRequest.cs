@@ -10,14 +10,11 @@ namespace BookStore.Server.DTOs.StoryPoetry
 
         [Required]
         [RegularExpression(
-            "Story|Poetry",
-            ErrorMessage = "Type must be either Story or Poetry."
+            "Story|Poetry|Special",
+            ErrorMessage = "Type must be either Story, Poetry, or Special."
         )]
         public string Type { get; set; } = string.Empty;
 
-        [Required]
-        [Range(1, int.MaxValue)]
-        public int CategoryId { get; set; }
 
         [Required]
         public string Content { get; set; } = string.Empty;

@@ -27,9 +27,6 @@ namespace BookStore.Server.DTOs.Event
         [Range(0, 100000)]
         public decimal EntryFee { get; set; }
 
-        [Required]
-        [Range(0, 100000)]
-        public decimal BookPrice { get; set; }
 
         [Required]
         [Range(1, 10000)]
