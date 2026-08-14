@@ -9,38 +9,60 @@ namespace BookStore.Server.Repositories
     {
         private readonly ApplicationDbContext _context;
 
-        public EventRegistrationRepository(ApplicationDbContext context)
+        public EventRegistrationRepository(
+            ApplicationDbContext context)
         {
             _context = context;
         }
 
 
-        // Check Duplicate Registration
-        public async Task<bool> AlreadyRegisteredAsync(int userId, int eventId)
+        // =========================================================
+        // CHECK DUPLICATE REGISTRATION
+        // =========================================================
+
+        public async Task<bool> AlreadyRegisteredAsync(
+            int userId,
+            int eventId)
         {
             return await _context.EventRegistrations
-                .AnyAsync(r => r.UserId == userId && r.EventId == eventId);
+                .AnyAsync(r =>
+                    r.UserId == userId &&
+                    r.EventId == eventId);
         }
 
 
-        // Get Event
-        public async Task<Event?> GetEventAsync(int eventId)
+        // =========================================================
+        // GET EVENT
+        // =========================================================
+
+        public async Task<Event?> GetEventAsync(
+            int eventId)
         {
             return await _context.Events
-                .FirstOrDefaultAsync(e => e.EventId == eventId);
+                .FirstOrDefaultAsync(
+                    e => e.EventId == eventId);
         }
 
 
-        // Add Registration
-        public async Task AddAsync(EventRegistration registration)
+        // =========================================================
+        // ADD REGISTRATION
+        // =========================================================
+
+        public async Task AddAsync(
+            EventRegistration registration)
         {
             _context.EventRegistrations.Add(registration);
+
             await _context.SaveChangesAsync();
         }
 
 
-        // Get My Registrations
-        public async Task<List<EventRegistrationResponse>> GetMyRegistrationsAsync(int userId)
+        // =========================================================
+        // GET MY REGISTRATIONS
+        // =========================================================
+
+        public async Task<List<EventRegistrationResponse>>
+            GetMyRegistrationsAsync(int userId)
         {
             return await _context.EventRegistrations
                 .Include(r => r.User)
@@ -48,46 +70,48 @@ namespace BookStore.Server.Repositories
                 .Where(r => r.UserId == userId)
                 .Select(r => new EventRegistrationResponse
                 {
-                    RegistrationId = r.RegistrationId,
+                    RegistrationId =
+                        r.RegistrationId,
 
-                    UserName = r.User!.FirstName + " " + r.User.LastName,
+                    UserName =
+                        r.User!.FirstName +
+                        " " +
+                        r.User.LastName,
 
-                    Email = r.User.Email,
+                    Email =
+                        r.User.Email,
 
-                    Phone = r.User.Phone,
+                    Phone =
+                        r.User.Phone,
 
+                    EventName =
+                        r.Event!.EventName,
 
-                    EventName = r.Event!.EventName,
+                    EventDate =
+                        r.Event.EventDate,
 
-                    EventDate = r.Event.EventDate,
+                    Venue =
+                        r.Event.Venue,
 
-                    Venue = r.Event.Venue,
+                    NumberOfSeats =
+                        r.NumberOfSeats,
 
+                    TotalAmount =
+                        r.TotalAmount,
 
-                    NumberOfSeats = r.NumberOfSeats,
+                    Status =
+                        r.Status,
 
-
-                    // Total book copies requested
-                    BookCopies = r.BookCopies,
-
-                    // Free copies for approved contributors
-                    FreeBookCopies = r.FreeBookCopies,
-
-                    // Additional paid copies
-                    PaidBookCopies = r.PaidBookCopies,
-
-
-                    TotalAmount = r.TotalAmount,
-
-
-                    Status = r.Status,
-
-
-                    RegistrationDate = r.RegistrationDate
+                    RegistrationDate =
+                        r.RegistrationDate
                 })
                 .ToListAsync();
         }
 
+
+        // =========================================================
+        // SAVE CHANGES
+        // =========================================================
 
         public async Task SaveChangesAsync()
         {

@@ -7,14 +7,11 @@ namespace BookStore.Server.Services
     public class EventRegistrationService
     {
         private readonly EventRegistrationRepository _repository;
-        private readonly EventContributorRepository _eventContributorRepository;
 
         public EventRegistrationService(
-            EventRegistrationRepository repository,
-            EventContributorRepository eventContributorRepository)
+            EventRegistrationRepository repository)
         {
             _repository = repository;
-            _eventContributorRepository = eventContributorRepository;
         }
 
 
@@ -74,82 +71,17 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 5. Check Event Contributor
-            // -----------------------------------------------------
-
-            bool isEventContributor =
-                await _eventContributorRepository
-                    .IsContributorAsync(
-                        userId,
-                        request.EventId);
-
-
-            // -----------------------------------------------------
-            // 6. Normal users cannot request books
-            // -----------------------------------------------------
-
-            if (!isEventContributor &&
-                request.BookCopies > 0)
-            {
-                return
-                    "Only event contributors can request book copies.";
-            }
-
-
-            // -----------------------------------------------------
-            // 7. Calculate Free and Paid Copies
-            // -----------------------------------------------------
-
-            int freeBookCopies = 0;
-
-            int paidBookCopies = 0;
-
-
-            if (isEventContributor)
-            {
-                // First 2 copies are FREE
-                freeBookCopies =
-                    Math.Min(
-                        request.BookCopies,
-                        2);
-
-                // Remaining copies are PAID
-                paidBookCopies =
-                    Math.Max(
-                        request.BookCopies - 2,
-                        0);
-            }
-
-
-            // -----------------------------------------------------
-            // 8. Calculate Event Fee
-            // -----------------------------------------------------
-
-            decimal eventAmount =
-                eventItem.EntryFee *
-                request.NumberOfSeats;
-
-
-            // -----------------------------------------------------
-            // 9. Calculate Extra Book Fee
-            // -----------------------------------------------------
-
-            decimal bookAmount =
-                eventItem.BookPrice *
-                paidBookCopies;
-
-
-            // -----------------------------------------------------
-            // 10. Calculate Final Amount
+            // 5. Event Registration Amount
+            // Fixed amount for the event
+            // NOT calculated based on number of seats
             // -----------------------------------------------------
 
             decimal totalAmount =
-                eventAmount +
-                bookAmount;
+                eventItem.EntryFee;
 
 
             // -----------------------------------------------------
-            // 11. Create Registration
+            // 6. Create Registration
             // -----------------------------------------------------
 
             var registration =
@@ -163,15 +95,6 @@ namespace BookStore.Server.Services
 
                     NumberOfSeats =
                         request.NumberOfSeats,
-
-                    BookCopies =
-                        request.BookCopies,
-
-                    FreeBookCopies =
-                        freeBookCopies,
-
-                    PaidBookCopies =
-                        paidBookCopies,
 
                     TotalAmount =
                         totalAmount,
@@ -189,7 +112,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 12. Reduce Available Seats
+            // 7. Reduce Available Seats
             // -----------------------------------------------------
 
             eventItem.AvailableSeats -=

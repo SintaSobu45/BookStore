@@ -18,21 +18,12 @@
 
         public string Type { get; set; } = string.Empty;
 
-        public int CategoryId { get; set; }
-
-        public string CategoryName { get; set; } = string.Empty;
+       
 
         public string Content { get; set; } = string.Empty;
-
-        public string Status { get; set; } = string.Empty;
-
-        public DateTime? ReviewedDate { get; set; }
-
-        public string? AdminRemarks { get; set; }
 
         public DateTime CreatedDate { get; set; }
 
         public DateTime? UpdatedDate { get; set; }
-
     }
 }

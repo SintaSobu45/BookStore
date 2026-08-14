@@ -20,7 +20,12 @@ namespace BookStore.Server.Controllers
         }
 
 
+        // =========================================================
+        // REGISTER FOR EVENT
         // POST: api/EventRegistration
+        // LOGGED-IN USERS ONLY
+        // =========================================================
+
         [HttpPost]
         public async Task<IActionResult> Register(
             [FromBody] AddEventRegistrationRequest request)
@@ -60,7 +65,12 @@ namespace BookStore.Server.Controllers
         }
 
 
+        // =========================================================
+        // GET MY EVENT REGISTRATIONS
         // GET: api/EventRegistration/MyRegistrations
+        // LOGGED-IN USERS ONLY
+        // =========================================================
+
         [HttpGet("MyRegistrations")]
         public async Task<IActionResult> MyRegistrations()
         {

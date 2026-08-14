@@ -7,7 +7,6 @@ namespace BookStore.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize(Roles = "Admin")]
     public class EventController : ControllerBase
     {
         private readonly EventService _eventService;
@@ -17,21 +16,32 @@ namespace BookStore.Server.Controllers
             _eventService = eventService;
         }
 
-        // GET: api/Event
+        // =========================================================
+        // GET ALL EVENTS
+        // Anyone can view events
+        // =========================================================
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var events = await _eventService.GetAllAsync();
+
             return Ok(events);
         }
 
-        // GET: api/Event/5
+
+        // =========================================================
+        // GET EVENT BY ID
+        // Anyone can view event details
+        // =========================================================
+
         [HttpGet("{id}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
-            var eventItem = await _eventService.GetByIdAsync(id);
+            var eventItem =
+                await _eventService.GetByIdAsync(id);
 
             if (eventItem == null)
                 return NotFound("Event not found.");
@@ -39,11 +49,19 @@ namespace BookStore.Server.Controllers
             return Ok(eventItem);
         }
 
-        // POST: api/Event
+
+        // =========================================================
+        // ADD EVENT
+        // ADMIN ONLY
+        // =========================================================
+
         [HttpPost]
-        public async Task<IActionResult> Add([FromForm] AddEventRequest request)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Add(
+            [FromForm] AddEventRequest request)
         {
-            var eventItem = await _eventService.AddAsync(request);
+            var eventItem =
+                await _eventService.AddAsync(request);
 
             return Ok(new
             {
@@ -52,11 +70,20 @@ namespace BookStore.Server.Controllers
             });
         }
 
-        // PUT: api/Event/5
+
+        // =========================================================
+        // UPDATE EVENT
+        // ADMIN ONLY
+        // =========================================================
+
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromForm] UpdateEventRequest request)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Update(
+            int id,
+            [FromForm] UpdateEventRequest request)
         {
-            var eventItem = await _eventService.UpdateAsync(id, request);
+            var eventItem =
+                await _eventService.UpdateAsync(id, request);
 
             if (eventItem == null)
                 return NotFound("Event not found.");
@@ -68,11 +95,18 @@ namespace BookStore.Server.Controllers
             });
         }
 
-        // DELETE: api/Event/5
+
+        // =========================================================
+        // DELETE EVENT
+        // ADMIN ONLY
+        // =========================================================
+
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _eventService.DeleteAsync(id);
+            var result =
+                await _eventService.DeleteAsync(id);
 
             if (!result)
                 return NotFound("Event not found.");

@@ -30,9 +30,7 @@ namespace BookStore.Server.Models.Event
         [Column(TypeName = "decimal(18,2)")]
         public decimal EntryFee { get; set; }
 
-        // Price of one book copy
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal BookPrice { get; set; }
+        
 
         [Required]
         public int MaxSeats { get; set; }
@@ -51,7 +49,6 @@ namespace BookStore.Server.Models.Event
 
         public ICollection<EventRegistration> EventRegistrations { get; set; } = new List<EventRegistration>();
 
-        public ICollection<EventContributor> EventContributors { get; set; }
-    = new List<EventContributor>();
+      
     }
 }

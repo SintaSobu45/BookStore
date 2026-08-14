@@ -20,40 +20,54 @@ namespace BookStore.Server.Services
             _eventImageService = eventImageService;
         }
 
+        // =========================================================
+        // GET ALL EVENTS
+        // =========================================================
 
-        // Get All Events
         public async Task<List<EventResponse>> GetAllAsync()
         {
             return await _eventRepository.GetAllAsync();
         }
 
 
-        // Get Event By Id
+        // =========================================================
+        // GET EVENT BY ID
+        // =========================================================
+
         public async Task<EventResponse?> GetByIdAsync(int id)
         {
             return await _eventRepository.GetResponseByIdAsync(id);
         }
 
 
-        // Add Event
-        public async Task<EventResponse?> AddAsync(AddEventRequest request)
+        // =========================================================
+        // ADD EVENT
+        // =========================================================
+
+        public async Task<EventResponse?> AddAsync(
+            AddEventRequest request)
         {
             var eventItem = new Event
             {
                 EventName = request.EventName,
+
                 Description = request.Description,
+
                 EventDate = request.EventDate,
+
                 EventTime = request.EventTime,
+
                 Venue = request.Venue,
 
-                // Fees
+                // Fixed registration fee for the event
                 EntryFee = request.EntryFee,
-                BookPrice = request.BookPrice,
 
                 MaxSeats = request.MaxSeats,
+
                 AvailableSeats = request.MaxSeats,
 
                 IsActive = true,
+
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -62,57 +76,76 @@ namespace BookStore.Server.Services
             eventItem = await _eventRepository.AddAsync(eventItem);
 
 
-            // Upload Image
+            // Upload Event Image
             if (request.Image != null)
             {
-                var uploadResult = await _cloudinaryService.UploadImageAsync(request.Image);
+                var uploadResult =
+                    await _cloudinaryService
+                        .UploadImageAsync(request.Image);
 
                 if (uploadResult != null)
                 {
                     var eventImage = new EventImage
                     {
                         EventId = eventItem.EventId,
+
                         ImageUrl = uploadResult.ImageUrl,
+
                         IsPrimary = true
                     };
 
-                    await _eventImageService.AddAsync(eventImage);
+                    await _eventImageService
+                        .AddAsync(eventImage);
                 }
             }
 
 
-            return await _eventRepository.GetResponseByIdAsync(eventItem.EventId);
+            return await _eventRepository
+                .GetResponseByIdAsync(eventItem.EventId);
         }
 
 
+        // =========================================================
+        // UPDATE EVENT
+        // =========================================================
 
-        // Update Event
-        public async Task<EventResponse?> UpdateAsync(int id, UpdateEventRequest request)
+        public async Task<EventResponse?> UpdateAsync(
+            int id,
+            UpdateEventRequest request)
         {
-            var eventItem = await _eventRepository.GetByIdAsync(id);
+            var eventItem =
+                await _eventRepository.GetByIdAsync(id);
 
             if (eventItem == null)
                 return null;
 
 
             eventItem.EventName = request.EventName;
+
             eventItem.Description = request.Description;
+
             eventItem.EventDate = request.EventDate;
+
             eventItem.EventTime = request.EventTime;
+
             eventItem.Venue = request.Venue;
 
-            // Fees
+            // Fixed registration fee
             eventItem.EntryFee = request.EntryFee;
-            eventItem.BookPrice = request.BookPrice;
 
 
-            // Keep AvailableSeats consistent if MaxSeats changes
-            int bookedSeats = eventItem.MaxSeats - eventItem.AvailableSeats;
+            // Calculate already booked seats
+            int bookedSeats =
+                eventItem.MaxSeats -
+                eventItem.AvailableSeats;
 
 
             eventItem.MaxSeats = request.MaxSeats;
 
-            eventItem.AvailableSeats = request.MaxSeats - bookedSeats;
+
+            // Keep already booked seats
+            eventItem.AvailableSeats =
+                request.MaxSeats - bookedSeats;
 
 
             if (eventItem.AvailableSeats < 0)
@@ -120,26 +153,35 @@ namespace BookStore.Server.Services
 
 
             eventItem.IsActive = request.IsActive;
+
             eventItem.UpdatedDate = DateTime.UtcNow;
 
 
-            await _eventRepository.UpdateAsync(eventItem);
+            await _eventRepository
+                .UpdateAsync(eventItem);
 
 
+            // =====================================================
+            // REPLACE EVENT IMAGE
+            // =====================================================
 
-            // Replace Image
             if (request.Image != null)
             {
-                var oldImage = await _eventImageService.GetPrimaryImageAsync(eventItem.EventId);
+                var oldImage =
+                    await _eventImageService
+                        .GetPrimaryImageAsync(eventItem.EventId);
 
 
                 if (oldImage != null)
                 {
-                    await _eventImageService.DeleteAsync(oldImage);
+                    await _eventImageService
+                        .DeleteAsync(oldImage);
                 }
 
 
-                var uploadResult = await _cloudinaryService.UploadImageAsync(request.Image);
+                var uploadResult =
+                    await _cloudinaryService
+                        .UploadImageAsync(request.Image);
 
 
                 if (uploadResult != null)
@@ -147,31 +189,38 @@ namespace BookStore.Server.Services
                     var newImage = new EventImage
                     {
                         EventId = eventItem.EventId,
+
                         ImageUrl = uploadResult.ImageUrl,
+
                         IsPrimary = true
                     };
 
-
-                    await _eventImageService.AddAsync(newImage);
+                    await _eventImageService
+                        .AddAsync(newImage);
                 }
             }
 
 
-            return await _eventRepository.GetResponseByIdAsync(eventItem.EventId);
+            return await _eventRepository
+                .GetResponseByIdAsync(eventItem.EventId);
         }
 
 
+        // =========================================================
+        // DELETE EVENT
+        // =========================================================
 
-        // Delete Event
         public async Task<bool> DeleteAsync(int id)
         {
-            var eventItem = await _eventRepository.GetByIdAsync(id);
+            var eventItem =
+                await _eventRepository.GetByIdAsync(id);
 
             if (eventItem == null)
                 return false;
 
 
-            return await _eventRepository.DeleteAsync(eventItem);
+            return await _eventRepository
+                .DeleteAsync(eventItem);
         }
     }
 }

@@ -31,6 +31,6 @@ namespace BookStore.Server.Models
 
        
 
-        public ICollection<StoryPoetry> StoryPoetries { get; set; } = new List<StoryPoetry>();
+       
     }
 }

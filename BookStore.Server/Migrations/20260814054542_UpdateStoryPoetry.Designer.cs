@@ -4,6 +4,7 @@ using BookStore.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookStore.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814054542_UpdateStoryPoetry")]
+    partial class UpdateStoryPoetry
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -410,6 +413,9 @@ namespace BookStore.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StoryPoetryId"));
 
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -434,6 +440,8 @@ namespace BookStore.Server.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("StoryPoetryId");
+
+                    b.HasIndex("CategoryId");
 
                     b.HasIndex("UserId");
 
@@ -641,11 +649,19 @@ namespace BookStore.Server.Migrations
 
             modelBuilder.Entity("BookStore.Server.Models.StoryPoetry", b =>
                 {
+                    b.HasOne("BookStore.Server.Models.Category", "Category")
+                        .WithMany("StoryPoetries")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("BookStore.Server.Models.User", "User")
                         .WithMany("StoryPoetries")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Category");
 
                     b.Navigation("User");
                 });
@@ -695,6 +711,8 @@ namespace BookStore.Server.Migrations
             modelBuilder.Entity("BookStore.Server.Models.Category", b =>
                 {
                     b.Navigation("Books");
+
+                    b.Navigation("StoryPoetries");
                 });
 
             modelBuilder.Entity("BookStore.Server.Models.Event.Event", b =>

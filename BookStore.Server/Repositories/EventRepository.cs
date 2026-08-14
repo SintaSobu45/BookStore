@@ -28,7 +28,7 @@ namespace BookStore.Server.Repositories
                     EventTime = e.EventTime,
                     Venue = e.Venue,
                     EntryFee = e.EntryFee,
-                    BookPrice = e.BookPrice,
+                  
                     MaxSeats = e.MaxSeats,
                     AvailableSeats = e.AvailableSeats,
                     IsActive = e.IsActive,
@@ -66,7 +66,7 @@ namespace BookStore.Server.Repositories
                     EventTime = e.EventTime,
                     Venue = e.Venue,
                     EntryFee = e.EntryFee,
-                    BookPrice = e.BookPrice,
+                
                     MaxSeats = e.MaxSeats,
                     AvailableSeats = e.AvailableSeats,
                     IsActive = e.IsActive,

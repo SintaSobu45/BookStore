@@ -14,14 +14,6 @@ public class EventRegistration
 
     public int NumberOfSeats { get; set; }
 
-    // Total number of book copies requested
-    public int BookCopies { get; set; } = 0;
-
-    // Free book copies given to approved contributors
-    public int FreeBookCopies { get; set; } = 0;
-
-    // Additional book copies that need payment
-    public int PaidBookCopies { get; set; } = 0;
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal TotalAmount { get; set; }
