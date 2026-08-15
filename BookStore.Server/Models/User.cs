@@ -9,19 +9,25 @@ namespace BookStore.Server.Models
         [Key]
         public int UserId { get; set; }
 
+
+        // =========================================================
+        // ROLE
+        // =========================================================
+
         [Required]
         public int RoleId { get; set; }
 
         [ForeignKey(nameof(RoleId))]
         public Role? Role { get; set; }
 
-        [Required]
-        [StringLength(100)]
-        public string FirstName { get; set; } = string.Empty;
+
+        // =========================================================
+        // BASIC USER DETAILS
+        // =========================================================
 
         [Required]
         [StringLength(100)]
-        public string LastName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
 
         [Required]
         [EmailAddress]
@@ -36,7 +42,12 @@ namespace BookStore.Server.Models
         public string Phone { get; set; } = string.Empty;
 
 
+        // =========================================================
+        // PROFILE DETAILS
+        // =========================================================
+
         public string? ProfileImageUrl { get; set; }
+
         [StringLength(500)]
         public string? Address { get; set; }
 
@@ -46,8 +57,39 @@ namespace BookStore.Server.Models
         [StringLength(100)]
         public string? State { get; set; }
 
+        [StringLength(100)]
+        public string? District { get; set; }
+
         [StringLength(10)]
         public string? Pincode { get; set; }
+
+
+        // =========================================================
+        // MALAYALAM PROFILE DETAILS
+        // These are optional during registration.
+        // They can be completed later from Profile
+        // or while submitting Story/Poetry.
+        // =========================================================
+
+        [StringLength(100)]
+        public string? NameMalayalam { get; set; }
+
+        [StringLength(500)]
+        public string? AddressMalayalam { get; set; }
+
+        [StringLength(100)]
+        public string? CityMalayalam { get; set; }
+
+        [StringLength(100)]
+        public string? DistrictMalayalam { get; set; }
+
+        [StringLength(100)]
+        public string? StateMalayalam { get; set; }
+
+
+        // =========================================================
+        // ACCOUNT DETAILS
+        // =========================================================
 
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
@@ -57,6 +99,11 @@ namespace BookStore.Server.Models
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedDate { get; set; }
+
+
+        // =========================================================
+        // NAVIGATION PROPERTIES
+        // =========================================================
 
         public ICollection<Review> Reviews { get; set; }
             = new List<Review>();

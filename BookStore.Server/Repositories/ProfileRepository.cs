@@ -14,38 +14,86 @@ namespace BookStore.Server.Repositories
             _context = context;
         }
 
-        // Get Profile
-        public async Task<GetProfileResponse?> GetProfileAsync(int userId)
+
+        // =========================================================
+        // GET PROFILE
+        // =========================================================
+
+        public async Task<GetProfileResponse?> GetProfileAsync(
+            int userId)
         {
             return await _context.Users
                 .Where(u => u.UserId == userId)
                 .Select(u => new GetProfileResponse
                 {
+                    // Basic details
                     UserId = u.UserId,
-                    FirstName = u.FirstName,
-                    LastName = u.LastName,
+
+                    Name = u.Name,
+
                     Email = u.Email,
+
                     Phone = u.Phone,
-                    ProfileImageUrl = u.ProfileImageUrl,
+
+
+                    // Profile image
+                    ProfileImageUrl =
+                        u.ProfileImageUrl,
+
+
+                    // Normal address
                     Address = u.Address,
+
                     City = u.City,
+
+                    District = u.District,
+
                     State = u.State,
-                    Pincode = u.Pincode
+
+                    Pincode = u.Pincode,
+
+
+                    // Malayalam details
+                    NameMalayalam =
+                        u.NameMalayalam,
+
+                    AddressMalayalam =
+                        u.AddressMalayalam,
+
+                    CityMalayalam =
+                        u.CityMalayalam,
+
+                    DistrictMalayalam =
+                        u.DistrictMalayalam,
+
+                    StateMalayalam =
+                        u.StateMalayalam
                 })
                 .FirstOrDefaultAsync();
         }
 
-        // Get User Entity
-        public async Task<User?> GetUserByIdAsync(int userId)
+
+        // =========================================================
+        // GET USER ENTITY
+        // =========================================================
+
+        public async Task<User?> GetUserByIdAsync(
+            int userId)
         {
             return await _context.Users
-                .FirstOrDefaultAsync(u => u.UserId == userId);
+                .FirstOrDefaultAsync(
+                    u => u.UserId == userId);
         }
 
-        // Update Profile
+
+        // =========================================================
+        // UPDATE PROFILE
+        // =========================================================
+
         public async Task<User> UpdateAsync(User user)
         {
             _context.Users.Update(user);
+
             await _context.SaveChangesAsync();
 
             return user;

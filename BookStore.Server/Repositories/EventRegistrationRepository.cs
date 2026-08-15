@@ -17,7 +17,42 @@ namespace BookStore.Server.Repositories
 
 
         // =========================================================
+        // GET REGISTRATION BY ID
+        // Used for Payment / Payment Verification
+        // =========================================================
+
+        public async Task<EventRegistration?> GetRegistrationAsync(
+            int registrationId)
+        {
+            return await _context.EventRegistrations
+                .Include(r => r.Event)
+                .FirstOrDefaultAsync(
+                    r => r.RegistrationId == registrationId);
+        }
+
+
+        // =========================================================
+        // GET REGISTRATION BY ID
+        // Used when payment is successfully verified
+        // =========================================================
+
+        public async Task<EventRegistration?> GetByIdAsync(
+            int registrationId)
+        {
+            return await _context.EventRegistrations
+                .Include(r => r.Event)
+                .FirstOrDefaultAsync(
+                    r => r.RegistrationId == registrationId);
+        }
+
+
+        // =========================================================
         // CHECK DUPLICATE REGISTRATION
+        // =========================================================
+        // Only REGISTERED registrations are treated as duplicate.
+        //
+        // Pending registration means payment is not completed yet.
+        // Therefore, user can try payment again.
         // =========================================================
 
         public async Task<bool> AlreadyRegisteredAsync(
@@ -27,7 +62,8 @@ namespace BookStore.Server.Repositories
             return await _context.EventRegistrations
                 .AnyAsync(r =>
                     r.UserId == userId &&
-                    r.EventId == eventId);
+                    r.EventId == eventId &&
+                    r.Status == "Registered");
         }
 
 
@@ -74,9 +110,7 @@ namespace BookStore.Server.Repositories
                         r.RegistrationId,
 
                     UserName =
-                        r.User!.FirstName +
-                        " " +
-                        r.User.LastName,
+                        r.User!.Name,
 
                     Email =
                         r.User.Email,

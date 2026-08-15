@@ -7,63 +7,237 @@ namespace BookStore.Server.Services
     public class StoryPoetryService
     {
         private readonly StoryPoetryRepository _storyPoetryRepository;
+        private readonly ProfileRepository _profileRepository;
+        private readonly CloudinaryService _cloudinaryService;
 
         public StoryPoetryService(
-            StoryPoetryRepository storyPoetryRepository)
+            StoryPoetryRepository storyPoetryRepository,
+            ProfileRepository profileRepository,
+            CloudinaryService cloudinaryService)
         {
             _storyPoetryRepository = storyPoetryRepository;
+            _profileRepository = profileRepository;
+            _cloudinaryService = cloudinaryService;
         }
 
+
         // =========================================================
-        // ADD STORY / POETRY
+        // ADD STORY / POETRY / SPECIAL
         // =========================================================
 
         public async Task<StoryPoetryResponse> AddAsync(
             AddStoryPoetryRequest request,
             int userId)
         {
+            // -----------------------------------------------------
+            // GET LOGGED-IN USER PROFILE
+            // -----------------------------------------------------
+
+            var user = await _profileRepository
+                .GetUserByIdAsync(userId);
+
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException(
+                    "User profile not found.");
+            }
+
+
+            // -----------------------------------------------------
+            // IMAGE IS REQUIRED
+            // -----------------------------------------------------
+
+            if (request.ContributorProfileImage == null ||
+                request.ContributorProfileImage.Length == 0)
+            {
+                throw new ArgumentException(
+                    "Contributor profile image is required.");
+            }
+
+
+            // =====================================================
+            // CONTRIBUTOR DETAILS
+            // =====================================================
+
+            // Profile data may be used by the frontend to pre-fill
+            // the submission form.
+            //
+            // However, the values submitted in the request are used
+            // here so that if the user edits any value, the edited
+            // value is saved in StoryPoetry.
+            //
+            // These values DO NOT update the User profile.
+
+            var contributorNameMalayalam =
+                request.ContributorNameMalayalam;
+
+            var contributorAddressMalayalam =
+                request.ContributorAddressMalayalam;
+
+            var contributorDistrictMalayalam =
+                request.ContributorDistrictMalayalam;
+
+            var contributorCityMalayalam =
+                request.ContributorCityMalayalam;
+
+            var contributorEmail =
+                request.ContributorEmail;
+
+            var contributorPhone =
+                request.ContributorPhone;
+
+
+            // =====================================================
+            // VALIDATE FINAL CONTRIBUTOR DETAILS
+            // =====================================================
+
+            if (string.IsNullOrWhiteSpace(
+                contributorNameMalayalam))
+            {
+                throw new ArgumentException(
+                    "Contributor Malayalam name is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                contributorAddressMalayalam))
+            {
+                throw new ArgumentException(
+                    "Contributor Malayalam address is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                contributorDistrictMalayalam))
+            {
+                throw new ArgumentException(
+                    "Contributor Malayalam district is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                contributorCityMalayalam))
+            {
+                throw new ArgumentException(
+                    "Contributor Malayalam city is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                contributorEmail))
+            {
+                throw new ArgumentException(
+                    "Contributor email is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                contributorPhone))
+            {
+                throw new ArgumentException(
+                    "Contributor phone number is required.");
+            }
+
+
+            // =====================================================
+            // UPLOAD PROFILE IMAGE TO CLOUDINARY
+            // =====================================================
+
+            var uploadedImage =
+                await _cloudinaryService.UploadImageAsync(
+                    request.ContributorProfileImage);
+
+            if (uploadedImage == null ||
+                string.IsNullOrWhiteSpace(
+                    uploadedImage.ImageUrl))
+            {
+                throw new Exception(
+                    "Contributor profile image upload failed.");
+            }
+
+
+            // =====================================================
+            // CREATE STORY / POETRY
+            // =====================================================
+
             var storyPoetry = new StoryPoetry
             {
+                // Logged-in user's ID from JWT
                 UserId = userId,
 
+                // Story / Poetry details
                 Title = request.Title,
-
                 Type = request.Type,
-
                 Content = request.Content,
 
+                // Contributor snapshot
+                ContributorNameMalayalam =
+                    contributorNameMalayalam,
+
+                ContributorAddressMalayalam =
+                    contributorAddressMalayalam,
+
+                ContributorDistrictMalayalam =
+                    contributorDistrictMalayalam,
+
+                ContributorCityMalayalam =
+                    contributorCityMalayalam,
+
+                ContributorEmail =
+                    contributorEmail,
+
+                ContributorPhone =
+                    contributorPhone,
+
+                // Cloudinary image URL
+                ContributorProfileImageUrl =
+                    uploadedImage.ImageUrl,
+
+                // Date
                 CreatedDate = DateTime.UtcNow
             };
+
+
+            // =====================================================
+            // SAVE
+            // =====================================================
 
             var created =
                 await _storyPoetryRepository
                     .AddAsync(storyPoetry);
 
+
+            // -----------------------------------------------------
+            // GET SAVED RECORD
+            // -----------------------------------------------------
+
             var result =
                 await _storyPoetryRepository
-                    .GetByIdAsync(created.StoryPoetryId);
+                    .GetByIdAsync(
+                        created.StoryPoetryId);
+
 
             return MapToResponse(result!);
         }
 
+
         // =========================================================
-        // GET STORY / POETRY BY ID
+        // GET BY ID
         // =========================================================
 
-        public async Task<StoryPoetryResponse?> GetByIdAsync(int id)
+        public async Task<StoryPoetryResponse?> GetByIdAsync(
+            int id)
         {
             var storyPoetry =
                 await _storyPoetryRepository
                     .GetByIdAsync(id);
 
             if (storyPoetry == null)
+            {
                 return null;
+            }
 
             return MapToResponse(storyPoetry);
         }
 
+
         // =========================================================
-        // GET ALL STORY / POETRY
+        // GET ALL SUBMISSIONS
         // =========================================================
 
         public async Task<List<StoryPoetryResponse>> GetAllAsync()
@@ -72,8 +246,9 @@ namespace BookStore.Server.Services
                 .GetAllAsync();
         }
 
+
         // =========================================================
-        // GET MY STORY / POETRY
+        // GET MY SUBMISSIONS
         // =========================================================
 
         public async Task<List<StoryPoetryResponse>> GetMyAsync(
@@ -83,8 +258,9 @@ namespace BookStore.Server.Services
                 .GetByUserIdAsync(userId);
         }
 
+
         // =========================================================
-        // UPDATE STORY / POETRY
+        // UPDATE
         // =========================================================
 
         public async Task<StoryPoetryResponse?> UpdateAsync(
@@ -97,14 +273,25 @@ namespace BookStore.Server.Services
                     .GetByIdAsync(id);
 
             if (storyPoetry == null)
+            {
                 return null;
+            }
 
-            // Only owner can update
+
+            // -----------------------------------------------------
+            // ONLY OWNER CAN UPDATE
+            // -----------------------------------------------------
+
             if (storyPoetry.UserId != userId)
             {
                 throw new UnauthorizedAccessException(
                     "You can only update your own submission.");
             }
+
+
+            // -----------------------------------------------------
+            // UPDATE STORY DETAILS
+            // -----------------------------------------------------
 
             storyPoetry.Title =
                 request.Title;
@@ -118,14 +305,22 @@ namespace BookStore.Server.Services
             storyPoetry.UpdatedDate =
                 DateTime.UtcNow;
 
+
+            // -----------------------------------------------------
+            // CONTRIBUTOR DETAILS AND IMAGE
+            // ARE NOT UPDATED
+            // -----------------------------------------------------
+
             await _storyPoetryRepository
                 .UpdateAsync(storyPoetry);
+
 
             return await GetByIdAsync(id);
         }
 
+
         // =========================================================
-        // DELETE STORY / POETRY
+        // DELETE
         // =========================================================
 
         public async Task<bool> DeleteAsync(
@@ -137,20 +332,29 @@ namespace BookStore.Server.Services
                     .GetByIdAsync(id);
 
             if (storyPoetry == null)
+            {
                 return false;
+            }
 
-            // Only owner can delete
+
+            // -----------------------------------------------------
+            // ONLY OWNER CAN DELETE
+            // -----------------------------------------------------
+
             if (storyPoetry.UserId != userId)
             {
                 throw new UnauthorizedAccessException(
                     "You can only delete your own submission.");
             }
 
+
             await _storyPoetryRepository
                 .DeleteAsync(storyPoetry);
 
+
             return true;
         }
+
 
         // =========================================================
         // MAP ENTITY TO RESPONSE DTO
@@ -167,21 +371,6 @@ namespace BookStore.Server.Services
                 UserId =
                     storyPoetry.UserId,
 
-                UserName =
-                    storyPoetry.User != null
-                        ? storyPoetry.User.FirstName + " " +
-                          storyPoetry.User.LastName
-                        : string.Empty,
-
-                ProfileImageUrl =
-                    storyPoetry.User?.ProfileImageUrl,
-
-                Email =
-                    storyPoetry.User?.Email ?? string.Empty,
-
-                Phone =
-                    storyPoetry.User?.Phone ?? string.Empty,
-
                 Title =
                     storyPoetry.Title,
 
@@ -190,6 +379,44 @@ namespace BookStore.Server.Services
 
                 Content =
                     storyPoetry.Content,
+
+
+                // -------------------------------------------------
+                // CONTRIBUTOR DETAILS
+                // -------------------------------------------------
+
+                ContributorNameMalayalam =
+                    storyPoetry
+                        .ContributorNameMalayalam,
+
+                ContributorAddressMalayalam =
+                    storyPoetry
+                        .ContributorAddressMalayalam,
+
+                ContributorDistrictMalayalam =
+                    storyPoetry
+                        .ContributorDistrictMalayalam,
+
+                ContributorCityMalayalam =
+                    storyPoetry
+                        .ContributorCityMalayalam,
+
+                ContributorEmail =
+                    storyPoetry
+                        .ContributorEmail,
+
+                ContributorPhone =
+                    storyPoetry
+                        .ContributorPhone,
+
+                ContributorProfileImageUrl =
+                    storyPoetry
+                        .ContributorProfileImageUrl,
+
+
+                // -------------------------------------------------
+                // DATES
+                // -------------------------------------------------
 
                 CreatedDate =
                     storyPoetry.CreatedDate,

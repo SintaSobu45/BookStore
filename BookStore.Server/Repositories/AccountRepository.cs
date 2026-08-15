@@ -13,28 +13,44 @@ namespace BookStore.Server.Repositories
             _context = context;
         }
 
-        // Check if Email already exists
+        // =========================================================
+        // CHECK IF EMAIL ALREADY EXISTS
+        // =========================================================
+
         public async Task<bool> EmailExistsAsync(string email)
         {
             return await _context.Users
                 .AnyAsync(u => u.Email == email);
         }
 
-        // Get Role by Name
+
+        // =========================================================
+        // GET ROLE BY NAME
+        // =========================================================
+
         public async Task<Role?> GetRoleByNameAsync(string roleName)
         {
             return await _context.Roles
                 .FirstOrDefaultAsync(r => r.RoleName == roleName);
         }
 
-        // Register User
+
+        // =========================================================
+        // REGISTER USER
+        // =========================================================
+
         public async Task AddUserAsync(User user)
         {
             await _context.Users.AddAsync(user);
+
             await _context.SaveChangesAsync();
         }
 
-        // Get User by Email
+
+        // =========================================================
+        // GET USER BY EMAIL
+        // =========================================================
+
         public async Task<User?> GetUserByEmailAsync(string email)
         {
             return await _context.Users
@@ -42,7 +58,11 @@ namespace BookStore.Server.Repositories
                 .FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        // Save Changes
+
+        // =========================================================
+        // SAVE CHANGES
+        // =========================================================
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();

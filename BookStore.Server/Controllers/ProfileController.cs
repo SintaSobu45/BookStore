@@ -13,19 +13,25 @@ namespace BookStore.Server.Controllers
     {
         private readonly ProfileService _profileService;
 
-        public ProfileController(ProfileService profileService)
+        public ProfileController(
+            ProfileService profileService)
         {
             _profileService = profileService;
         }
 
 
-        // GET: api/Profile
+        // =========================================================
+        // GET PROFILE
+        // =========================================================
+
         [HttpGet]
         public async Task<IActionResult> GetProfile()
         {
             var userId = GetUserIdFromToken();
 
-            var profile = await _profileService.GetProfileAsync(userId);
+            var profile =
+                await _profileService
+                    .GetProfileAsync(userId);
 
             if (profile == null)
                 return NotFound("Profile not found");
@@ -34,14 +40,22 @@ namespace BookStore.Server.Controllers
         }
 
 
-        // PUT: api/Profile
-        [HttpPut]
-        public async Task<IActionResult> UpdateProfile(UpdateProfileRequest request)
-        {
-            var userId = GetUserIdFromToken();
+        // =========================================================
+        // UPDATE PROFILE
+        // =========================================================
 
-            var updatedProfile = await _profileService
-                .UpdateProfileAsync(userId, request);
+        [HttpPut]
+        public async Task<IActionResult> UpdateProfile(
+            UpdateProfileRequest request)
+        {
+            var userId =
+                GetUserIdFromToken();
+
+            var updatedProfile =
+                await _profileService
+                    .UpdateProfileAsync(
+                        userId,
+                        request);
 
             if (updatedProfile == null)
                 return NotFound("User not found");
@@ -53,33 +67,58 @@ namespace BookStore.Server.Controllers
             });
         }
 
-        // Upload Profile Image
+
+        // =========================================================
+        // UPLOAD PROFILE IMAGE
+        // =========================================================
+
         [HttpPost("image")]
-        public async Task<IActionResult> UploadProfileImage(IFormFile image)
+        public async Task<IActionResult> UploadProfileImage(
+            IFormFile image)
         {
-            var userId = GetUserIdFromToken();
+            var userId =
+                GetUserIdFromToken();
 
             if (image == null || image.Length == 0)
-                return BadRequest("Please select an image.");
+            {
+                return BadRequest(
+                    "Please select an image.");
+            }
 
-            var profile = await _profileService
-                .UploadProfileImageAsync(userId, image);
+
+            var profile =
+                await _profileService
+                    .UploadProfileImageAsync(
+                        userId,
+                        image);
 
             if (profile == null)
                 return NotFound("User not found");
 
+
             return Ok(new
             {
-                message = "Profile image uploaded successfully",
+                message =
+                    "Profile image uploaded successfully",
+
                 profile = profile
             });
         }
 
 
-        // Get UserId from JWT Token
+        // =========================================================
+        // GET USER ID FROM JWT
+        // =========================================================
+
         private int GetUserIdFromToken()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId =
+                User.FindFirstValue(
+                    ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthorizedAccessException(
+                    "User ID not found.");
 
             return int.Parse(userId);
         }

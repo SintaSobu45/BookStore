@@ -16,7 +16,8 @@ namespace BookStore.Server.Services
 
 
         // =========================================================
-        // REGISTER EVENT
+        // CREATE EVENT REGISTRATION
+        // Registration remains PENDING until payment is successful
         // =========================================================
 
         public async Task<string> RegisterAsync(
@@ -63,6 +64,11 @@ namespace BookStore.Server.Services
             // 4. Check Available Seats
             // -----------------------------------------------------
 
+            if (request.NumberOfSeats <= 0)
+            {
+                return "Number of seats must be greater than zero.";
+            }
+
             if (request.NumberOfSeats >
                 eventItem.AvailableSeats)
             {
@@ -81,7 +87,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 6. Create Registration
+            // 6. Create Pending Registration
             // -----------------------------------------------------
 
             var registration =
@@ -102,28 +108,28 @@ namespace BookStore.Server.Services
                     RegistrationDate =
                         DateTime.UtcNow,
 
+                    // Payment is not completed yet
                     Status =
-                        "Registered"
+                        "Pending"
                 };
 
+
+            // -----------------------------------------------------
+            // 7. Save Pending Registration
+            // -----------------------------------------------------
+            // IMPORTANT:
+            // AvailableSeats is NOT reduced here.
+            //
+            // Seats will be reduced only after successful
+            // Razorpay payment verification.
+            // -----------------------------------------------------
 
             await _repository.AddAsync(
                 registration);
 
 
-            // -----------------------------------------------------
-            // 7. Reduce Available Seats
-            // -----------------------------------------------------
-
-            eventItem.AvailableSeats -=
-                request.NumberOfSeats;
-
-
-            await _repository.SaveChangesAsync();
-
-
             return
-                "Event registration successful.";
+                "Event registration created. Please complete the payment.";
         }
 
 
