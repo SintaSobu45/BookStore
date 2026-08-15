@@ -16,6 +16,7 @@ namespace BookStore.Server.Controllers
             _eventService = eventService;
         }
 
+
         // =========================================================
         // GET ALL EVENTS
         // Anyone can view events
@@ -25,7 +26,8 @@ namespace BookStore.Server.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
-            var events = await _eventService.GetAllAsync();
+            var events =
+                await _eventService.GetAllAsync();
 
             return Ok(events);
         }
@@ -41,10 +43,16 @@ namespace BookStore.Server.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var eventItem =
-                await _eventService.GetByIdAsync(id);
+                await _eventService
+                    .GetByIdAsync(id);
 
             if (eventItem == null)
-                return NotFound("Event not found.");
+            {
+                return NotFound(new
+                {
+                    Message = "Event not found."
+                });
+            }
 
             return Ok(eventItem);
         }
@@ -61,11 +69,14 @@ namespace BookStore.Server.Controllers
             [FromForm] AddEventRequest request)
         {
             var eventItem =
-                await _eventService.AddAsync(request);
+                await _eventService
+                    .AddAsync(request);
 
             return Ok(new
             {
-                Message = "Event added successfully.",
+                Message =
+                    "Event added successfully.",
+
                 Data = eventItem
             });
         }
@@ -82,17 +93,37 @@ namespace BookStore.Server.Controllers
             int id,
             [FromForm] UpdateEventRequest request)
         {
-            var eventItem =
-                await _eventService.UpdateAsync(id, request);
-
-            if (eventItem == null)
-                return NotFound("Event not found.");
-
-            return Ok(new
+            try
             {
-                Message = "Event updated successfully.",
-                Data = eventItem
-            });
+                var eventItem =
+                    await _eventService
+                        .UpdateAsync(id, request);
+
+
+                if (eventItem == null)
+                {
+                    return NotFound(new
+                    {
+                        Message = "Event not found."
+                    });
+                }
+
+
+                return Ok(new
+                {
+                    Message =
+                        "Event updated successfully.",
+
+                    Data = eventItem
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    Message = ex.Message
+                });
+            }
         }
 
 
@@ -106,14 +137,23 @@ namespace BookStore.Server.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var result =
-                await _eventService.DeleteAsync(id);
+                await _eventService
+                    .DeleteAsync(id);
+
 
             if (!result)
-                return NotFound("Event not found.");
+            {
+                return NotFound(new
+                {
+                    Message = "Event not found."
+                });
+            }
+
 
             return Ok(new
             {
-                Message = "Event deleted successfully."
+                Message =
+                    "Event deleted successfully."
             });
         }
     }

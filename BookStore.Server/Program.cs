@@ -108,6 +108,9 @@ namespace BookStore.Server
             builder.Services.Configure<CloudinarySettings>(
              builder.Configuration.GetSection("CloudinarySettings"));
 
+            builder.Services.Configure<RazorpaySettings>(
+    builder.Configuration.GetSection("Razorpay"));
+
             // Service
             builder.Services.AddScoped<AccountService>();
             builder.Services.AddScoped<CategoryService>();

@@ -14,6 +14,7 @@ namespace BookStore.Server.Repositories
             _context = context;
         }
 
+
         // =========================================================
         // ADD STORY / POETRY / SPECIAL
         // =========================================================
@@ -28,6 +29,7 @@ namespace BookStore.Server.Repositories
             return storyPoetry;
         }
 
+
         // =========================================================
         // GET BY ID
         // =========================================================
@@ -35,49 +37,37 @@ namespace BookStore.Server.Repositories
         public async Task<StoryPoetry?> GetByIdAsync(int id)
         {
             return await _context.StoryPoetries
-                .Include(s => s.User)
                 .FirstOrDefaultAsync(
                     s => s.StoryPoetryId == id);
         }
 
+
         // =========================================================
         // GET ALL SUBMISSIONS
         // =========================================================
+        // Used by Admin
+        // Returns all Story / Poetry submissions.
+        // =========================================================
 
-        public async Task<List<StoryPoetryResponse>>
-            GetAllAsync()
+        public async Task<List<StoryPoetryResponse>> GetAllAsync()
         {
             return await _context.StoryPoetries
-                .Include(s => s.User)
                 .Select(s => new StoryPoetryResponse
                 {
+                    // -------------------------------------------------
+                    // SUBMISSION
+                    // -------------------------------------------------
+
                     StoryPoetryId =
                         s.StoryPoetryId,
 
                     UserId =
                         s.UserId,
 
-                    UserName =
-                        s.User != null
-                            ? s.User.FirstName +
-                              " " +
-                              s.User.LastName
-                            : string.Empty,
 
-                    ProfileImageUrl =
-                        s.User != null
-                            ? s.User.ProfileImageUrl
-                            : null,
-
-                    Email =
-                        s.User != null
-                            ? s.User.Email
-                            : string.Empty,
-
-                    Phone =
-                        s.User != null
-                            ? s.User.Phone
-                            : string.Empty,
+                    // -------------------------------------------------
+                    // STORY / POETRY DETAILS
+                    // -------------------------------------------------
 
                     Title =
                         s.Title,
@@ -87,6 +77,42 @@ namespace BookStore.Server.Repositories
 
                     Content =
                         s.Content,
+
+
+                    // -------------------------------------------------
+                    // CONTRIBUTOR DETAILS
+                    // -------------------------------------------------
+
+                    ContributorNameMalayalam =
+                        s.ContributorNameMalayalam,
+
+                    ContributorAddressMalayalam =
+                        s.ContributorAddressMalayalam,
+
+                    ContributorDistrictMalayalam =
+                        s.ContributorDistrictMalayalam,
+
+                    ContributorCityMalayalam =
+                        s.ContributorCityMalayalam,
+
+                    ContributorEmail =
+                        s.ContributorEmail,
+
+                    ContributorPhone =
+                        s.ContributorPhone,
+
+
+                    // -------------------------------------------------
+                    // CONTRIBUTOR PROFILE IMAGE
+                    // -------------------------------------------------
+
+                    ContributorProfileImageUrl =
+                        s.ContributorProfileImageUrl,
+
+
+                    // -------------------------------------------------
+                    // DATES
+                    // -------------------------------------------------
 
                     CreatedDate =
                         s.CreatedDate,
@@ -98,46 +124,36 @@ namespace BookStore.Server.Repositories
                     s => s.CreatedDate)
                 .ToListAsync();
         }
+
 
         // =========================================================
         // GET USER'S OWN SUBMISSIONS
         // =========================================================
+        // Used by logged-in users.
+        // Returns only submissions belonging to the given UserId.
+        // =========================================================
 
-        public async Task<List<StoryPoetryResponse>>
-            GetByUserIdAsync(int userId)
+        public async Task<List<StoryPoetryResponse>> GetByUserIdAsync(
+            int userId)
         {
             return await _context.StoryPoetries
-                .Include(s => s.User)
                 .Where(s => s.UserId == userId)
                 .Select(s => new StoryPoetryResponse
                 {
+                    // -------------------------------------------------
+                    // SUBMISSION
+                    // -------------------------------------------------
+
                     StoryPoetryId =
                         s.StoryPoetryId,
 
                     UserId =
                         s.UserId,
 
-                    UserName =
-                        s.User != null
-                            ? s.User.FirstName +
-                              " " +
-                              s.User.LastName
-                            : string.Empty,
 
-                    ProfileImageUrl =
-                        s.User != null
-                            ? s.User.ProfileImageUrl
-                            : null,
-
-                    Email =
-                        s.User != null
-                            ? s.User.Email
-                            : string.Empty,
-
-                    Phone =
-                        s.User != null
-                            ? s.User.Phone
-                            : string.Empty,
+                    // -------------------------------------------------
+                    // STORY / POETRY DETAILS
+                    // -------------------------------------------------
 
                     Title =
                         s.Title,
@@ -147,6 +163,42 @@ namespace BookStore.Server.Repositories
 
                     Content =
                         s.Content,
+
+
+                    // -------------------------------------------------
+                    // CONTRIBUTOR DETAILS
+                    // -------------------------------------------------
+
+                    ContributorNameMalayalam =
+                        s.ContributorNameMalayalam,
+
+                    ContributorAddressMalayalam =
+                        s.ContributorAddressMalayalam,
+
+                    ContributorDistrictMalayalam =
+                        s.ContributorDistrictMalayalam,
+
+                    ContributorCityMalayalam =
+                        s.ContributorCityMalayalam,
+
+                    ContributorEmail =
+                        s.ContributorEmail,
+
+                    ContributorPhone =
+                        s.ContributorPhone,
+
+
+                    // -------------------------------------------------
+                    // CONTRIBUTOR PROFILE IMAGE
+                    // -------------------------------------------------
+
+                    ContributorProfileImageUrl =
+                        s.ContributorProfileImageUrl,
+
+
+                    // -------------------------------------------------
+                    // DATES
+                    // -------------------------------------------------
 
                     CreatedDate =
                         s.CreatedDate,
@@ -158,6 +210,7 @@ namespace BookStore.Server.Repositories
                     s => s.CreatedDate)
                 .ToListAsync();
         }
+
 
         // =========================================================
         // UPDATE
@@ -166,13 +219,13 @@ namespace BookStore.Server.Repositories
         public async Task<StoryPoetry?> UpdateAsync(
             StoryPoetry storyPoetry)
         {
-            _context.StoryPoetries.Update(
-                storyPoetry);
+            _context.StoryPoetries.Update(storyPoetry);
 
             await _context.SaveChangesAsync();
 
             return storyPoetry;
         }
+
 
         // =========================================================
         // DELETE
@@ -181,13 +234,13 @@ namespace BookStore.Server.Repositories
         public async Task<bool> DeleteAsync(
             StoryPoetry storyPoetry)
         {
-            _context.StoryPoetries.Remove(
-                storyPoetry);
+            _context.StoryPoetries.Remove(storyPoetry);
 
             await _context.SaveChangesAsync();
 
             return true;
         }
+
 
         // =========================================================
         // CHECK EXISTENCE
@@ -199,6 +252,7 @@ namespace BookStore.Server.Repositories
                 .AnyAsync(
                     s => s.StoryPoetryId == id);
         }
+
 
         // =========================================================
         // SAVE CHANGES

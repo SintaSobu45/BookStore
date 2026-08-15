@@ -12,10 +12,10 @@ namespace BookStore.Server.DTOs.Book
         [StringLength(20)]
         public string? ISBN { get; set; }
 
-        [Required]
+        [Range(0.01, 1000000)]
         public decimal Price { get; set; }
 
-        [Required]
+        [Range(0, 100000)]
         public int StockQuantity { get; set; }
 
         public DateTime? PublishedDate { get; set; }

@@ -2,25 +2,54 @@
 {
     public class StoryPoetryResponse
     {
+        // =========================================================
+        // SUBMISSION
+        // =========================================================
+
         public int StoryPoetryId { get; set; }
 
+        // Logged-in user ID from JWT
         public int UserId { get; set; }
 
-        public string UserName { get; set; } = string.Empty;
 
-        public string? ProfileImageUrl { get; set; }
-
-        public string Email { get; set; } = string.Empty;
-
-        public string Phone { get; set; } = string.Empty;
+        // =========================================================
+        // STORY / POETRY DETAILS
+        // =========================================================
 
         public string Title { get; set; } = string.Empty;
 
         public string Type { get; set; } = string.Empty;
 
-       
-
         public string Content { get; set; } = string.Empty;
+
+
+        // =========================================================
+        // CONTRIBUTOR DETAILS
+        // =========================================================
+
+        public string ContributorNameMalayalam { get; set; } = string.Empty;
+
+        public string ContributorAddressMalayalam { get; set; } = string.Empty;
+
+        public string ContributorDistrictMalayalam { get; set; } = string.Empty;
+
+        public string ContributorCityMalayalam { get; set; } = string.Empty;
+
+        public string ContributorEmail { get; set; } = string.Empty;
+
+        public string ContributorPhone { get; set; } = string.Empty;
+
+
+        // =========================================================
+        // CONTRIBUTOR PROFILE IMAGE
+        // =========================================================
+
+        public string ContributorProfileImageUrl { get; set; } = string.Empty;
+
+
+        // =========================================================
+        // DATES
+        // =========================================================
 
         public DateTime CreatedDate { get; set; }
 

@@ -30,49 +30,89 @@ namespace BookStore.Server.Controllers
                 User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userIdClaim))
+            {
                 throw new UnauthorizedAccessException(
                     "User ID not found.");
+            }
 
-            return int.Parse(userIdClaim);
+            if (!int.TryParse(userIdClaim, out int userId))
+            {
+                throw new UnauthorizedAccessException(
+                    "Invalid User ID.");
+            }
+
+            return userId;
         }
 
 
         // =========================================================
-        // USER
+        // ADD STORY / POETRY / SPECIAL
         // =========================================================
 
         // POST: api/StoryPoetry
-        // Add Story / Poetry
+        //
+        // Login is required.
+        // UserId comes from JWT.
+        //
+        // Content-Type:
+        // multipart/form-data
+
         [HttpPost]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> Add(
-            [FromBody] AddStoryPoetryRequest request)
+            [FromForm] AddStoryPoetryRequest request)
         {
             try
             {
+                // -------------------------------------------------
+                // GET LOGGED-IN USER ID FROM JWT
+                // -------------------------------------------------
+
                 var userId = GetUserId();
+
+
+                // -------------------------------------------------
+                // ADD STORY / POETRY
+                // -------------------------------------------------
 
                 var result =
                     await _storyPoetryService
                         .AddAsync(request, userId);
 
+
                 return Ok(new
                 {
-                    message = "Story/Poetry submitted successfully.",
+                    message =
+                        "Story/Poetry submitted successfully.",
+
                     data = result
                 });
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new
                 {
-                    message = "User ID not found."
+                    message = ex.Message
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
                 });
             }
         }
 
 
+        // =========================================================
+        // GET MY SUBMISSIONS
+        // =========================================================
+
         // GET: api/StoryPoetry/my
-        // Get My Story / Poetry
+        //
+        // Logged-in user can see only their own submissions.
+
         [HttpGet("my")]
         public async Task<IActionResult> GetMy()
         {
@@ -86,46 +126,69 @@ namespace BookStore.Server.Controllers
 
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new
                 {
-                    message = "User ID not found."
+                    message = ex.Message
                 });
             }
         }
 
 
+        // =========================================================
+        // GET BY ID
+        // =========================================================
+
         // GET: api/StoryPoetry/{id}
-        // Get Story / Poetry by Id
+        //
+        // Admin:
+        //      Can view any submission.
+        //
+        // Normal user:
+        //      Can view only their own submission.
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
             try
             {
-                var userId = GetUserId();
-
                 var result =
                     await _storyPoetryService
                         .GetByIdAsync(id);
+
 
                 if (result == null)
                 {
                     return NotFound(new
                     {
-                        message = "Story/Poetry not found."
+                        message =
+                            "Story/Poetry not found."
                     });
                 }
 
 
-                // Admin can view any submission
+                // -------------------------------------------------
+                // ADMIN CAN VIEW ANY SUBMISSION
+                // -------------------------------------------------
+
                 if (User.IsInRole("Admin"))
                 {
                     return Ok(result);
                 }
 
 
-                // Normal user can view only own submission
+                // -------------------------------------------------
+                // NORMAL LOGGED-IN USER
+                // -------------------------------------------------
+
+                var userId = GetUserId();
+
+
+                // -------------------------------------------------
+                // USER CAN VIEW ONLY THEIR OWN SUBMISSION
+                // -------------------------------------------------
+
                 if (result.UserId != userId)
                 {
                     return Forbid();
@@ -134,18 +197,26 @@ namespace BookStore.Server.Controllers
 
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new
                 {
-                    message = "User ID not found."
+                    message = ex.Message
                 });
             }
         }
 
 
+        // =========================================================
+        // UPDATE
+        // =========================================================
+
         // PUT: api/StoryPoetry/{id}
-        // Update My Story / Poetry
+        //
+        // Only the logged-in owner can update.
+        //
+        // Contributor details and image are not updated here.
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(
             int id,
@@ -155,6 +226,7 @@ namespace BookStore.Server.Controllers
             {
                 var userId = GetUserId();
 
+
                 var result =
                     await _storyPoetryService
                         .UpdateAsync(
@@ -162,30 +234,47 @@ namespace BookStore.Server.Controllers
                             request,
                             userId);
 
+
                 if (result == null)
                 {
                     return NotFound(new
                     {
-                        message = "Story/Poetry not found."
+                        message =
+                            "Story/Poetry not found."
                     });
                 }
 
 
                 return Ok(new
                 {
-                    message = "Story/Poetry updated successfully.",
+                    message =
+                        "Story/Poetry updated successfully.",
+
                     data = result
                 });
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
                 return Forbid();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
             }
         }
 
 
+        // =========================================================
+        // DELETE
+        // =========================================================
+
         // DELETE: api/StoryPoetry/{id}
-        // Delete My Story / Poetry
+        //
+        // Only the logged-in owner can delete.
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -193,15 +282,20 @@ namespace BookStore.Server.Controllers
             {
                 var userId = GetUserId();
 
+
                 var result =
                     await _storyPoetryService
-                        .DeleteAsync(id, userId);
+                        .DeleteAsync(
+                            id,
+                            userId);
+
 
                 if (!result)
                 {
                     return NotFound(new
                     {
-                        message = "Story/Poetry not found."
+                        message =
+                            "Story/Poetry not found."
                     });
                 }
 
@@ -220,11 +314,15 @@ namespace BookStore.Server.Controllers
 
 
         // =========================================================
-        // ADMIN
+        // ADMIN - GET ALL SUBMISSIONS
         // =========================================================
 
         // GET: api/StoryPoetry/admin/all
-        // Get All Story / Poetry
+        //
+        // Only Admin can access.
+        //
+        // Admin can see all logged-in users' submissions.
+
         [HttpGet("admin/all")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()

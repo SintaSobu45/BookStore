@@ -15,25 +15,65 @@ namespace BookStore.Server.Helpers
             _configuration = configuration;
         }
 
+
+        // =========================================================
+        // GENERATE JWT TOKEN
+        // =========================================================
+
         public string GenerateToken(User user)
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role?.RoleName ?? "")
+                // User ID
+                new Claim(
+                    ClaimTypes.NameIdentifier,
+                    user.UserId.ToString()
+                ),
+
+                // User Name
+                new Claim(
+                    ClaimTypes.Name,
+                    user.Name
+                ),
+
+                // Email
+                new Claim(
+                    ClaimTypes.Email,
+                    user.Email
+                ),
+
+                // Role
+                new Claim(
+                    ClaimTypes.Role,
+                    user.Role?.RoleName ?? string.Empty
+                )
             };
+
+
+            // =====================================================
+            // JWT KEY
+            // =====================================================
 
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(
                     _configuration["Jwt:Key"]!
-                ));
+                )
+            );
+
+
+            // =====================================================
+            // SIGNING CREDENTIALS
+            // =====================================================
 
             var credentials = new SigningCredentials(
                 key,
                 SecurityAlgorithms.HmacSha256
             );
+
+
+            // =====================================================
+            // CREATE TOKEN
+            // =====================================================
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
@@ -43,7 +83,13 @@ namespace BookStore.Server.Helpers
                 signingCredentials: credentials
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+
+            // =====================================================
+            // RETURN TOKEN
+            // =====================================================
+
+            return new JwtSecurityTokenHandler()
+                .WriteToken(token);
         }
     }
 }

@@ -7,7 +7,10 @@ namespace BookStore.Server.Data
     {
         public static void Initialize(ApplicationDbContext context)
         {
-            // Create Roles if they don't exist
+            // =========================================================
+            // CREATE ROLES
+            // =========================================================
+
             if (!context.Roles.Any())
             {
                 context.Roles.AddRange(
@@ -24,31 +27,54 @@ namespace BookStore.Server.Data
                 context.SaveChanges();
             }
 
-            // Get Admin Role
+
+            // =========================================================
+            // GET ADMIN ROLE
+            // =========================================================
+
             var adminRole = context.Roles
                 .First(r => r.RoleName == "Admin");
 
-            // Create Admin User if it doesn't exist
-            if (!context.Users.Any(u => u.Email == "admin@bookstore.com"))
+
+            // =========================================================
+            // CREATE ADMIN USER
+            // =========================================================
+
+            if (!context.Users.Any(
+                u => u.Email == "admin@bookstore.com"))
             {
                 var admin = new User
                 {
-                    FirstName = "System",
-                    LastName = "Admin",
+                    Name = "System Admin",
+
                     Email = "admin@bookstore.com",
+
                     Phone = "9999999999",
+
                     RoleId = adminRole.RoleId,
+
                     IsActive = true,
+
                     CreatedDate = DateTime.UtcNow
                 };
 
-                // Hash Admin Password
+
+                // =====================================================
+                // HASH ADMIN PASSWORD
+                // =====================================================
+
                 var passwordHasher = new PasswordHasher();
 
-                admin.PasswordHash = passwordHasher.HashPassword(
-                    admin,
-                    "Admin@123"
-                );
+                admin.PasswordHash =
+                    passwordHasher.HashPassword(
+                        admin,
+                        "Admin@123"
+                    );
+
+
+                // =====================================================
+                // SAVE ADMIN
+                // =====================================================
 
                 context.Users.Add(admin);
 

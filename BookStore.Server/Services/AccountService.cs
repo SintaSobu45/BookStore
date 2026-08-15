@@ -21,8 +21,13 @@ namespace BookStore.Server.Services
             _jwtHelper = jwtHelper;
         }
 
-        // Register User
-        public async Task<bool> RegisterAsync(RegisterRequest request)
+
+        // =========================================================
+        // REGISTER USER
+        // =========================================================
+
+        public async Task<bool> RegisterAsync(
+            RegisterRequest request)
         {
             // Check if email already exists
             if (await _repository.EmailExistsAsync(request.Email))
@@ -30,31 +35,41 @@ namespace BookStore.Server.Services
                 return false;
             }
 
+
             // Get User Role
-            var userRole = await _repository.GetRoleByNameAsync("User");
+            var userRole =
+                await _repository.GetRoleByNameAsync("User");
 
             if (userRole == null)
             {
                 return false;
             }
 
+
             // Create User
             var user = new User
             {
-                FirstName = request.FirstName,
-                LastName = request.LastName,
+                Name = request.Name,
+
                 Email = request.Email,
+
                 Phone = request.Phone,
+
                 RoleId = userRole.RoleId,
+
                 IsActive = true,
+
                 CreatedDate = DateTime.UtcNow
             };
 
+
             // Hash Password
-            user.PasswordHash = _passwordHasher.HashPassword(
-                user,
-                request.Password
-            );
+            user.PasswordHash =
+                _passwordHasher.HashPassword(
+                    user,
+                    request.Password
+                );
+
 
             // Save User
             await _repository.AddUserAsync(user);
@@ -62,34 +77,54 @@ namespace BookStore.Server.Services
             return true;
         }
 
-        // Login User
-        public async Task<LoginResponse?> LoginAsync(LoginRequest request)
+
+        // =========================================================
+        // LOGIN USER
+        // =========================================================
+
+        public async Task<LoginResponse?> LoginAsync(
+            LoginRequest request)
         {
-            var user = await _repository.GetUserByEmailAsync(request.Email);
+            var user =
+                await _repository.GetUserByEmailAsync(
+                    request.Email);
 
             if (user == null)
             {
                 return null;
             }
 
-            var isValid = _passwordHasher.VerifyPassword(
-                user,
-                request.Password
-            );
+
+            // Verify Password
+            var isValid =
+                _passwordHasher.VerifyPassword(
+                    user,
+                    request.Password
+                );
 
             if (!isValid)
             {
                 return null;
             }
 
-            var token = _jwtHelper.GenerateToken(user);
+
+            // Generate JWT
+            var token =
+                _jwtHelper.GenerateToken(user);
+
 
             return new LoginResponse
             {
                 UserId = user.UserId,
-                FullName = $"{user.FirstName} {user.LastName}",
+
+                FullName = user.Name,
+
                 Email = user.Email,
-                Role = user.Role?.RoleName ?? string.Empty,
+
+                Role =
+                    user.Role?.RoleName
+                    ?? string.Empty,
+
                 Token = token
             };
         }

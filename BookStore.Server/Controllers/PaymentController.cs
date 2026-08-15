@@ -16,60 +16,116 @@ namespace BookStore.Server.Controllers
             _paymentService = paymentService;
         }
 
+
+        // =========================================================
         // GET: api/Payment
+        // ADMIN ONLY
+        // =========================================================
+
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
-            var payments = await _paymentService.GetAllAsync();
+            var payments =
+                await _paymentService.GetAllAsync();
 
             return Ok(payments);
         }
 
+
+        // =========================================================
         // GET: api/Payment/5
+        // LOGGED-IN USERS
+        // =========================================================
+
         [HttpGet("{id}")]
         [Authorize]
         public async Task<IActionResult> GetById(int id)
         {
-            var payment = await _paymentService.GetByIdAsync(id);
+            var payment =
+                await _paymentService.GetByIdAsync(id);
 
             if (payment == null)
+            {
                 return NotFound(new
                 {
                     message = "Payment not found."
                 });
+            }
 
             return Ok(payment);
         }
 
-        // POST: api/Payment
-        [HttpPost]
+
+        // =========================================================
+        // POST: api/Payment/event
+        // CREATE RAZORPAY ORDER FOR EVENT
+        // =========================================================
+
+        [HttpPost("event")]
         [Authorize]
-        public async Task<IActionResult> Create(
-            [FromBody] CreatePaymentDto request)
+        public async Task<IActionResult> CreateEventPayment(
+            [FromBody] CreateEventPaymentRequest request)
         {
-            var payment = await _paymentService.CreateAsync(request);
+            try
+            {
+                var payment =
+                    await _paymentService
+                        .CreateEventPaymentAsync(request);
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = payment.PaymentId },
-                payment);
+                if (payment == null)
+                {
+                    return NotFound(new
+                    {
+                        message = "Event registration not found."
+                    });
+                }
+
+                return Ok(payment);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
 
-        // PUT: api/Payment/5/paid
-        [HttpPut("{id}/paid")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> MarkAsPaid(int id)
+
+        // =========================================================
+        // POST: api/Payment/verify
+        // VERIFY RAZORPAY PAYMENT
+        // =========================================================
+
+        [HttpPost("verify")]
+        [Authorize]
+        public async Task<IActionResult> VerifyPayment(
+            [FromBody] RazorpayPaymentVerificationRequest request)
         {
-            var payment = await _paymentService.MarkAsPaidAsync(id);
+            try
+            {
+                var payment =
+                    await _paymentService
+                        .VerifyRazorpayPaymentAsync(request);
 
-            if (payment == null)
-                return NotFound(new
+                if (payment == null)
                 {
-                    message = "Payment not found."
-                });
+                    return NotFound(new
+                    {
+                        message = "Payment not found."
+                    });
+                }
 
-            return Ok(payment);
+                return Ok(payment);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
     }
 }

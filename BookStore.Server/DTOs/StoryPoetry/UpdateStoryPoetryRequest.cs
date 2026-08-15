@@ -15,7 +15,6 @@ namespace BookStore.Server.DTOs.StoryPoetry
         )]
         public string Type { get; set; } = string.Empty;
 
-
         [Required]
         public string Content { get; set; } = string.Empty;
     }
