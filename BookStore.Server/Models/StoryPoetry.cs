@@ -89,6 +89,18 @@ namespace BookStore.Server.Models
 
 
         // =========================================================
+        // PAYMENT STATUS
+        // =========================================================
+
+        // Pending -> Payment not completed
+        // Paid    -> Payment completed successfully
+
+        [Required]
+        [StringLength(30)]
+        public string PaymentStatus { get; set; } = "Pending";
+
+
+        // =========================================================
         // DATES
         // =========================================================
 
