@@ -49,7 +49,10 @@ namespace BookStore.Server.Controllers
                     .RegisterAsync(userId, request);
 
 
-            if (result != "Event registration successful.")
+            // Registration is successfully created as Pending.
+            // Payment must be completed separately.
+            if (result !=
+                "Event registration created. Please complete the payment.")
             {
                 return BadRequest(new
                 {
