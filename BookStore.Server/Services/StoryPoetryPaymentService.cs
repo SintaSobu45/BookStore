@@ -29,7 +29,7 @@ namespace BookStore.Server.Services
 
 
         // =========================================================
-        // CREATE RAZORPAY ORDER FOR STORY / POETRY
+        // CREATE RAZORPAY PAYMENT
         // =========================================================
 
         public async Task<PaymentResponseDto?>
@@ -99,7 +99,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 5. Get Amount
+            // 5. Get Payment Amount
             // -----------------------------------------------------
 
             decimal totalAmount =
@@ -161,7 +161,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 10. Create Local Payment Record
+            // 10. Create Payment Record
             // -----------------------------------------------------
 
             var payment =
@@ -212,12 +212,13 @@ namespace BookStore.Server.Services
             // 12. Return Response
             // -----------------------------------------------------
 
-            return MapToResponse(createdPayment);
+            return MapToResponse(
+                createdPayment);
         }
 
 
         // =========================================================
-        // VERIFY STORY / POETRY RAZORPAY PAYMENT
+        // VERIFY RAZORPAY PAYMENT
         // =========================================================
 
         public async Task<PaymentResponseDto?>
@@ -231,7 +232,8 @@ namespace BookStore.Server.Services
 
             var payment =
                 await _paymentRepository
-                    .GetByIdAsync(request.PaymentId);
+                    .GetByIdAsync(
+                        request.PaymentId);
 
             if (payment == null)
             {
@@ -428,7 +430,18 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 15. Save Updated Payment
+            // 15. Update Story / Poetry Payment Status
+            // -----------------------------------------------------
+
+            storyPoetry.PaymentStatus =
+                "Paid";
+
+            storyPoetry.UpdatedDate =
+                DateTime.UtcNow;
+
+
+            // -----------------------------------------------------
+            // 16. Save Updated Payment
             // -----------------------------------------------------
 
             var updatedPayment =
@@ -442,10 +455,19 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 16. Return Response
+            // 17. Save Updated Story / Poetry
             // -----------------------------------------------------
 
-            return MapToResponse(updatedPayment);
+            await _storyPoetryRepository
+                .UpdateAsync(storyPoetry);
+
+
+            // -----------------------------------------------------
+            // 18. Return Response
+            // -----------------------------------------------------
+
+            return MapToResponse(
+                updatedPayment);
         }
 
 
@@ -461,9 +483,11 @@ namespace BookStore.Server.Services
                     _razorpaySettings.KeyId,
                     _razorpaySettings.KeySecret);
 
+
             Razorpay.Api.Payment razorpayPayment =
                 client.Payment.Fetch(
                     razorpayPaymentId);
+
 
             return razorpayPayment["method"]?.ToString();
         }

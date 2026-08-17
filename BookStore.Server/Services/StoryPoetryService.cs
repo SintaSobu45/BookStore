@@ -59,15 +59,6 @@ namespace BookStore.Server.Services
             // CONTRIBUTOR DETAILS
             // =====================================================
 
-            // Profile data may be used by the frontend to pre-fill
-            // the submission form.
-            //
-            // However, the values submitted in the request are used
-            // here so that if the user edits any value, the edited
-            // value is saved in StoryPoetry.
-            //
-            // These values DO NOT update the User profile.
-
             var contributorNameMalayalam =
                 request.ContributorNameMalayalam;
 
@@ -88,7 +79,7 @@ namespace BookStore.Server.Services
 
 
             // =====================================================
-            // VALIDATE FINAL CONTRIBUTOR DETAILS
+            // VALIDATE CONTRIBUTOR DETAILS
             // =====================================================
 
             if (string.IsNullOrWhiteSpace(
@@ -157,12 +148,14 @@ namespace BookStore.Server.Services
 
             var storyPoetry = new StoryPoetry
             {
-                // Logged-in user's ID from JWT
+                // Logged-in user
                 UserId = userId,
 
                 // Story / Poetry details
                 Title = request.Title,
+
                 Type = request.Type,
+
                 Content = request.Content,
 
                 // Contributor snapshot
@@ -184,9 +177,18 @@ namespace BookStore.Server.Services
                 ContributorPhone =
                     contributorPhone,
 
-                // Cloudinary image URL
+                // Cloudinary image
                 ContributorProfileImageUrl =
                     uploadedImage.ImageUrl,
+
+                // =================================================
+                // PAYMENT STATUS
+                // =================================================
+                //
+                // Story is created first.
+                // Payment is completed separately.
+                //
+                PaymentStatus = "Pending",
 
                 // Date
                 CreatedDate = DateTime.UtcNow
@@ -194,7 +196,7 @@ namespace BookStore.Server.Services
 
 
             // =====================================================
-            // SAVE
+            // SAVE STORY / POETRY
             // =====================================================
 
             var created =
@@ -202,9 +204,9 @@ namespace BookStore.Server.Services
                     .AddAsync(storyPoetry);
 
 
-            // -----------------------------------------------------
+            // =====================================================
             // GET SAVED RECORD
-            // -----------------------------------------------------
+            // =====================================================
 
             var result =
                 await _storyPoetryRepository
@@ -371,6 +373,11 @@ namespace BookStore.Server.Services
                 UserId =
                     storyPoetry.UserId,
 
+
+                // -------------------------------------------------
+                // STORY / POETRY DETAILS
+                // -------------------------------------------------
+
                 Title =
                     storyPoetry.Title,
 
@@ -409,9 +416,22 @@ namespace BookStore.Server.Services
                     storyPoetry
                         .ContributorPhone,
 
+
+                // -------------------------------------------------
+                // PROFILE IMAGE
+                // -------------------------------------------------
+
                 ContributorProfileImageUrl =
                     storyPoetry
                         .ContributorProfileImageUrl,
+
+
+                // -------------------------------------------------
+                // PAYMENT STATUS
+                // -------------------------------------------------
+
+                PaymentStatus =
+                    storyPoetry.PaymentStatus,
 
 
                 // -------------------------------------------------
