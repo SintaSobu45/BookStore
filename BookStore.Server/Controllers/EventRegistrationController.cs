@@ -41,29 +41,39 @@ namespace BookStore.Server.Controllers
                 });
             }
 
-            int userId = int.Parse(userIdClaim.Value);
+            int userId =
+                int.Parse(userIdClaim.Value);
 
 
             var result =
                 await _eventRegistrationService
-                    .RegisterAsync(userId, request);
+                    .RegisterAsync(
+                        userId,
+                        request);
 
 
-            // Registration is successfully created as Pending.
-            // Payment must be completed separately.
-            if (result !=
-                "Event registration created. Please complete the payment.")
+            // -----------------------------------------------------
+            // Registration Failed
+            // -----------------------------------------------------
+
+            if (!result.Success)
             {
                 return BadRequest(new
                 {
-                    Message = result
+                    Message = result.Message
                 });
             }
 
 
+            // -----------------------------------------------------
+            // Registration Created Successfully
+            // Return RegistrationId
+            // -----------------------------------------------------
+
             return Ok(new
             {
-                Message = result
+                Message = result.Message,
+                RegistrationId = result.RegistrationId
             });
         }
 
@@ -88,7 +98,8 @@ namespace BookStore.Server.Controllers
                 });
             }
 
-            int userId = int.Parse(userIdClaim.Value);
+            int userId =
+                int.Parse(userIdClaim.Value);
 
 
             var registrations =
