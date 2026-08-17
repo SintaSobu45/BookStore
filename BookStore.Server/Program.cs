@@ -133,6 +133,7 @@ namespace BookStore.Server
 
             builder.Services.AddScoped<PaymentService>();
             builder.Services.AddScoped<PaymentSettingsService>();
+            builder.Services.AddScoped<StoryPoetryPaymentService>();
 
             // JWT Authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
