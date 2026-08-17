@@ -14,7 +14,13 @@
 
         public decimal Amount { get; set; }
 
+        // Payment gateway
+        // Example: Razorpay
         public string PaymentType { get; set; } = string.Empty;
+
+        // Actual payment method
+        // Example: UPI, Card, NetBanking, Wallet
+        public string? PaymentMethod { get; set; }
 
         public string Status { get; set; } = string.Empty;
 
@@ -23,8 +29,6 @@
         public string? RazorpayPaymentId { get; set; }
 
         public string? RazorpaySignature { get; set; }
-
-        public string? TransactionId { get; set; }
 
         public DateTime CreatedDate { get; set; }
 

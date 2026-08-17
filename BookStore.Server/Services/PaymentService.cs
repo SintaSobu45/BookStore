@@ -43,11 +43,11 @@ namespace BookStore.Server.Services
                 OrderId = p.OrderId,
                 Amount = p.Amount,
                 PaymentType = p.PaymentType,
+                PaymentMethod = p.PaymentMethod,
                 Status = p.Status,
                 RazorpayOrderId = p.RazorpayOrderId,
                 RazorpayPaymentId = p.RazorpayPaymentId,
                 RazorpaySignature = p.RazorpaySignature,
-                TransactionId = p.TransactionId,
                 CreatedDate = p.CreatedDate,
                 PaidDate = p.PaidDate
             }).ToList();
@@ -75,11 +75,11 @@ namespace BookStore.Server.Services
                 OrderId = payment.OrderId,
                 Amount = payment.Amount,
                 PaymentType = payment.PaymentType,
+                PaymentMethod = payment.PaymentMethod,
                 Status = payment.Status,
                 RazorpayOrderId = payment.RazorpayOrderId,
                 RazorpayPaymentId = payment.RazorpayPaymentId,
                 RazorpaySignature = payment.RazorpaySignature,
-                TransactionId = payment.TransactionId,
                 CreatedDate = payment.CreatedDate,
                 PaidDate = payment.PaidDate
             };
@@ -199,6 +199,11 @@ namespace BookStore.Server.Services
                     PaymentType =
                         "Razorpay",
 
+                    // Payment method is known only after
+                    // successful Razorpay payment.
+                    PaymentMethod =
+                        null,
+
                     Status =
                         "Pending",
 
@@ -240,6 +245,9 @@ namespace BookStore.Server.Services
                 PaymentType =
                     createdPayment.PaymentType,
 
+                PaymentMethod =
+                    createdPayment.PaymentMethod,
+
                 Status =
                     createdPayment.Status,
 
@@ -261,8 +269,9 @@ namespace BookStore.Server.Services
         // After successful verification:
         //
         // 1. Payment -> Paid
-        // 2. EventRegistration -> Registered
-        // 3. AvailableSeats -> Reduced
+        // 2. PaymentMethod -> fetched from Razorpay
+        // 3. EventRegistration -> Registered
+        // 4. AvailableSeats -> Reduced
         //
         // =========================================================
 
@@ -455,7 +464,16 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 13. Mark Payment As Paid
+            // 13. Get Payment Method From Razorpay
+            // -----------------------------------------------------
+
+            string? paymentMethod =
+                GetRazorpayPaymentMethod(
+                    request.RazorpayPaymentId);
+
+
+            // -----------------------------------------------------
+            // 14. Mark Payment As Paid
             // -----------------------------------------------------
 
             payment.RazorpayPaymentId =
@@ -463,6 +481,9 @@ namespace BookStore.Server.Services
 
             payment.RazorpaySignature =
                 request.RazorpaySignature;
+
+            payment.PaymentMethod =
+                paymentMethod;
 
             payment.Status =
                 "Paid";
@@ -472,7 +493,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 14. Mark Registration As Registered
+            // 15. Mark Registration As Registered
             // -----------------------------------------------------
 
             registration.Status =
@@ -480,7 +501,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 15. Reduce Available Seats
+            // 16. Reduce Available Seats
             // -----------------------------------------------------
 
             eventItem.AvailableSeats -=
@@ -488,7 +509,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 16. Save Payment
+            // 17. Save Payment
             // -----------------------------------------------------
 
             var updatedPayment =
@@ -500,7 +521,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 17. Save Registration + Event
+            // 18. Save Registration + Event
             // -----------------------------------------------------
 
             await _eventRegistrationRepository
@@ -508,7 +529,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 18. Return Response
+            // 19. Return Response
             // -----------------------------------------------------
 
             return new PaymentResponseDto
@@ -534,6 +555,9 @@ namespace BookStore.Server.Services
                 PaymentType =
                     updatedPayment.PaymentType,
 
+                PaymentMethod =
+                    updatedPayment.PaymentMethod,
+
                 Status =
                     updatedPayment.Status,
 
@@ -546,15 +570,44 @@ namespace BookStore.Server.Services
                 RazorpaySignature =
                     updatedPayment.RazorpaySignature,
 
-                TransactionId =
-                    updatedPayment.TransactionId,
-
                 CreatedDate =
                     updatedPayment.CreatedDate,
 
                 PaidDate =
                     updatedPayment.PaidDate
             };
+        }
+
+
+        // =========================================================
+        // GET PAYMENT METHOD FROM RAZORPAY
+        // =========================================================
+        //
+        // Uses Razorpay Payment ID to fetch the actual payment
+        // details from Razorpay.
+        //
+        // Example returned values:
+        //
+        // upi
+        // card
+        // netbanking
+        // wallet
+        //
+        // =========================================================
+
+        private string? GetRazorpayPaymentMethod(
+            string razorpayPaymentId)
+        {
+            Razorpay.Api.RazorpayClient client =
+                new Razorpay.Api.RazorpayClient(
+                    _razorpaySettings.KeyId,
+                    _razorpaySettings.KeySecret);
+
+            Razorpay.Api.Payment razorpayPayment =
+                client.Payment.Fetch(
+                    razorpayPaymentId);
+
+            return razorpayPayment["method"]?.ToString();
         }
     }
 }
