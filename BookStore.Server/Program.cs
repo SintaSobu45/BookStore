@@ -96,7 +96,8 @@ namespace BookStore.Server
       
 
             builder.Services.AddScoped<PaymentRepository>();
-
+            builder.Services.AddScoped<PaymentSettingsRepository>();
+       
 
 
 
@@ -131,6 +132,7 @@ namespace BookStore.Server
        
 
             builder.Services.AddScoped<PaymentService>();
+            builder.Services.AddScoped<PaymentSettingsService>();
 
             // JWT Authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

@@ -36,6 +36,7 @@ namespace BookStore.Server.Data
     
 
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<PaymentSettings> PaymentSettings { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
