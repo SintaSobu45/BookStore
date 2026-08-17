@@ -20,9 +20,10 @@ namespace BookStore.Server.Services
         // Registration remains PENDING until payment is successful
         // =========================================================
 
-        public async Task<string> RegisterAsync(
-            int userId,
-            AddEventRegistrationRequest request)
+        public async Task<(bool Success, string Message, int? RegistrationId)>
+            RegisterAsync(
+                int userId,
+                AddEventRegistrationRequest request)
         {
             // -----------------------------------------------------
             // 1. Check Duplicate Registration
@@ -32,7 +33,11 @@ namespace BookStore.Server.Services
                 userId,
                 request.EventId))
             {
-                return "You have already registered for this event.";
+                return (
+                    false,
+                    "You have already registered for this event.",
+                    null
+                );
             }
 
 
@@ -46,7 +51,11 @@ namespace BookStore.Server.Services
 
             if (eventItem == null)
             {
-                return "Event not found.";
+                return (
+                    false,
+                    "Event not found.",
+                    null
+                );
             }
 
 
@@ -56,7 +65,11 @@ namespace BookStore.Server.Services
 
             if (!eventItem.IsActive)
             {
-                return "Event is not active.";
+                return (
+                    false,
+                    "Event is not active.",
+                    null
+                );
             }
 
 
@@ -66,13 +79,21 @@ namespace BookStore.Server.Services
 
             if (request.NumberOfSeats <= 0)
             {
-                return "Number of seats must be greater than zero.";
+                return (
+                    false,
+                    "Number of seats must be greater than zero.",
+                    null
+                );
             }
 
             if (request.NumberOfSeats >
                 eventItem.AvailableSeats)
             {
-                return "Requested seats are not available.";
+                return (
+                    false,
+                    "Requested seats are not available.",
+                    null
+                );
             }
 
 
@@ -128,8 +149,15 @@ namespace BookStore.Server.Services
                 registration);
 
 
-            return
-                "Event registration created. Please complete the payment.";
+            // -----------------------------------------------------
+            // 8. Return Generated RegistrationId
+            // -----------------------------------------------------
+
+            return (
+                true,
+                "Event registration created. Please complete the payment.",
+                registration.RegistrationId
+            );
         }
 
 
