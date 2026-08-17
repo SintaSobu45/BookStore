@@ -49,14 +49,6 @@ namespace BookStore.Server.Controllers
         // ADD STORY / POETRY / SPECIAL
         // =========================================================
 
-        // POST: api/StoryPoetry
-        //
-        // Login is required.
-        // UserId comes from JWT.
-        //
-        // Content-Type:
-        // multipart/form-data
-
         [HttpPost]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Add(
@@ -64,21 +56,11 @@ namespace BookStore.Server.Controllers
         {
             try
             {
-                // -------------------------------------------------
-                // GET LOGGED-IN USER ID FROM JWT
-                // -------------------------------------------------
-
                 var userId = GetUserId();
-
-
-                // -------------------------------------------------
-                // ADD STORY / POETRY
-                // -------------------------------------------------
 
                 var result =
                     await _storyPoetryService
                         .AddAsync(request, userId);
-
 
                 return Ok(new
                 {
@@ -109,10 +91,6 @@ namespace BookStore.Server.Controllers
         // GET MY SUBMISSIONS
         // =========================================================
 
-        // GET: api/StoryPoetry/my
-        //
-        // Logged-in user can see only their own submissions.
-
         [HttpGet("my")]
         public async Task<IActionResult> GetMy()
         {
@@ -140,14 +118,6 @@ namespace BookStore.Server.Controllers
         // GET BY ID
         // =========================================================
 
-        // GET: api/StoryPoetry/{id}
-        //
-        // Admin:
-        //      Can view any submission.
-        //
-        // Normal user:
-        //      Can view only their own submission.
-
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -156,7 +126,6 @@ namespace BookStore.Server.Controllers
                 var result =
                     await _storyPoetryService
                         .GetByIdAsync(id);
-
 
                 if (result == null)
                 {
@@ -179,21 +148,19 @@ namespace BookStore.Server.Controllers
 
 
                 // -------------------------------------------------
-                // NORMAL LOGGED-IN USER
+                // NORMAL USER
                 // -------------------------------------------------
 
                 var userId = GetUserId();
 
-
-                // -------------------------------------------------
-                // USER CAN VIEW ONLY THEIR OWN SUBMISSION
-                // -------------------------------------------------
-
                 if (result.UserId != userId)
                 {
-                    return Forbid();
+                    return StatusCode(403, new
+                    {
+                        message =
+                            "You can only view your own submission."
+                    });
                 }
-
 
                 return Ok(result);
             }
@@ -211,12 +178,6 @@ namespace BookStore.Server.Controllers
         // UPDATE
         // =========================================================
 
-        // PUT: api/StoryPoetry/{id}
-        //
-        // Only the logged-in owner can update.
-        //
-        // Contributor details and image are not updated here.
-
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(
             int id,
@@ -226,14 +187,12 @@ namespace BookStore.Server.Controllers
             {
                 var userId = GetUserId();
 
-
                 var result =
                     await _storyPoetryService
                         .UpdateAsync(
                             id,
                             request,
                             userId);
-
 
                 if (result == null)
                 {
@@ -243,7 +202,6 @@ namespace BookStore.Server.Controllers
                             "Story/Poetry not found."
                     });
                 }
-
 
                 return Ok(new
                 {
@@ -255,7 +213,10 @@ namespace BookStore.Server.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid();
+                return StatusCode(403, new
+                {
+                    message = ex.Message
+                });
             }
             catch (ArgumentException ex)
             {
@@ -271,10 +232,6 @@ namespace BookStore.Server.Controllers
         // DELETE
         // =========================================================
 
-        // DELETE: api/StoryPoetry/{id}
-        //
-        // Only the logged-in owner can delete.
-
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -282,13 +239,11 @@ namespace BookStore.Server.Controllers
             {
                 var userId = GetUserId();
 
-
                 var result =
                     await _storyPoetryService
                         .DeleteAsync(
                             id,
                             userId);
-
 
                 if (!result)
                 {
@@ -299,16 +254,18 @@ namespace BookStore.Server.Controllers
                     });
                 }
 
-
                 return Ok(new
                 {
                     message =
                         "Story/Poetry deleted successfully."
                 });
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Forbid();
+                return StatusCode(403, new
+                {
+                    message = ex.Message
+                });
             }
         }
 
@@ -316,12 +273,6 @@ namespace BookStore.Server.Controllers
         // =========================================================
         // ADMIN - GET ALL SUBMISSIONS
         // =========================================================
-
-        // GET: api/StoryPoetry/admin/all
-        //
-        // Only Admin can access.
-        //
-        // Admin can see all logged-in users' submissions.
 
         [HttpGet("admin/all")]
         [Authorize(Roles = "Admin")]

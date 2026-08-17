@@ -35,14 +35,24 @@ namespace BookStore.Server.Controllers
                     "User ID not found in token.");
             }
 
-            return int.Parse(userIdClaim);
+            if (!int.TryParse(
+                userIdClaim,
+                out int userId))
+            {
+                throw new UnauthorizedAccessException(
+                    "Invalid User ID in token.");
+            }
+
+            return userId;
         }
 
 
         // =========================================================
         // CREATE STORY / POETRY PAYMENT
-        // POST: api/StoryPoetryPayment
         // =========================================================
+
+        // POST:
+        // api/StoryPoetryPayment
 
         [HttpPost]
         public async Task<IActionResult> CreatePayment(
@@ -50,7 +60,16 @@ namespace BookStore.Server.Controllers
         {
             try
             {
+                // -------------------------------------------------
+                // GET USER ID FROM JWT
+                // -------------------------------------------------
+
                 int userId = GetUserId();
+
+
+                // -------------------------------------------------
+                // CREATE PAYMENT
+                // -------------------------------------------------
 
                 var payment =
                     await _paymentService
@@ -58,42 +77,52 @@ namespace BookStore.Server.Controllers
                             request,
                             userId);
 
+
+                // -------------------------------------------------
+                // STORY / POETRY NOT FOUND
+                // -------------------------------------------------
+
                 if (payment == null)
                 {
                     return NotFound(new
                     {
-                        Message =
+                        message =
                             "Story/Poetry submission not found."
                     });
                 }
 
+
+                // -------------------------------------------------
+                // SUCCESS
+                // -------------------------------------------------
+
                 return Ok(new
                 {
-                    Message =
+                    message =
                         "Story/Poetry payment order created successfully.",
 
-                    Data = payment
+                    data = payment
                 });
             }
             catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new
                 {
-                    Message = ex.Message
+                    message = ex.Message
                 });
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(new
                 {
-                    Message = ex.Message
+                    message = ex.Message
                 });
             }
             catch (Exception ex)
             {
                 return BadRequest(new
                 {
-                    Message = ex.Message
+                    message = ex.Message
                 });
             }
         }
@@ -101,8 +130,10 @@ namespace BookStore.Server.Controllers
 
         // =========================================================
         // VERIFY STORY / POETRY PAYMENT
-        // POST: api/StoryPoetryPayment/verify
         // =========================================================
+
+        // POST:
+        // api/StoryPoetryPayment/verify
 
         [HttpPost("verify")]
         public async Task<IActionResult> VerifyPayment(
@@ -110,7 +141,16 @@ namespace BookStore.Server.Controllers
         {
             try
             {
+                // -------------------------------------------------
+                // GET USER ID FROM JWT
+                // -------------------------------------------------
+
                 int userId = GetUserId();
+
+
+                // -------------------------------------------------
+                // VERIFY PAYMENT
+                // -------------------------------------------------
 
                 var payment =
                     await _paymentService
@@ -118,42 +158,52 @@ namespace BookStore.Server.Controllers
                             request,
                             userId);
 
+
+                // -------------------------------------------------
+                // PAYMENT NOT FOUND
+                // -------------------------------------------------
+
                 if (payment == null)
                 {
                     return NotFound(new
                     {
-                        Message =
+                        message =
                             "Payment not found."
                     });
                 }
 
+
+                // -------------------------------------------------
+                // SUCCESS
+                // -------------------------------------------------
+
                 return Ok(new
                 {
-                    Message =
+                    message =
                         "Story/Poetry payment verified successfully.",
 
-                    Data = payment
+                    data = payment
                 });
             }
             catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new
                 {
-                    Message = ex.Message
+                    message = ex.Message
                 });
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(new
                 {
-                    Message = ex.Message
+                    message = ex.Message
                 });
             }
             catch (Exception ex)
             {
                 return BadRequest(new
                 {
-                    Message = ex.Message
+                    message = ex.Message
                 });
             }
         }

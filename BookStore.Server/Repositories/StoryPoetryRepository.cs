@@ -111,6 +111,14 @@ namespace BookStore.Server.Repositories
 
 
                     // -------------------------------------------------
+                    // PAYMENT STATUS
+                    // -------------------------------------------------
+
+                    PaymentStatus =
+                        s.PaymentStatus,
+
+
+                    // -------------------------------------------------
                     // DATES
                     // -------------------------------------------------
 
@@ -194,6 +202,14 @@ namespace BookStore.Server.Repositories
 
                     ContributorProfileImageUrl =
                         s.ContributorProfileImageUrl,
+
+
+                    // -------------------------------------------------
+                    // PAYMENT STATUS
+                    // -------------------------------------------------
+
+                    PaymentStatus =
+                        s.PaymentStatus,
 
 
                     // -------------------------------------------------
