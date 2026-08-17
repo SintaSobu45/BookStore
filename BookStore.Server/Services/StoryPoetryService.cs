@@ -185,7 +185,7 @@ namespace BookStore.Server.Services
                 // PAYMENT STATUS
                 // =================================================
                 //
-                // Story is created first.
+                // Story/Poetry is created first.
                 // Payment is completed separately.
                 //
                 PaymentStatus = "Pending",
@@ -387,6 +387,13 @@ namespace BookStore.Server.Services
                 Content =
                     storyPoetry.Content,
 
+                // -------------------------------------------------
+                // PAYMENT STATUS
+                // -------------------------------------------------
+
+                PaymentStatus =
+                    storyPoetry.PaymentStatus,
+
 
                 // -------------------------------------------------
                 // CONTRIBUTOR DETAILS
@@ -424,14 +431,6 @@ namespace BookStore.Server.Services
                 ContributorProfileImageUrl =
                     storyPoetry
                         .ContributorProfileImageUrl,
-
-
-                // -------------------------------------------------
-                // PAYMENT STATUS
-                // -------------------------------------------------
-
-                PaymentStatus =
-                    storyPoetry.PaymentStatus,
 
 
                 // -------------------------------------------------
