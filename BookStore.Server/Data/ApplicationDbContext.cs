@@ -105,12 +105,12 @@ namespace BookStore.Server.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
 
+            
             // =========================================================
             // CART MODULE
             // =========================================================
 
             // User - Cart
-            // UserId is nullable because guest users do not have a UserId.
             modelBuilder.Entity<Cart>()
                 .HasOne(c => c.User)
                 .WithMany()
@@ -130,6 +130,16 @@ namespace BookStore.Server.Data
                 .WithMany()
                 .HasForeignKey(ci => ci.BookId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // GuestCartId index
+            modelBuilder.Entity<Cart>()
+                .HasIndex(c => c.GuestCartId)
+                .IsUnique();
+
+            // Prevent duplicate book in same cart
+            modelBuilder.Entity<CartItem>()
+                .HasIndex(ci => new { ci.CartId, ci.BookId })
+                .IsUnique();
 
 
             // =========================================================
