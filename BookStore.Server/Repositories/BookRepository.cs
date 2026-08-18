@@ -14,7 +14,10 @@ namespace BookStore.Server.Repositories
             _context = context;
         }
 
-        // Get All Books
+        // =========================================================
+        // GET ALL BOOKS
+        // =========================================================
+
         public async Task<List<BookResponse>> GetAllAsync()
         {
             return await _context.Books
@@ -27,20 +30,29 @@ namespace BookStore.Server.Repositories
                     BookId = b.BookId,
                     Title = b.Title,
                     ISBN = b.ISBN,
+
+                    // Price
                     Price = b.Price,
+                    DiscountPercentage = b.DiscountPercentage,
+                    DiscountedPrice =
+                        b.Price - (b.Price * b.DiscountPercentage / 100),
+
                     StockQuantity = b.StockQuantity,
                     PublishedDate = b.PublishedDate,
                     Description = b.Description,
                     IsActive = b.IsActive,
 
+                    // IDs
                     CategoryId = b.CategoryId,
                     AuthorId = b.AuthorId,
                     PublisherId = b.PublisherId,
 
+                    // Names
                     CategoryName = b.Category!.CategoryName,
                     AuthorName = b.Author!.AuthorName,
                     PublisherName = b.Publisher!.PublisherName,
 
+                    // Image
                     ImageUrl = b.BookImages
                         .Where(i => i.IsPrimary)
                         .Select(i => i.ImageUrl)
@@ -49,7 +61,11 @@ namespace BookStore.Server.Repositories
                 .ToListAsync();
         }
 
-        // Search Books
+
+        // =========================================================
+        // SEARCH BOOKS
+        // =========================================================
+
         public async Task<List<BookResponse>> SearchAsync(string keyword)
         {
             keyword = keyword.Trim().ToLower();
@@ -61,7 +77,8 @@ namespace BookStore.Server.Repositories
                 .Include(b => b.BookImages)
                 .Where(b =>
                     b.Title.ToLower().Contains(keyword) ||
-                    (b.ISBN != null && b.ISBN.ToLower().Contains(keyword)) ||
+                    (b.ISBN != null &&
+                     b.ISBN.ToLower().Contains(keyword)) ||
                     b.Author!.AuthorName.ToLower().Contains(keyword) ||
                     b.Category!.CategoryName.ToLower().Contains(keyword) ||
                     b.Publisher!.PublisherName.ToLower().Contains(keyword))
@@ -70,20 +87,29 @@ namespace BookStore.Server.Repositories
                     BookId = b.BookId,
                     Title = b.Title,
                     ISBN = b.ISBN,
+
+                    // Price
                     Price = b.Price,
+                    DiscountPercentage = b.DiscountPercentage,
+                    DiscountedPrice =
+                        b.Price - (b.Price * b.DiscountPercentage / 100),
+
                     StockQuantity = b.StockQuantity,
                     PublishedDate = b.PublishedDate,
                     Description = b.Description,
                     IsActive = b.IsActive,
 
+                    // IDs
                     CategoryId = b.CategoryId,
                     AuthorId = b.AuthorId,
                     PublisherId = b.PublisherId,
 
+                    // Names
                     CategoryName = b.Category!.CategoryName,
                     AuthorName = b.Author!.AuthorName,
                     PublisherName = b.Publisher!.PublisherName,
 
+                    // Image
                     ImageUrl = b.BookImages
                         .Where(i => i.IsPrimary)
                         .Select(i => i.ImageUrl)
@@ -92,7 +118,11 @@ namespace BookStore.Server.Repositories
                 .ToListAsync();
         }
 
-        // Filter Books
+
+        // =========================================================
+        // FILTER BOOKS
+        // =========================================================
+
         public async Task<List<BookResponse>> FilterAsync(
             int? categoryId,
             int? authorId,
@@ -108,20 +138,50 @@ namespace BookStore.Server.Repositories
                 .Include(b => b.BookImages)
                 .AsQueryable();
 
+
+            // Category filter
             if (categoryId.HasValue)
-                query = query.Where(b => b.CategoryId == categoryId.Value);
+            {
+                query = query.Where(
+                    b => b.CategoryId == categoryId.Value);
+            }
 
+
+            // Author filter
             if (authorId.HasValue)
-                query = query.Where(b => b.AuthorId == authorId.Value);
+            {
+                query = query.Where(
+                    b => b.AuthorId == authorId.Value);
+            }
 
+
+            // Publisher filter
             if (publisherId.HasValue)
-                query = query.Where(b => b.PublisherId == publisherId.Value);
+            {
+                query = query.Where(
+                    b => b.PublisherId == publisherId.Value);
+            }
 
+
+            // Minimum price
             if (minPrice.HasValue)
-                query = query.Where(b => b.Price >= minPrice.Value);
+            {
+                query = query.Where(
+                    b => b.Price >= minPrice.Value);
+            }
 
+
+            // Maximum price
             if (maxPrice.HasValue)
-                query = query.Where(b => b.Price <= maxPrice.Value);
+            {
+                query = query.Where(
+                    b => b.Price <= maxPrice.Value);
+            }
+
+
+            // =====================================================
+            // SORTING
+            // =====================================================
 
             switch (sortBy?.ToLower())
             {
@@ -150,26 +210,40 @@ namespace BookStore.Server.Repositories
                     break;
             }
 
+
+            // =====================================================
+            // RESPONSE
+            // =====================================================
+
             return await query
                 .Select(b => new BookResponse
                 {
                     BookId = b.BookId,
                     Title = b.Title,
                     ISBN = b.ISBN,
+
+                    // Price
                     Price = b.Price,
+                    DiscountPercentage = b.DiscountPercentage,
+                    DiscountedPrice =
+                        b.Price - (b.Price * b.DiscountPercentage / 100),
+
                     StockQuantity = b.StockQuantity,
                     PublishedDate = b.PublishedDate,
                     Description = b.Description,
                     IsActive = b.IsActive,
 
+                    // IDs
                     CategoryId = b.CategoryId,
                     AuthorId = b.AuthorId,
                     PublisherId = b.PublisherId,
 
+                    // Names
                     CategoryName = b.Category!.CategoryName,
                     AuthorName = b.Author!.AuthorName,
                     PublisherName = b.Publisher!.PublisherName,
 
+                    // Image
                     ImageUrl = b.BookImages
                         .Where(i => i.IsPrimary)
                         .Select(i => i.ImageUrl)
@@ -178,7 +252,11 @@ namespace BookStore.Server.Repositories
                 .ToListAsync();
         }
 
-        // Get Book Entity By Id
+
+        // =========================================================
+        // GET BOOK ENTITY BY ID
+        // =========================================================
+
         public async Task<Book?> GetByIdAsync(int id)
         {
             return await _context.Books
@@ -186,7 +264,11 @@ namespace BookStore.Server.Repositories
                 .FirstOrDefaultAsync(b => b.BookId == id);
         }
 
-        // Get Book Response By Id
+
+        // =========================================================
+        // GET BOOK RESPONSE BY ID
+        // =========================================================
+
         public async Task<BookResponse?> GetResponseByIdAsync(int id)
         {
             return await _context.Books
@@ -200,20 +282,29 @@ namespace BookStore.Server.Repositories
                     BookId = b.BookId,
                     Title = b.Title,
                     ISBN = b.ISBN,
+
+                    // Price
                     Price = b.Price,
+                    DiscountPercentage = b.DiscountPercentage,
+                    DiscountedPrice =
+                        b.Price - (b.Price * b.DiscountPercentage / 100),
+
                     StockQuantity = b.StockQuantity,
                     PublishedDate = b.PublishedDate,
                     Description = b.Description,
                     IsActive = b.IsActive,
 
+                    // IDs
                     CategoryId = b.CategoryId,
                     AuthorId = b.AuthorId,
                     PublisherId = b.PublisherId,
 
+                    // Names
                     CategoryName = b.Category!.CategoryName,
                     AuthorName = b.Author!.AuthorName,
                     PublisherName = b.Publisher!.PublisherName,
 
+                    // Image
                     ImageUrl = b.BookImages
                         .Where(i => i.IsPrimary)
                         .Select(i => i.ImageUrl)
@@ -222,34 +313,53 @@ namespace BookStore.Server.Repositories
                 .FirstOrDefaultAsync();
         }
 
-        // Add Book
+
+        // =========================================================
+        // ADD BOOK
+        // =========================================================
+
         public async Task<Book> AddAsync(Book book)
         {
             _context.Books.Add(book);
+
             await _context.SaveChangesAsync();
 
             return book;
         }
 
-        // Update Book
+
+        // =========================================================
+        // UPDATE BOOK
+        // =========================================================
+
         public async Task<Book?> UpdateAsync(Book book)
         {
             _context.Books.Update(book);
+
             await _context.SaveChangesAsync();
 
             return book;
         }
 
-        // Delete Book
+
+        // =========================================================
+        // DELETE BOOK
+        // =========================================================
+
         public async Task<bool> DeleteAsync(Book book)
         {
             _context.Books.Remove(book);
+
             await _context.SaveChangesAsync();
 
             return true;
         }
 
-        // Check if Book Exists
+
+        // =========================================================
+        // CHECK IF BOOK EXISTS
+        // =========================================================
+
         public async Task<bool> ExistsAsync(int id)
         {
             return await _context.Books

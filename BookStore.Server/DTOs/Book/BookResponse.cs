@@ -10,6 +10,10 @@
 
         public decimal Price { get; set; }
 
+        public decimal DiscountPercentage { get; set; }
+
+        public decimal DiscountedPrice { get; set; }
+
         public int StockQuantity { get; set; }
 
         public DateTime? PublishedDate { get; set; }
