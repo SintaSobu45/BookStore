@@ -22,6 +22,10 @@
 
         public string Status { get; set; } = string.Empty;
 
+        public string PaymentStatus { get; set; } = string.Empty;
+
+        public string PaymentMethod { get; set; } = string.Empty;
+
         public DateTime RegistrationDate { get; set; }
     }
 }
