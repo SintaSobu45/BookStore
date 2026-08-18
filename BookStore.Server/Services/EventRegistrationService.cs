@@ -171,5 +171,18 @@ namespace BookStore.Server.Services
             return await _repository
                 .GetMyRegistrationsAsync(userId);
         }
+
+
+        // =========================================================
+        // GET ALL EVENT REGISTRATIONS
+        // ADMIN ONLY
+        // =========================================================
+
+        public async Task<List<EventRegistrationResponse>>
+            GetAllRegistrationsAsync()
+        {
+            return await _repository
+                .GetAllRegistrationsAsync();
+        }
     }
 }

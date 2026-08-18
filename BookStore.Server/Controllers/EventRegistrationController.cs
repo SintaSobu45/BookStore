@@ -109,5 +109,23 @@ namespace BookStore.Server.Controllers
 
             return Ok(registrations);
         }
+
+
+        // =========================================================
+        // GET ALL EVENT REGISTRATIONS
+        // GET: api/EventRegistration
+        // ADMIN ONLY
+        // =========================================================
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllRegistrations()
+        {
+            var registrations =
+                await _eventRegistrationService
+                    .GetAllRegistrationsAsync();
+
+            return Ok(registrations);
+        }
     }
 }

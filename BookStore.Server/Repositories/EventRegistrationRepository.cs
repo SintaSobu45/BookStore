@@ -49,11 +49,6 @@ namespace BookStore.Server.Repositories
         // =========================================================
         // CHECK DUPLICATE REGISTRATION
         // =========================================================
-        // Only REGISTERED registrations are treated as duplicate.
-        //
-        // Pending registration means payment is not completed yet.
-        // Therefore, user can try payment again.
-        // =========================================================
 
         public async Task<bool> AlreadyRegisteredAsync(
             int userId,
@@ -96,6 +91,9 @@ namespace BookStore.Server.Repositories
         // =========================================================
         // GET MY REGISTRATIONS
         // =========================================================
+        // Logged-in user only
+        // Includes payment status and payment method
+        // =========================================================
 
         public async Task<List<EventRegistrationResponse>>
             GetMyRegistrationsAsync(int userId)
@@ -135,6 +133,98 @@ namespace BookStore.Server.Repositories
 
                     Status =
                         r.Status,
+
+                    PaymentStatus =
+                        _context.Payments
+                            .Where(p =>
+                                p.EventRegistrationId ==
+                                r.RegistrationId)
+                            .OrderByDescending(p => p.CreatedDate)
+                            .Select(p => p.Status)
+                            .FirstOrDefault()
+                        ?? "Not Paid",
+
+                    PaymentMethod =
+                        _context.Payments
+                            .Where(p =>
+                                p.EventRegistrationId ==
+                                r.RegistrationId)
+                            .OrderByDescending(p => p.CreatedDate)
+                            .Select(p => p.PaymentMethod)
+                            .FirstOrDefault()
+                        ?? string.Empty,
+
+                    RegistrationDate =
+                        r.RegistrationDate
+                })
+                .ToListAsync();
+        }
+
+
+        // =========================================================
+        // GET ALL EVENT REGISTRATIONS
+        // =========================================================
+        // ADMIN ONLY
+        // Includes user, event and payment details
+        // =========================================================
+
+        public async Task<List<EventRegistrationResponse>>
+            GetAllRegistrationsAsync()
+        {
+            return await _context.EventRegistrations
+                .Include(r => r.User)
+                .Include(r => r.Event)
+                .Select(r => new EventRegistrationResponse
+                {
+                    RegistrationId =
+                        r.RegistrationId,
+
+                    UserName =
+                        r.User!.Name,
+
+                    Email =
+                        r.User.Email,
+
+                    Phone =
+                        r.User.Phone,
+
+                    EventName =
+                        r.Event!.EventName,
+
+                    EventDate =
+                        r.Event.EventDate,
+
+                    Venue =
+                        r.Event.Venue,
+
+                    NumberOfSeats =
+                        r.NumberOfSeats,
+
+                    TotalAmount =
+                        r.TotalAmount,
+
+                    Status =
+                        r.Status,
+
+                    PaymentStatus =
+                        _context.Payments
+                            .Where(p =>
+                                p.EventRegistrationId ==
+                                r.RegistrationId)
+                            .OrderByDescending(p => p.CreatedDate)
+                            .Select(p => p.Status)
+                            .FirstOrDefault()
+                        ?? "Not Paid",
+
+                    PaymentMethod =
+                        _context.Payments
+                            .Where(p =>
+                                p.EventRegistrationId ==
+                                r.RegistrationId)
+                            .OrderByDescending(p => p.CreatedDate)
+                            .Select(p => p.PaymentMethod)
+                            .FirstOrDefault()
+                        ?? string.Empty,
 
                     RegistrationDate =
                         r.RegistrationDate
