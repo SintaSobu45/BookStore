@@ -97,10 +97,10 @@ namespace BookStore.Server
 
             builder.Services.AddScoped<PaymentRepository>();
             builder.Services.AddScoped<PaymentSettingsRepository>();
-       
 
 
-
+            builder.Services.AddScoped<CartRepository>();
+            
 
 
             // Helpers
@@ -134,6 +134,9 @@ namespace BookStore.Server
             builder.Services.AddScoped<PaymentService>();
             builder.Services.AddScoped<PaymentSettingsService>();
             builder.Services.AddScoped<StoryPoetryPaymentService>();
+
+            builder.Services.AddScoped<CartService>();
+
 
             // JWT Authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
