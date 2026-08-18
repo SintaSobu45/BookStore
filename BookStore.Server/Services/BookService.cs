@@ -20,26 +20,37 @@ namespace BookStore.Server.Services
             _bookImageService = bookImageService;
         }
 
-        // Get All Books
+        // =========================================================
+        // GET ALL BOOKS
+        // =========================================================
+
         public async Task<List<BookResponse>> GetAllAsync()
         {
             return await _bookRepository.GetAllAsync();
         }
 
-        // Search Books
+
+        // =========================================================
+        // SEARCH BOOKS
+        // =========================================================
+
         public async Task<List<BookResponse>> SearchAsync(string keyword)
         {
             return await _bookRepository.SearchAsync(keyword);
         }
 
 
+        // =========================================================
+        // FILTER BOOKS
+        // =========================================================
+
         public async Task<List<BookResponse>> FilterAsync(
-    int? categoryId,
-    int? authorId,
-    int? publisherId,
-    decimal? minPrice,
-    decimal? maxPrice,
-    string? sortBy)
+            int? categoryId,
+            int? authorId,
+            int? publisherId,
+            decimal? minPrice,
+            decimal? maxPrice,
+            string? sortBy)
         {
             return await _bookRepository.FilterAsync(
                 categoryId,
@@ -51,13 +62,20 @@ namespace BookStore.Server.Services
         }
 
 
-        // Get Book By Id
+        // =========================================================
+        // GET BOOK BY ID
+        // =========================================================
+
         public async Task<BookResponse?> GetByIdAsync(int id)
         {
             return await _bookRepository.GetResponseByIdAsync(id);
         }
 
-        // Add Book
+
+        // =========================================================
+        // ADD BOOK
+        // =========================================================
+
         public async Task<BookResponse?> AddAsync(AddBookRequest request)
         {
             var book = new Book
@@ -65,6 +83,10 @@ namespace BookStore.Server.Services
                 Title = request.Title,
                 ISBN = request.ISBN,
                 Price = request.Price,
+
+                // Default is 15% if no value is provided
+                DiscountPercentage = request.DiscountPercentage,
+
                 StockQuantity = request.StockQuantity,
                 PublishedDate = request.PublishedDate,
                 Description = request.Description,
@@ -78,10 +100,15 @@ namespace BookStore.Server.Services
             // Save Book
             book = await _bookRepository.AddAsync(book);
 
-            // Upload Image
+
+            // =====================================================
+            // UPLOAD BOOK IMAGE
+            // =====================================================
+
             if (request.Image != null)
             {
-                var uploadResult = await _cloudinaryService.UploadImageAsync(request.Image);
+                var uploadResult =
+                    await _cloudinaryService.UploadImageAsync(request.Image);
 
                 if (uploadResult != null)
                 {
@@ -96,21 +123,37 @@ namespace BookStore.Server.Services
                 }
             }
 
+
+            // Return complete book response
             return await _bookRepository.GetResponseByIdAsync(book.BookId);
         }
 
-        // Update Book
-        public async Task<BookResponse?> UpdateAsync(int id, UpdateBookRequest request)
+
+        // =========================================================
+        // UPDATE BOOK
+        // =========================================================
+
+        public async Task<BookResponse?> UpdateAsync(
+            int id,
+            UpdateBookRequest request)
         {
             var book = await _bookRepository.GetByIdAsync(id);
 
             if (book == null)
                 return null;
 
-            // Update Book Details
+
+            // =====================================================
+            // UPDATE BOOK DETAILS
+            // =====================================================
+
             book.Title = request.Title;
             book.ISBN = request.ISBN;
             book.Price = request.Price;
+
+            // Update book-specific discount
+            book.DiscountPercentage = request.DiscountPercentage;
+
             book.StockQuantity = request.StockQuantity;
             book.PublishedDate = request.PublishedDate;
             book.Description = request.Description;
@@ -122,19 +165,27 @@ namespace BookStore.Server.Services
 
             await _bookRepository.UpdateAsync(book);
 
-            // Replace Image (if new image selected)
+
+            // =====================================================
+            // REPLACE IMAGE IF NEW IMAGE IS SELECTED
+            // =====================================================
+
             if (request.Image != null)
             {
-                // Delete old image record
-                var oldImage = await _bookImageService.GetPrimaryImageAsync(book.BookId);
+                // Get old primary image
+                var oldImage =
+                    await _bookImageService.GetPrimaryImageAsync(book.BookId);
 
+                // Delete old image record
                 if (oldImage != null)
                 {
                     await _bookImageService.DeleteAsync(oldImage);
                 }
 
+
                 // Upload new image
-                var uploadResult = await _cloudinaryService.UploadImageAsync(request.Image);
+                var uploadResult =
+                    await _cloudinaryService.UploadImageAsync(request.Image);
 
                 if (uploadResult != null)
                 {
@@ -149,10 +200,16 @@ namespace BookStore.Server.Services
                 }
             }
 
+
+            // Return updated book
             return await _bookRepository.GetResponseByIdAsync(book.BookId);
         }
 
-        // Delete Book
+
+        // =========================================================
+        // DELETE BOOK
+        // =========================================================
+
         public async Task<bool> DeleteAsync(int id)
         {
             var book = await _bookRepository.GetByIdAsync(id);
