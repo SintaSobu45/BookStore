@@ -40,7 +40,7 @@ namespace BookStore.Server.Services
                 UserId = p.UserId,
                 StoryPoetryId = p.StoryPoetryId,
                 EventRegistrationId = p.EventRegistrationId,
-                OrderId = p.OrderId,
+               
                 Amount = p.Amount,
                 PaymentType = p.PaymentType,
                 PaymentMethod = p.PaymentMethod,
@@ -72,7 +72,7 @@ namespace BookStore.Server.Services
                 UserId = payment.UserId,
                 StoryPoetryId = payment.StoryPoetryId,
                 EventRegistrationId = payment.EventRegistrationId,
-                OrderId = payment.OrderId,
+              
                 Amount = payment.Amount,
                 PaymentType = payment.PaymentType,
                 PaymentMethod = payment.PaymentMethod,
@@ -546,8 +546,7 @@ namespace BookStore.Server.Services
                 EventRegistrationId =
                     updatedPayment.EventRegistrationId,
 
-                OrderId =
-                    updatedPayment.OrderId,
+               
 
                 Amount =
                     updatedPayment.Amount,
