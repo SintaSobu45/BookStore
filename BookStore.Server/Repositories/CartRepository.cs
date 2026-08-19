@@ -155,6 +155,21 @@ namespace BookStore.Server.Repositories
             await _context.SaveChangesAsync();
         }
 
+        // =========================================================
+        // CLEAR CART ITEMS
+        // =========================================================
+
+        public async Task ClearCartAsync(Cart cart)
+        {
+            if (cart.CartItems.Any())
+            {
+                _context.CartItems.RemoveRange(cart.CartItems);
+            }
+
+            cart.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+        }
 
         // =========================================================
         // SAVE CHANGES

@@ -176,8 +176,7 @@ namespace BookStore.Server.Services
                     EventRegistrationId =
                         null,
 
-                    OrderId =
-                        null,
+                   
 
                     Amount =
                         totalAmount,
@@ -514,8 +513,6 @@ namespace BookStore.Server.Services
                 EventRegistrationId =
                     payment.EventRegistrationId,
 
-                OrderId =
-                    payment.OrderId,
 
                 Amount =
                     payment.Amount,

@@ -1,6 +1,8 @@
 ﻿using BookStore.Server.Models;
+using BookStore.Server.Models.BookPayment;
 using BookStore.Server.Models.Cart;
 using BookStore.Server.Models.Event;
+using BookStore.Server.Models.OrderModel;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.Server.Data
@@ -40,6 +42,11 @@ namespace BookStore.Server.Data
         // Payment
         public DbSet<Payment> Payments { get; set; }
         public DbSet<PaymentSettings> PaymentSettings { get; set; }
+
+        public DbSet<Order> Orders { get; set; }
+
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<BookPayment> BookPayments { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -203,6 +210,59 @@ namespace BookStore.Server.Data
                 .HasOne(p => p.EventRegistration)
                 .WithMany()
                 .HasForeignKey(p => p.EventRegistrationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // =========================================================
+            // ORDER
+            // =========================================================
+
+            
+
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.User)
+                .WithMany(u => u.Orders)
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // =========================================================
+            // ORDER ITEM → ORDER
+            // =========================================================
+
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Order)
+                .WithMany(o => o.OrderItems)
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            // =========================================================
+            // ORDER ITEM → BOOK
+            // =========================================================
+
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Book)
+                .WithMany()
+                .HasForeignKey(oi => oi.BookId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // =========================================================
+            // BOOK PAYMENT
+            // =========================================================
+
+            // Order -> BookPayment
+            modelBuilder.Entity<BookPayment>()
+                .HasOne(bp => bp.Order)
+                .WithMany()
+                .HasForeignKey(bp => bp.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // User -> BookPayment
+            modelBuilder.Entity<BookPayment>()
+                .HasOne(bp => bp.User)
+                .WithMany()
+                .HasForeignKey(bp => bp.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

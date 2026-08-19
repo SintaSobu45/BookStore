@@ -1,47 +1,35 @@
-﻿using BookStore.Server.Models.Event;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using BookStore.Server.Models.OrderModel;
 
-namespace BookStore.Server.Models
+namespace BookStore.Server.Models.BookPayment
 {
-    public class Payment
+    public class BookPayment
     {
         [Key]
-        public int PaymentId { get; set; }
+        public int BookPaymentId { get; set; }
+
+
+        // =========================================================
+        // ORDER
+        // =========================================================
+
+        [Required]
+        public int OrderId { get; set; }
+
+        [ForeignKey(nameof(OrderId))]
+        public Order? Order { get; set; }
+
 
         // =========================================================
         // USER
         // =========================================================
 
-        [Required]
-        public int UserId { get; set; }
+        // Null for guest orders
+        public int? UserId { get; set; }
 
+        [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
-
-
-        // =========================================================
-        // STORY / POETRY
-        // =========================================================
-
-        public int? StoryPoetryId { get; set; }
-
-        public StoryPoetry? StoryPoetry { get; set; }
-
-
-        // =========================================================
-        // EVENT REGISTRATION
-        // =========================================================
-
-        public int? EventRegistrationId { get; set; }
-
-        public EventRegistration? EventRegistration { get; set; }
-
-
-        // =========================================================
-        // BOOK ORDER - FOR FUTURE CART / ORDER
-        // =========================================================
-
-        //public int? OrderId { get; set; }
 
 
         // =========================================================
@@ -52,16 +40,17 @@ namespace BookStore.Server.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
 
-        // Payment gateway
-        // Example: Razorpay
         [Required]
         [StringLength(50)]
-        public string PaymentType { get; set; } = string.Empty;
+        public string PaymentType { get; set; } = "Razorpay";
 
-        // Actual payment method
-        // Example: UPI, Card, NetBanking, Wallet
-        [StringLength(30)]
+        [StringLength(50)]
         public string? PaymentMethod { get; set; }
+
+
+        // =========================================================
+        // PAYMENT STATUS
+        // =========================================================
 
         [Required]
         [StringLength(30)]
@@ -69,13 +58,16 @@ namespace BookStore.Server.Models
 
 
         // =========================================================
-        // RAZORPAY
+        // RAZORPAY DETAILS
         // =========================================================
 
+        [StringLength(100)]
         public string? RazorpayOrderId { get; set; }
 
+        [StringLength(100)]
         public string? RazorpayPaymentId { get; set; }
 
+        [StringLength(500)]
         public string? RazorpaySignature { get; set; }
 
 

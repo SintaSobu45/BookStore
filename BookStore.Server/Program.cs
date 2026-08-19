@@ -100,7 +100,10 @@ namespace BookStore.Server
 
 
             builder.Services.AddScoped<CartRepository>();
-            
+
+            builder.Services.AddScoped<OrderRepository>();
+            builder.Services.AddScoped<BookPaymentRepository>();
+
 
 
             // Helpers
@@ -136,6 +139,11 @@ namespace BookStore.Server
             builder.Services.AddScoped<StoryPoetryPaymentService>();
 
             builder.Services.AddScoped<CartService>();
+
+           
+
+            builder.Services.AddScoped<OrderService>();
+            builder.Services.AddScoped<BookPaymentService>();
 
 
             // JWT Authentication

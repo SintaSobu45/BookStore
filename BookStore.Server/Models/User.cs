@@ -1,6 +1,8 @@
 ﻿using BookStore.Server.Models.Event;
+using BookStore.Server.Models.OrderModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+
 
 namespace BookStore.Server.Models
 {
@@ -116,5 +118,8 @@ namespace BookStore.Server.Models
 
         public ICollection<Payment> Payments { get; set; }
             = new List<Payment>();
+
+        public ICollection<Order> Orders { get; set; }
+    = new List<Order>();
     }
 }
