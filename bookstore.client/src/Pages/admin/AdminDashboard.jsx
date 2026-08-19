@@ -56,9 +56,9 @@ function AdminDashboard() {
       );
 
       setInventory({
-        inStock: books.filter((b) => b.stockQuantity > 10).length,
+        inStock: books.filter((b) => b.stockQuantity > 1).length,
         lowStock: books.filter(
-          (b) => b.stockQuantity <= 10 && b.stockQuantity > 0
+          (b) => b.stockQuantity <= 5 && b.stockQuantity > 0
         ).length,
         outStock: books.filter((b) => b.stockQuantity === 0).length,
       });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { CalendarDays, MapPin, Users, IndianRupee } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { CalendarDays, MapPin, Users, IndianRupee, Home, ChevronRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
@@ -35,18 +35,48 @@ export default function Events() {
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-stone-50">
+      <div className="container min-h-screen bg-stone-50">
         {/* Hero */}
-        <div className="bg-[#1b3b2b] text-white py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <h1 className="text-4xl font-extrabold mb-3">Upcoming Events</h1>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
+  <div className="bg-[#1b3b2b] border border-emerald-800/40 rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-12 flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-sm">
+    
+    {/* Decorative ambient background glow */}
+    <div className="absolute -right-12 -bottom-12 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
-            <p className="text-emerald-100 max-w-2xl">
-              Participate in book festivals, author meetups, poetry competitions
-              and literary events happening across Kerala.
-            </p>
-          </div>
-        </div>
+    {/* Hero Text & Breadcrumbs */}
+    <div className="max-w-xl z-10 mb-6 md:mb-0">
+      {/* Breadcrumb */}
+      <div className="flex items-center space-x-2 text-xs sm:text-sm text-emerald-200/80 font-medium mb-3 sm:mb-4">
+        <Link to="/" className="hover:text-white flex items-center transition-colors">
+          <Home className="h-4 w-4 mr-1" />
+          Home
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-emerald-400/60" />
+        <span className="text-white font-semibold">Events</span>
+      </div>
+
+      <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-2 sm:mb-3">
+        Upcoming Events
+      </h1>
+
+      <p className="text-emerald-100/90 text-xs sm:text-base leading-relaxed max-w-md font-medium">
+        Participate in book festivals, author meetups, poetry competitions and literary events happening across Kerala.
+      </p>
+    </div>
+
+    {/* Hero Image */}
+    <div className="relative z-10 w-full md:w-[40%] flex justify-center">
+      <div className="relative group w-full">
+        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-emerald-700 rounded-2xl blur opacity-20 group-hover:opacity-35 transition duration-300"></div>
+        <img
+          src="https://www.oyorooms.com/blog/wp-content/uploads/2018/02/type-of-event.jpg"
+          alt="Literary events and festivals"
+          className="relative rounded-xl sm:rounded-2xl object-cover w-full h-[130px] sm:h-[180px] md:h-[220px] shadow-md border border-white/10"
+        />
+      </div>
+    </div>
+  </div>
+</div>
 
         <div className="max-w-7x1 mx-auto px-4 py-12">
           {loading && (
@@ -71,12 +101,12 @@ export default function Events() {
                 className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
               >
                 {/* Event Image */}
-                <div className="h-80 bg-stone-100 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-full bg-stone-100 overflow-hidden">
                   {event.imageUrl ? (
                     <img
                       src={event.imageUrl}
                       alt={event.eventName}
-                      className="w-full h-full object-contain transition-transform duration-500 hover:scale-105"
+                      className="w-full h-auto object-contain transition-transform duration-500 hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-6xl">

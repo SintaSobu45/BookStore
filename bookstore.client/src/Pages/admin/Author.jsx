@@ -445,13 +445,11 @@ return (
                   Biography
                 </th>
 
-                <th className="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Status
-                </th>
+              
 
-                <th className="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                {/* <th className="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Created
-                </th>
+                </th> */}
 
                 <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">
                   Actions
@@ -515,38 +513,11 @@ return (
                   </td>
 
 
-                  {/* Status */}
-
-                  <td className="px-4 py-4">
-
-                    {author.isActive ? (
-
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-
-                        Active
-
-                      </span>
-
-                    ) : (
-
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold">
-
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-
-                        Inactive
-
-                      </span>
-
-                    )}
-
-                  </td>
 
 
                   {/* Created */}
 
-                  <td className="px-4 py-4 text-gray-500 whitespace-nowrap">
+                  {/* <td className="px-4 py-4 text-gray-500 whitespace-nowrap">
 
                     {author.createdDate
                       ? new Date(
@@ -554,7 +525,7 @@ return (
                         ).toLocaleDateString()
                       : "-"}
 
-                  </td>
+                  </td> */}
 
 
                   {/* Actions */}

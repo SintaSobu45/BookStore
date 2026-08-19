@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from "react";
-
 import {
   getBooks,
   createBook,
   updateBook,
   deleteBook,
 } from "../../services/bookService";
-
 import { getAuthors } from "../../services/authorService";
-
 import { getCategories } from "../../services/categoryService";
 import { getPublishers } from "../../services/publisherService";
 
@@ -16,40 +13,34 @@ function Books() {
   // =========================
   // Books
   // =========================
-
   const [books, setBooks] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
-
   const [success, setSuccess] = useState("");
 
   // =========================
   // Dropdown data
   // =========================
-
   const [authors, setAuthors] = useState([]);
-
   const [categories, setCategories] = useState([]);
-
   const [publishers, setPublishers] = useState([]);
 
   // =========================
-  // Form
+  // Form & Modal State
   // =========================
-
   const [showForm, setShowForm] = useState(false);
-
   const [editMode, setEditMode] = useState(false);
-
   const [editingBookId, setEditingBookId] = useState(null);
+  const [modalBook, setModalBook] = useState(null);
+
+  const [imagePreview, setImagePreview] = useState(null);
 
   const [formData, setFormData] = useState({
     title: "",
     isbn: "",
     price: "",
     stockQuantity: "",
+    discountPercentage: "",
     publishedDate: "",
     description: "",
     categoryId: "",
@@ -62,7 +53,6 @@ function Books() {
   // =========================
   // Load data
   // =========================
-
   useEffect(() => {
     loadBooks();
     loadAuthors();
@@ -74,12 +64,10 @@ function Books() {
     try {
       setLoading(true);
       setError("");
-
       const data = await getBooks();
-
       setBooks(data);
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -88,45 +76,50 @@ function Books() {
   const loadAuthors = async () => {
     try {
       const data = await getAuthors();
-
       setAuthors(data);
-    } catch (error) {
-      console.error("Failed to load authors:", error);
+    } catch (err) {
+      console.error("Failed to load authors:", err);
     }
   };
 
   const loadCategories = async () => {
     try {
       const data = await getCategories();
-
       setCategories(data);
-    } catch (error) {
-      console.error("Failed to load categories:", error);
+    } catch (err) {
+      console.error("Failed to load categories:", err);
     }
   };
 
   const loadPublishers = async () => {
     try {
       const data = await getPublishers();
-
       setPublishers(data);
-    } catch (error) {
-      console.error("Failed to load publishers:", error);
+    } catch (err) {
+      console.error("Failed to load publishers:", err);
     }
   };
 
   // =========================
   // Handle input
   // =========================
-
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
 
     if (type === "file") {
+      const file = files[0] || null;
+
       setFormData({
         ...formData,
-        image: files[0] || null,
+        image: file,
       });
+
+      // Show selected image preview
+      if (file) {
+        setImagePreview(URL.createObjectURL(file));
+      } else {
+        setImagePreview(null);
+      }
 
       return;
     }
@@ -140,13 +133,12 @@ function Books() {
   // =========================
   // Reset form
   // =========================
-
   const resetForm = () => {
     setFormData({
       title: "",
       isbn: "",
       price: "",
-      stockQuantity: "",
+      discountPercentage: "",
       publishedDate: "",
       description: "",
       categoryId: "",
@@ -155,135 +147,97 @@ function Books() {
       isActive: true,
       image: null,
     });
-
     setEditingBookId(null);
-
     setEditMode(false);
-
+    setImagePreview(null); 
     setShowForm(false);
+  };
+
+  // =========================
+  // Helper: Build FormData
+  // =========================
+  const buildBookFormData = (data, isUpdate = false) => {
+    const dataObj = new FormData();
+    dataObj.append("Title", data.title);
+    dataObj.append("ISBN", data.isbn || "");
+    dataObj.append("Price", data.price);
+    dataObj.append("StockQuantity", data.stockQuantity);
+
+    dataObj.append(
+      "DiscountPercentage",
+      data.discountPercentage === "" ? "0" : data.discountPercentage,
+    );
+
+    if (data.publishedDate) {
+      dataObj.append("PublishedDate", data.publishedDate);
+    }
+
+    dataObj.append("Description", data.description || "");
+    dataObj.append("CategoryId", data.categoryId);
+    dataObj.append("AuthorId", data.authorId);
+    dataObj.append("PublisherId", data.publisherId);
+
+    if (isUpdate) {
+      dataObj.append("IsActive", data.isActive);
+    }
+
+    if (data.image) {
+      dataObj.append("Image", data.image);
+    }
+
+    return dataObj;
   };
 
   // =========================
   // Create / Update
   // =========================
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setError("");
     setSuccess("");
 
     try {
-      // =========================
-      // UPDATE
-      // =========================
-
       if (editMode) {
-        const updateData = new FormData();
-
-        updateData.append("Title", formData.title);
-        updateData.append("ISBN", formData.isbn || "");
-        updateData.append("Price", formData.price);
-        updateData.append("StockQuantity", formData.stockQuantity);
-        updateData.append("PublishedDate", formData.publishedDate || "");
-        updateData.append("Description", formData.description || "");
-        updateData.append("CategoryId", formData.categoryId);
-        updateData.append("AuthorId", formData.authorId);
-        updateData.append("PublisherId", formData.publisherId);
-        updateData.append("IsActive", formData.isActive);
-
-        // Only send image if user selected a new one
-        if (formData.image) {
-          updateData.append("Image", formData.image);
-        }
-
+        const updateData = buildBookFormData(formData, true);
         await updateBook(editingBookId, updateData);
-
         setSuccess("Book updated successfully.");
-      }
-
-      // =========================
-      // CREATE
-      // =========================
-      else {
-        const bookData = new FormData();
-
-        bookData.append("Title", formData.title);
-
-        bookData.append("ISBN", formData.isbn);
-
-        bookData.append("Price", formData.price);
-
-        bookData.append("StockQuantity", formData.stockQuantity);
-
-        if (formData.publishedDate) {
-          bookData.append("PublishedDate", formData.publishedDate);
-        }
-
-        bookData.append("Description", formData.description);
-
-        bookData.append("CategoryId", formData.categoryId);
-
-        bookData.append("AuthorId", formData.authorId);
-
-        bookData.append("PublisherId", formData.publisherId);
-
-        if (formData.image) {
-          bookData.append("Image", formData.image);
-        }
-
+      } else {
+        const bookData = buildBookFormData(formData, false);
         await createBook(bookData);
-
         setSuccess("Book added successfully.");
       }
 
       resetForm();
-
       await loadBooks();
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
   // =========================
   // Edit
   // =========================
-
   const handleEdit = (book) => {
     setEditingBookId(book.bookId);
-
     setFormData({
       title: book.title || "",
-
       isbn: book.isbn || "",
-
       price: book.price ?? "",
-
+      discountPercentage: book.discountPercentage ?? "",
       stockQuantity: book.stockQuantity ?? "",
-
       publishedDate: book.publishedDate ? book.publishedDate.split("T")[0] : "",
-
       description: book.description || "",
-
       categoryId: getIdValue(book.categoryId, categories, book.categoryName),
-
       authorId: getIdValue(book.authorId, authors, book.authorName),
-
       publisherId: getIdValue(book.publisherId, publishers, book.publisherName),
-
       isActive: book.isActive,
-
       image: null,
     });
-
+    setImagePreview(book.imageUrl);
     setEditMode(true);
-
     setShowForm(true);
-
     setError("");
-
     setSuccess("");
-
     window.scrollTo({
       top: 0,
       behavior: "smooth",
@@ -293,35 +247,27 @@ function Books() {
   // =========================
   // Delete
   // =========================
-
   const handleDelete = async (id) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this book?",
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setError("");
-
       setSuccess("");
-
       await deleteBook(id);
-
       setSuccess("Book deleted successfully.");
-
       await loadBooks();
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
   // =========================
   // Helper
   // =========================
-
   const getIdValue = (directId, list, name) => {
     if (directId !== undefined && directId !== null) {
       return directId;
@@ -345,19 +291,14 @@ function Books() {
   // =========================
   // UI
   // =========================
-
   return (
     <div className="space-y-6">
-      {/* =========================
-            Header
-        ========================= */}
-
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             Books
           </h1>
-
           <p className="mt-1 text-sm text-gray-500">
             Manage and organize the books in your bookstore.
           </p>
@@ -370,6 +311,7 @@ function Books() {
             } else {
               setEditMode(false);
               setEditingBookId(null);
+               setImagePreview(null);
               setShowForm(true);
             }
           }}
@@ -379,10 +321,7 @@ function Books() {
         </button>
       </div>
 
-      {/* =========================
-            Messages
-        ========================= */}
-
+      {/* Messages */}
       {error && (
         <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
           <span className="font-medium">{error}</span>
@@ -395,19 +334,13 @@ function Books() {
         </div>
       )}
 
-      {/* =========================
-            Add / Edit Book Form
-        ========================= */}
-
+      {/* Add / Edit Book Form */}
       {showForm && (
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-          {/* Form Header */}
-
           <div className="px-5 sm:px-6 py-5 border-b border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">
               {editMode ? "Edit Book" : "Add New Book"}
             </h2>
-
             <p className="text-sm text-gray-500 mt-1">
               {editMode
                 ? "Update the book information below."
@@ -415,18 +348,14 @@ function Books() {
             </p>
           </div>
 
-          {/* Form Body */}
-
           <div className="p-5 sm:p-6">
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {/* Book Title */}
-
                 <div className="lg:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Book Title
                   </label>
-
                   <input
                     type="text"
                     name="title"
@@ -440,12 +369,10 @@ function Books() {
                 </div>
 
                 {/* ISBN */}
-
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     ISBN
                   </label>
-
                   <input
                     type="text"
                     name="isbn"
@@ -458,12 +385,10 @@ function Books() {
                 </div>
 
                 {/* Published Date */}
-
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Published Date
                   </label>
-
                   <input
                     type="date"
                     name="publishedDate"
@@ -474,17 +399,14 @@ function Books() {
                 </div>
 
                 {/* Price */}
-
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Price
                   </label>
-
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                       ₹
                     </span>
-
                     <input
                       type="number"
                       name="price"
@@ -499,13 +421,40 @@ function Books() {
                   </div>
                 </div>
 
-                {/* Stock */}
+                {/* Discount Percentage */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Discount Percentage
+                  </label>
 
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="discountPercentage"
+                      placeholder="0"
+                      value={formData.discountPercentage}
+                      onChange={handleChange}
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      className="w-full pr-10 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                    />
+
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                      %
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-gray-400 mt-2">
+                    Enter 0 if there is no discount.
+                  </p>
+                </div>
+
+                {/* Stock Quantity */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Stock Quantity
                   </label>
-
                   <input
                     type="number"
                     name="stockQuantity"
@@ -519,12 +468,10 @@ function Books() {
                 </div>
 
                 {/* Category */}
-
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Category
                   </label>
-
                   <select
                     name="categoryId"
                     value={formData.categoryId}
@@ -533,7 +480,6 @@ function Books() {
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
                   >
                     <option value="">Select Category</option>
-
                     {categories
                       .filter((category) => category.isActive)
                       .map((category) => (
@@ -548,12 +494,10 @@ function Books() {
                 </div>
 
                 {/* Author */}
-
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Author
                   </label>
-
                   <select
                     name="authorId"
                     value={formData.authorId}
@@ -562,7 +506,6 @@ function Books() {
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
                   >
                     <option value="">Select Author</option>
-
                     {authors.map((author) => (
                       <option key={author.authorId} value={author.authorId}>
                         {author.authorName}
@@ -572,12 +515,10 @@ function Books() {
                 </div>
 
                 {/* Publisher */}
-
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Publisher
                   </label>
-
                   <select
                     name="publisherId"
                     value={formData.publisherId}
@@ -586,7 +527,6 @@ function Books() {
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
                   >
                     <option value="">Select Publisher</option>
-
                     {publishers
                       .filter((publisher) => publisher.isActive)
                       .map((publisher) => (
@@ -601,12 +541,10 @@ function Books() {
                 </div>
 
                 {/* Description */}
-
                 <div className="lg:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Description
                   </label>
-
                   <textarea
                     name="description"
                     rows="5"
@@ -616,7 +554,6 @@ function Books() {
                     maxLength={2000}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 resize-none"
                   />
-
                   <div className="flex justify-end mt-1">
                     <span className="text-xs text-gray-400">
                       {formData.description?.length || 0}/2000
@@ -625,12 +562,10 @@ function Books() {
                 </div>
 
                 {/* Image */}
-
                 <div className="lg:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Book Image
                   </label>
-
                   <input
                     type="file"
                     name="image"
@@ -638,7 +573,21 @@ function Books() {
                     onChange={handleChange}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-900 file:text-white file:text-sm file:font-medium hover:file:bg-gray-800 cursor-pointer"
                   />
+                  {imagePreview && (
+                    <div className="mt-3">
+                      <p className="text-xs font-medium text-gray-500 mb-2">
+                        Image Preview
+                      </p>
 
+                      <div className="w-24 h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                        <img
+                          src={imagePreview}
+                          alt="Book preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  )}
                   {editMode && (
                     <p className="text-xs text-gray-400 mt-2">
                       Leave empty if you don't want to change the image.
@@ -646,8 +595,7 @@ function Books() {
                   )}
                 </div>
 
-                {/* Active */}
-
+                {/* Active Checkbox */}
                 {editMode && (
                   <div className="lg:col-span-2">
                     <label className="inline-flex items-center gap-3 cursor-pointer">
@@ -658,7 +606,6 @@ function Books() {
                         onChange={handleChange}
                         className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                       />
-
                       <span className="text-sm font-medium text-gray-700">
                         Active Book
                       </span>
@@ -668,7 +615,6 @@ function Books() {
               </div>
 
               {/* Form Actions */}
-
               <div className="flex flex-col sm:flex-row gap-3 mt-7 pt-5 border-t border-gray-100">
                 <button
                   type="submit"
@@ -676,7 +622,6 @@ function Books() {
                 >
                   {editMode ? "Save Changes" : "Save Book"}
                 </button>
-
                 <button
                   type="button"
                   onClick={resetForm}
@@ -690,109 +635,59 @@ function Books() {
         </div>
       )}
 
-      {/* =========================
-            Books List
-        ========================= */}
-
+      {/* Books List Table */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        {/* Table Header */}
-
         <div className="px-5 sm:px-6 py-5 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
               <h2 className="text-lg font-bold text-gray-900">All Books</h2>
-
               <p className="text-sm text-gray-500 mt-1">
                 {books.length} book{books.length !== 1 ? "s" : ""} in your store
+                (Click any row to view details)
               </p>
             </div>
           </div>
         </div>
 
-        {/* Table */}
-
         <div className="w-full overflow-x-auto rounded-xl">
-          <table className="w-full min-w-[1500px] text-sm">
-            {/* ================= TABLE HEADER ================= */}
-
+          <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr className="text-left">
-                <th className="w-[60px] px-6 py-5 font-semibold text-gray-500">
+                <th className="w-16 px-6 py-4 font-semibold text-gray-500">
                   #
                 </th>
-
-                <th className="w-[330px] px-6 py-5 font-semibold text-gray-500">
-                  Book
-                </th>
-
-                <th className="w-[180px] px-6 py-5 font-semibold text-gray-500">
-                  ISBN
-                </th>
-
-                <th className="w-[180px] px-6 py-5 font-semibold text-gray-500">
-                  Author
-                </th>
-
-                <th className="w-[180px] px-6 py-5 font-semibold text-gray-500">
-                  Category
-                </th>
-
-                <th className="w-[200px] px-6 py-5 font-semibold text-gray-500">
-                  Publisher
-                </th>
-
-                <th className="w-[120px] px-6 py-5 font-semibold text-gray-500">
-                  Price
-                </th>
-
-                <th className="w-[100px] px-6 py-5 font-semibold text-gray-500">
-                  Stock
-                </th>
-
-                <th className="w-[130px] px-6 py-5 font-semibold text-gray-500">
-                  Status
-                </th>
-
-                <th className="w-[180px] px-6 py-5 font-semibold text-gray-500 text-right">
-                  Actions
+                <th className="px-6 py-4 font-semibold text-gray-500">Book</th>
+                <th className="w-32 px-6 py-4 font-semibold text-gray-500 text-right">
+                  Action
                 </th>
               </tr>
             </thead>
 
-            {/* ================= TABLE BODY ================= */}
-
             <tbody className="divide-y divide-gray-100">
-              {/* Loading */}
-
               {loading && (
                 <tr>
                   <td
-                    colSpan="10"
+                    colSpan="3"
                     className="px-6 py-16 text-center text-gray-500"
                   >
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
-
                       <span className="text-sm">Loading books...</span>
                     </div>
                   </td>
                 </tr>
               )}
 
-              {/* Empty */}
-
               {!loading && !error && books.length === 0 && (
                 <tr>
-                  <td colSpan="10" className="px-6 py-16 text-center">
+                  <td colSpan="3" className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center">
                       <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-3xl mb-4">
                         📚
                       </div>
-
                       <h3 className="font-semibold text-gray-900">
                         No books found
                       </h3>
-
                       <p className="text-sm text-gray-500 mt-1">
                         Add your first book to get started.
                       </p>
@@ -801,27 +696,20 @@ function Books() {
                 </tr>
               )}
 
-              {/* ================= BOOKS ================= */}
-
               {!loading &&
                 books.map((book, index) => (
                   <tr
                     key={book.bookId}
-                    className="hover:bg-gray-50 transition-colors"
+                    onClick={() => setModalBook(book)}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer group"
                   >
-                    {/* Number */}
-
-                    <td className="px-6 py-6 text-gray-400 font-medium align-middle">
+                    <td className="px-6 py-4 text-gray-400 font-medium align-middle">
                       {index + 1}
                     </td>
 
-                    {/* ================= BOOK ================= */}
-
-                    <td className="px-6 py-6 align-middle">
+                    <td className="px-6 py-4 align-middle">
                       <div className="flex items-center gap-4">
-                        {/* Image */}
-
-                        <div className="w-16 h-20 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                        <div className="w-12 h-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
                           {book.imageUrl ? (
                             <img
                               src={book.imageUrl}
@@ -829,158 +717,195 @@ function Books() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-2xl">
+                            <div className="w-full h-full flex items-center justify-center text-xl">
                               📚
                             </div>
                           )}
                         </div>
-
-                        {/* Book Information */}
-
-                        <div className="min-w-0 w-[230px]">
-                          <p className="font-semibold text-gray-900 leading-6 whitespace-normal break-words">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 leading-snug group-hover:text-blue-600 transition-colors">
                             {book.title}
                           </p>
-
-                          {book.publishedDate && (
-                            <p className="text-xs text-gray-400 mt-2">
-                              Published{" "}
-                              {new Date(
-                                book.publishedDate,
-                              ).toLocaleDateString()}
-                            </p>
-                          )}
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            Click row for full details
+                          </p>
                         </div>
                       </div>
                     </td>
 
-                    {/* ================= ISBN ================= */}
-
-                    <td className="px-6 py-6 align-middle">
-                      <span className="text-gray-600 whitespace-nowrap">
-                        {book.isbn || "-"}
+                    <td className="px-6 py-4 align-middle text-right">
+                      <span className="text-xs font-semibold text-gray-400 group-hover:text-gray-900 transition-colors">
+                        View →
                       </span>
-                    </td>
-
-                    {/* ================= AUTHOR ================= */}
-
-                    <td className="px-6 py-6 align-middle">
-                      <span className="text-gray-600 whitespace-normal break-words">
-                        {book.authorName || "-"}
-                      </span>
-                    </td>
-
-                    {/* ================= CATEGORY ================= */}
-
-                    <td className="px-6 py-6 align-middle">
-                      <span className="text-gray-600 whitespace-normal break-words">
-                        {book.categoryName || "-"}
-                      </span>
-                    </td>
-
-                    {/* ================= PUBLISHER ================= */}
-
-                    <td className="px-6 py-6 align-middle">
-                      <span className="text-gray-600 whitespace-normal break-words">
-                        {book.publisherName || "-"}
-                      </span>
-                    </td>
-
-                    {/* ================= PRICE ================= */}
-
-                    <td className="px-6 py-6 align-middle">
-                      <span className="font-semibold text-gray-900 whitespace-nowrap">
-                        ₹{Number(book.price).toFixed(2)}
-                      </span>
-                    </td>
-
-                    {/* ================= STOCK ================= */}
-
-                    <td className="px-6 py-6 align-middle">
-                      <span
-                        className={`font-semibold ${
-                          book.stockQuantity > 0
-                            ? "text-emerald-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {book.stockQuantity}
-                      </span>
-                    </td>
-
-                    {/* ================= STATUS ================= */}
-
-                    <td className="px-6 py-6 align-middle">
-                      {book.isActive ? (
-                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold whitespace-nowrap">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold whitespace-nowrap">
-                          <span className="w-2 h-2 rounded-full bg-gray-400" />
-                          Inactive
-                        </span>
-                      )}
-                    </td>
-
-                    {/* ================= ACTIONS ================= */}
-
-                    <td className="px-6 py-6 align-middle">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(book)}
-                          className="
-                                        px-4
-                                        py-2
-                                        text-xs
-                                        font-semibold
-                                        text-blue-700
-                                        bg-blue-50
-                                        hover:bg-blue-100
-                                        rounded-lg
-                                        transition
-                                        duration-200
-                                        whitespace-nowrap
-                                    "
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          onClick={() => handleDelete(book.bookId)}
-                          className="
-                                        px-4
-                                        py-2
-                                        text-xs
-                                        font-semibold
-                                        text-red-700
-                                        bg-red-50
-                                        hover:bg-red-100
-                                        rounded-lg
-                                        transition
-                                        duration-200
-                                        whitespace-nowrap
-                                    "
-                        >
-                          Delete
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}
             </tbody>
           </table>
         </div>
-
-        {/* Mobile Hint */}
-
-        {!loading && books.length > 0 && (
-          <div className="md:hidden px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-center">
-            Swipe left and right to view all book details →
-          </div>
-        )}
       </div>
+
+      {/* Book Details Modal */}
+      {modalBook && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">
+                  Book Details
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Complete information for this book
+                </p>
+              </div>
+              <button
+                onClick={() => setModalBook(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-bold transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Header info with image */}
+              <div className="flex items-start gap-4 pb-5 border-b border-gray-100">
+                <div className="w-20 h-28 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0 shadow-sm">
+                  {modalBook.imageUrl ? (
+                    <img
+                      src={modalBook.imageUrl}
+                      alt={modalBook.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-3xl">
+                      📚
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1.5 min-w-0 flex-1">
+                  <div>
+                    {modalBook.isActive ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 leading-tight">
+                    {modalBook.title}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Published Date:{" "}
+                    {modalBook.publishedDate
+                      ? new Date(modalBook.publishedDate).toLocaleDateString()
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Grid properties */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <span className="block text-gray-400 text-xs font-medium mb-1">
+                    ISBN
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {modalBook.isbn || "N/A"}
+                  </span>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <span className="block text-gray-400 text-xs font-medium mb-1">
+                    Author
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {modalBook.authorName || "N/A"}
+                  </span>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <span className="block text-gray-400 text-xs font-medium mb-1">
+                    Category
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {modalBook.categoryName || "N/A"}
+                  </span>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <span className="block text-gray-400 text-xs font-medium mb-1">
+                    Publisher
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {modalBook.publisherName || "N/A"}
+                  </span>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <span className="block text-gray-400 text-xs font-medium mb-1">
+                    Price
+                  </span>
+                  <span className="font-semibold text-emerald-600">
+                    ₹{Number(modalBook.price).toFixed(2)}
+                  </span>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <span className="block text-gray-400 text-xs font-medium mb-1">
+                    Stock
+                  </span>
+                  <span
+                    className={`font-semibold ${modalBook.stockQuantity > 0 ? "text-gray-800" : "text-red-600"}`}
+                  >
+                    {modalBook.stockQuantity} units
+                  </span>
+                </div>
+              </div>
+
+              {/* Description */}
+              {modalBook.description && (
+                <div>
+                  <span className="block text-gray-700 font-semibold mb-2 text-sm">
+                    Description
+                  </span>
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-gray-600 text-sm leading-relaxed max-h-40 overflow-y-auto">
+                    {modalBook.description}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap items-center justify-end gap-3 rounded-b-2xl">
+              <button
+                onClick={() => {
+                  const bookToEdit = modalBook;
+                  setModalBook(null);
+                  handleEdit(bookToEdit);
+                }}
+                className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition-colors"
+              >
+                Edit Book
+              </button>
+              <button
+                onClick={() => {
+                  const bookId = modalBook.bookId;
+                  setModalBook(null);
+                  handleDelete(bookId);
+                }}
+                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-semibold transition-colors"
+              >
+                Delete Book
+              </button>
+              <button
+                onClick={() => setModalBook(null)}
+                className="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

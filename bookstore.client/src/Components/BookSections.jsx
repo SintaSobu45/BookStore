@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { getBooks } from "../services/bookService";
 import BookCard from "../Components/BookCard";
+import { Link } from "react-router-dom";
 
 export default function BookSections() {
     const [books, setBooks] = useState([]);
@@ -19,14 +20,14 @@ export default function BookSections() {
         loadBooks();
     }, []);
 
-    const featuredBooks = books.slice(0, 6);
+    const featuredBooks = books.slice(0, 5);
 
     const newArrivals = [...books]
         .reverse()
-        .slice(0, 6);
+        .slice(0, 10);
 
     const renderBookGrid = (title, books) => (
-        <section className="max-w-7xl mx-auto px-6 mb-12">
+        <section className="max-w-7xl mt-5 mx-auto px-6 mb-12">
 
             <div className="flex items-center justify-between mb-6">
 
@@ -34,14 +35,14 @@ export default function BookSections() {
                     {title}
                 </h2>
 
-                <button className="flex items-center text-sm font-medium text-emerald-700 hover:text-emerald-800">
+                <Link to={'/all/books'} className="flex items-center text-sm font-medium text-emerald-700 hover:text-emerald-800">
                     View All
                     <ChevronRight className="h-4 w-4 ml-1" />
-                </button>
+                </Link>
 
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-3 gap-y-8">
 
                 {books.map((book) => (
                     <BookCard

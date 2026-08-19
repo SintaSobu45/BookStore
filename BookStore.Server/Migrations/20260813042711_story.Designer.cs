@@ -4,6 +4,7 @@ using BookStore.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookStore.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260813042711_story")]
+    partial class story
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -73,9 +76,6 @@ namespace BookStore.Server.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
-
-                    b.Property<decimal>("DiscountPercentage")
-                        .HasColumnType("decimal(5,2)");
 
                     b.Property<string>("ISBN")
                         .HasMaxLength(20)
@@ -143,68 +143,6 @@ namespace BookStore.Server.Migrations
                     b.ToTable("BookImages");
                 });
 
-            modelBuilder.Entity("BookStore.Server.Models.Cart.Cart", b =>
-                {
-                    b.Property<int>("CartId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartId"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("GuestCartId")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CartId");
-
-                    b.HasIndex("GuestCartId")
-                        .IsUnique()
-                        .HasFilter("[GuestCartId] IS NOT NULL");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Carts");
-                });
-
-            modelBuilder.Entity("BookStore.Server.Models.Cart.CartItem", b =>
-                {
-                    b.Property<int>("CartItemId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartItemId"));
-
-                    b.Property<int>("BookId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CartId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("CartItemId");
-
-                    b.HasIndex("BookId");
-
-                    b.HasIndex("CartId", "BookId")
-                        .IsUnique();
-
-                    b.ToTable("CartItems");
-                });
-
             modelBuilder.Entity("BookStore.Server.Models.Category", b =>
                 {
                     b.Property<int>("CategoryId")
@@ -247,6 +185,9 @@ namespace BookStore.Server.Migrations
                     b.Property<int>("AvailableSeats")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("BookPrice")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -288,6 +229,38 @@ namespace BookStore.Server.Migrations
                     b.ToTable("Events");
                 });
 
+            modelBuilder.Entity("BookStore.Server.Models.Event.EventContributor", b =>
+                {
+                    b.Property<int>("EventContributorId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EventContributorId"));
+
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EventId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StoryPoetryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("EventContributorId");
+
+                    b.HasIndex("StoryPoetryId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("EventId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("EventContributors");
+                });
+
             modelBuilder.Entity("BookStore.Server.Models.Event.EventImage", b =>
                 {
                     b.Property<int>("EventImageId")
@@ -312,95 +285,6 @@ namespace BookStore.Server.Migrations
                     b.HasIndex("EventId");
 
                     b.ToTable("EventImages");
-                });
-
-            modelBuilder.Entity("BookStore.Server.Models.Payment", b =>
-                {
-                    b.Property<int>("PaymentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PaymentId"));
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("EventRegistrationId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("PaidDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PaymentMethod")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("PaymentType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("RazorpayOrderId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RazorpayPaymentId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RazorpaySignature")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<int?>("StoryPoetryId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("PaymentId");
-
-                    b.HasIndex("EventRegistrationId");
-
-                    b.HasIndex("StoryPoetryId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Payments");
-                });
-
-            modelBuilder.Entity("BookStore.Server.Models.PaymentSettings", b =>
-                {
-                    b.Property<int>("PaymentSettingsId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PaymentSettingsId"));
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("PaymentType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("PaymentSettingsId");
-
-                    b.ToTable("PaymentSettings");
                 });
 
             modelBuilder.Entity("BookStore.Server.Models.Publisher", b =>
@@ -502,50 +386,27 @@ namespace BookStore.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StoryPoetryId"));
 
+                    b.Property<string>("AdminRemarks")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ContributorAddressMalayalam")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("ContributorCityMalayalam")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ContributorDistrictMalayalam")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ContributorEmail")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("ContributorNameMalayalam")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("ContributorPhone")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ContributorProfileImageUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("PaymentStatus")
+                    b.Property<DateTime?>("ReviewedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -565,6 +426,8 @@ namespace BookStore.Server.Migrations
 
                     b.HasKey("StoryPoetryId");
 
+                    b.HasIndex("CategoryId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("StoryPoetries");
@@ -582,43 +445,28 @@ namespace BookStore.Server.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("AddressMalayalam")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<string>("City")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("CityMalayalam")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("District")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("DistrictMalayalam")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
+                    b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("NameMalayalam")
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -634,17 +482,10 @@ namespace BookStore.Server.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
-                    b.Property<string>("ProfileImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
 
                     b.Property<string>("State")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("StateMalayalam")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -666,10 +507,19 @@ namespace BookStore.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RegistrationId"));
 
+                    b.Property<int>("BookCopies")
+                        .HasColumnType("int");
+
                     b.Property<int>("EventId")
                         .HasColumnType("int");
 
+                    b.Property<int>("FreeBookCopies")
+                        .HasColumnType("int");
+
                     b.Property<int>("NumberOfSeats")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PaidBookCopies")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("RegistrationDate")
@@ -733,33 +583,31 @@ namespace BookStore.Server.Migrations
                     b.Navigation("Book");
                 });
 
-            modelBuilder.Entity("BookStore.Server.Models.Cart.Cart", b =>
+            modelBuilder.Entity("BookStore.Server.Models.Event.EventContributor", b =>
                 {
-                    b.HasOne("BookStore.Server.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("BookStore.Server.Models.Cart.CartItem", b =>
-                {
-                    b.HasOne("BookStore.Server.Models.Book", "Book")
-                        .WithMany()
-                        .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("BookStore.Server.Models.Cart.Cart", "Cart")
-                        .WithMany("CartItems")
-                        .HasForeignKey("CartId")
+                    b.HasOne("BookStore.Server.Models.Event.Event", "Event")
+                        .WithMany("EventContributors")
+                        .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Book");
+                    b.HasOne("BookStore.Server.Models.StoryPoetry", "StoryPoetry")
+                        .WithMany()
+                        .HasForeignKey("StoryPoetryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
-                    b.Navigation("Cart");
+                    b.HasOne("BookStore.Server.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("StoryPoetry");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("BookStore.Server.Models.Event.EventImage", b =>
@@ -771,31 +619,6 @@ namespace BookStore.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Event");
-                });
-
-            modelBuilder.Entity("BookStore.Server.Models.Payment", b =>
-                {
-                    b.HasOne("EventRegistration", "EventRegistration")
-                        .WithMany()
-                        .HasForeignKey("EventRegistrationId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("BookStore.Server.Models.StoryPoetry", "StoryPoetry")
-                        .WithMany()
-                        .HasForeignKey("StoryPoetryId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("BookStore.Server.Models.User", "User")
-                        .WithMany("Payments")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("EventRegistration");
-
-                    b.Navigation("StoryPoetry");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("BookStore.Server.Models.Review", b =>
@@ -819,11 +642,19 @@ namespace BookStore.Server.Migrations
 
             modelBuilder.Entity("BookStore.Server.Models.StoryPoetry", b =>
                 {
+                    b.HasOne("BookStore.Server.Models.Category", "Category")
+                        .WithMany("StoryPoetries")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("BookStore.Server.Models.User", "User")
                         .WithMany("StoryPoetries")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Category");
 
                     b.Navigation("User");
                 });
@@ -870,18 +701,17 @@ namespace BookStore.Server.Migrations
                     b.Navigation("Reviews");
                 });
 
-            modelBuilder.Entity("BookStore.Server.Models.Cart.Cart", b =>
-                {
-                    b.Navigation("CartItems");
-                });
-
             modelBuilder.Entity("BookStore.Server.Models.Category", b =>
                 {
                     b.Navigation("Books");
+
+                    b.Navigation("StoryPoetries");
                 });
 
             modelBuilder.Entity("BookStore.Server.Models.Event.Event", b =>
                 {
+                    b.Navigation("EventContributors");
+
                     b.Navigation("EventImages");
 
                     b.Navigation("EventRegistrations");
@@ -900,8 +730,6 @@ namespace BookStore.Server.Migrations
             modelBuilder.Entity("BookStore.Server.Models.User", b =>
                 {
                     b.Navigation("EventRegistrations");
-
-                    b.Navigation("Payments");
 
                     b.Navigation("Reviews");
 

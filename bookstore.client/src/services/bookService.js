@@ -24,21 +24,26 @@ export const getBookById = async (id) => {
 
 // Add book
 export const createBook = async (bookData) => {
-  const response = await fetch(`${API_BASE_URL}/api/Book`, {
-    method: 'POST',
-    body: bookData
-  })
+  const token = localStorage.getItem("token");
 
-  const data = await response.json()
+  const response = await fetch(`${API_BASE_URL}/api/Book`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: bookData,
+  });
+
+  const data = await response.json();
 
   if (!response.ok) {
     throw new Error(
-      data.message || 'Failed to create book'
-    )
+      data.message || "Failed to create book"
+    );
   }
 
-  return data
-}
+  return data;
+};
 
 // Update book
 export const updateBook = async (id, formData) => {
@@ -63,17 +68,22 @@ export const updateBook = async (id, formData) => {
 
 // Delete book
 export const deleteBook = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/api/Book/${id}`, {
-    method: 'DELETE'
-  })
+  const token = localStorage.getItem("token");
 
-  const data = await response.json()
+  const response = await fetch(`${API_BASE_URL}/api/Book/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
 
   if (!response.ok) {
     throw new Error(
-      data.message || 'Failed to delete book'
-    )
+      data.message || "Failed to delete book"
+    );
   }
 
-  return data
-}
+  return data;
+};

@@ -19,7 +19,7 @@ export default function Footer() {
               </div>
               <div>
                 <span className="text-xl font-extrabold tracking-tight text-gray-900 block leading-none">
-                  BOOK STORE
+                  THE OLD LIBRARY
                 </span>
                 <span className="text-[9px] tracking-widest text-gray-400 font-bold uppercase mt-1 block">
                   Online Book Sale & Community Platform
@@ -106,7 +106,7 @@ export default function Footer() {
 
         {/* Bottom Dark Copyright Bar */}
         <div className="bg-[#003111] text-white text-center py-4 rounded-xl text-sm font-medium">
-          © 2026 Book Store. All rights reserved.
+          © 2026 THE OLD LIBRARY. All rights reserved.
         </div>
 
       </div>

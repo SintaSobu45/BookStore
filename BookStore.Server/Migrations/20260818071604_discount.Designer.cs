@@ -4,6 +4,7 @@ using BookStore.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookStore.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260818071604_discount")]
+    partial class discount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -166,10 +169,6 @@ namespace BookStore.Server.Migrations
 
                     b.HasKey("CartId");
 
-                    b.HasIndex("GuestCartId")
-                        .IsUnique()
-                        .HasFilter("[GuestCartId] IS NOT NULL");
-
                     b.HasIndex("UserId");
 
                     b.ToTable("Carts");
@@ -199,8 +198,7 @@ namespace BookStore.Server.Migrations
 
                     b.HasIndex("BookId");
 
-                    b.HasIndex("CartId", "BookId")
-                        .IsUnique();
+                    b.HasIndex("CartId");
 
                     b.ToTable("CartItems");
                 });
