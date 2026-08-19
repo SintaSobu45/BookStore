@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Manjari:wght@100;400;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -20,4 +22,8 @@
 
 .nav-link-custom {
   position: relative;
+}
+
+.manjari-font {
+  font-family: "Manjari", sans-serif;
 }

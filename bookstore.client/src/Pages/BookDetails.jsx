@@ -15,6 +15,7 @@ import {
   Calendar,
 } from "lucide-react";
 
+
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import Navbar from "../Components/Navbar";
@@ -24,6 +25,9 @@ import { getBookById, getBooks } from "../services/bookService";
 
 import { getReviewsByBookId, addReview } from "../services/reviewService";
 import { getAuthorById } from "../services/authorService";
+import { addToCart } from "../services/cartService";
+import { notifyCartUpdated } from "../utils/cartEvents";
+import { toast } from "react-toastify";
 
 export default function BookDetail() {
   // =========================
@@ -49,6 +53,8 @@ export default function BookDetail() {
   const [error, setError] = useState("");
 
   const [author, setAuthor] = useState(null);
+
+  const [addingToCart, setAddingToCart] = useState(false);
 
   // =========================
   // Reviews State
@@ -265,6 +271,32 @@ export default function BookDetail() {
   };
 
   // =========================
+  // Add To Cart
+  // =========================
+
+  const handleAddToCart = async () => {
+  try {
+    setAddingToCart(true);
+
+    const bookId = Number(book.bookId || book.id);
+
+    await addToCart(bookId, 1);
+
+    notifyCartUpdated();
+
+    toast.success("Book added to cart!",{
+      autoClose:500,
+    });
+  } catch (error) {
+    console.error("Failed to add to cart:", error);
+
+    toast.error(error.message || "Failed to add book to cart.");
+  } finally {
+    setAddingToCart(false);
+  }
+};
+
+  // =========================
   // Calculate Average Rating
   // =========================
 
@@ -382,34 +414,6 @@ export default function BookDetail() {
                   <div className="text-6xl">📚</div>
                 )}
               </div>
-
-              {/* Thumbnail */}
-
-              <div className="grid grid-cols-4 gap-3">
-                <button className="border-2 border-emerald-900 shadow-sm rounded-xl overflow-hidden h-20 bg-gray-50 flex items-center justify-center">
-                  {book.imageUrl ? (
-                    <img
-                      src={book.imageUrl}
-                      alt={book.title}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span>📚</span>
-                  )}
-                </button>
-
-                <div className="border-2 border-stone-200 rounded-xl overflow-hidden h-20 bg-gray-50 flex items-center justify-center">
-                  <span className="text-gray-300 text-xl">📖</span>
-                </div>
-
-                <div className="border-2 border-stone-200 rounded-xl overflow-hidden h-20 bg-gray-50 flex items-center justify-center">
-                  <span className="text-gray-300 text-xl">📖</span>
-                </div>
-
-                <div className="border-2 border-stone-200 rounded-xl overflow-hidden h-20 bg-gray-50 flex items-center justify-center">
-                  <span className="text-gray-300 text-xl">📖</span>
-                </div>
-              </div>
             </div>
 
             {/* =========================
@@ -514,10 +518,29 @@ export default function BookDetail() {
               <div className="bg-white border border-stone-200/80 rounded-3xl p-6 space-y-5 shadow-sm">
                 {/* Pricing */}
 
-                <div className="flex items-baseline space-x-3">
+                {/* Pricing */}
+
+                <div className="flex items-baseline flex-wrap gap-3">
+                  {/* Discounted / Current Price */}
                   <span className="text-3xl font-extrabold text-gray-900">
-                    ₹{Number(book.price).toFixed(0)}
+                    ₹{Number(book.discountedPrice ?? book.price).toFixed(0)}
                   </span>
+
+                  {/* Original Price */}
+                  {Number(book.discountPercentage || 0) > 0 &&
+                    Number(book.discountedPrice) < Number(book.price) && (
+                      <span className="text-sm text-gray-400 line-through font-medium">
+                        ₹{Number(book.price).toFixed(0)}
+                      </span>
+                    )}
+
+                  {/* Discount Badge */}
+                  {Number(book.discountPercentage || 0) > 0 &&
+                    Number(book.discountedPrice) < Number(book.price) && (
+                      <span className="text-xs font-bold text-white bg-emerald-500 px-2 py-1 rounded-md">
+                        {Number(book.discountPercentage)}% OFF
+                      </span>
+                    )}
                 </div>
 
                 {/* Stock Badge */}
@@ -550,7 +573,7 @@ export default function BookDetail() {
                     </span>
 
                     <span className="font-bold text-gray-900 bg-stone-100 px-2.5 py-1 rounded-lg">
-                      English
+                      Malayalam
                     </span>
                   </div>
 
@@ -574,16 +597,17 @@ export default function BookDetail() {
                   {/* Add Cart */}
 
                   <button
-                    disabled={book.stockQuantity <= 0}
+                    onClick={handleAddToCart}
+                    disabled={book.stockQuantity <= 0 || addingToCart}
                     className={`w-full font-medium py-3 px-4 rounded-xl shadow-sm flex items-center justify-center space-x-2 transition-colors text-sm ${
-                      book.stockQuantity > 0
+                      book.stockQuantity > 0 && !addingToCart
                         ? "bg-emerald-900 hover:bg-emerald-800 text-white cursor-pointer"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
                     <ShoppingCart className="h-4 w-4" />
 
-                    <span>Add to Cart</span>
+                    <span>{addingToCart ? "Adding..." : "Add to Cart"}</span>
                   </button>
 
                   {/* Buy + Wishlist */}
@@ -598,10 +622,6 @@ export default function BookDetail() {
                       }`}
                     >
                       Buy Now
-                    </button>
-
-                    <button className="border border-stone-200 hover:bg-stone-50 p-2.5 rounded-xl text-gray-600 transition-colors cursor-pointer flex items-center justify-center">
-                      <Heart className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -1029,9 +1049,21 @@ export default function BookDetail() {
                         {item.title}
                       </h4>
 
-                      <span className="text-xs font-bold text-emerald-900">
-                        ₹{Number(item.price).toFixed(0)}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-emerald-900">
+                          ₹
+                          {Number(item.discountedPrice ?? item.price).toFixed(
+                            0,
+                          )}
+                        </span>
+
+                        {Number(item.discountPercentage || 0) > 0 &&
+                          Number(item.discountedPrice) < Number(item.price) && (
+                            <span className="text-[10px] text-gray-400 line-through">
+                              ₹{Number(item.price).toFixed(0)}
+                            </span>
+                          )}
+                      </div>
                     </div>
                   </div>
                 ))}

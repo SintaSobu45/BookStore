@@ -1,41 +1,43 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   BookOpen,
   Leaf,
-  Check,
-  X,
   Eye,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+  X,
+  UserCircle,
+  Mail,
+  Phone,
+  MapPin,
+  CalendarDays,
+  FileText,
+  CreditCard,
+} from "lucide-react";
 
-import {
-  getAllStoryPoetry,
-  approveStoryPoetry,
-  rejectStoryPoetry
-} from '../../services/storyPoetryService';
+import { getAllStoryPoetry } from "../../services/storyPoetryService";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminStoryPoetry() {
-
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [selectedItem, setSelectedItem] = useState(null);
-  const [remarks, setRemarks] = useState('');
 
-  // Load all submissions
+  // ================= LOAD ALL SUBMISSIONS =================
+
   const loadSubmissions = async () => {
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
       const data = await getAllStoryPoetry();
 
       setSubmissions(data);
     } catch (error) {
-      console.error('Failed to load submissions:', error);
-      setError(error.message || 'Failed to load submissions.');
+      console.error("Failed to load submissions:", error);
+      setError(error.message || "Failed to load submissions.");
     } finally {
       setLoading(false);
     }
@@ -45,70 +47,65 @@ export default function AdminStoryPoetry() {
     loadSubmissions();
   }, []);
 
-  // Approve
-  const handleApprove = async (id) => {
-    try {
-      setError('');
+  // ================= FORMAT DATE =================
 
-      await approveStoryPoetry(id, remarks);
-
-      setSelectedItem(null);
-      setRemarks('');
-
-      await loadSubmissions();
-
-    } catch (error) {
-      console.error('Approve failed:', error);
-      setError(error.message || 'Failed to approve submission.');
-    }
-  };
-
-  // Reject
-  const handleReject = async (id) => {
-    try {
-      setError('');
-
-      await rejectStoryPoetry(id, remarks);
-
-      setSelectedItem(null);
-      setRemarks('');
-
-      await loadSubmissions();
-
-    } catch (error) {
-      console.error('Reject failed:', error);
-      setError(error.message || 'Failed to reject submission.');
-    }
-  };
-
-  // Format date
   const formatDate = (date) => {
-    if (!date) return '-';
+    if (!date) return "-";
 
-    return new Date(date).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
     });
+  };
+
+  // ================= TYPE ICON =================
+
+  const renderTypeIcon = (type) => {
+    if (type === "Poetry") {
+      return <Leaf className="h-4 w-4 text-emerald-800" />;
+    }
+
+    return <BookOpen className="h-4 w-4 text-emerald-800" />;
+  };
+
+  // ================= TYPE COLOR =================
+
+  const getTypeStyle = (type) => {
+    if (type === "Poetry") {
+      return "bg-emerald-100 text-emerald-800";
+    }
+
+    if (type === "Special") {
+      return "bg-purple-100 text-purple-800";
+    }
+
+    return "bg-blue-100 text-blue-800";
+  };
+
+  // ================= PAYMENT STATUS COLOR =================
+
+  const getPaymentStyle = (status) => {
+    if (status === "Paid") {
+      return "bg-emerald-100 text-emerald-800";
+    }
+
+    return "bg-amber-100 text-amber-800";
   };
 
   return (
     <div className="p-6">
-
       {/* ================= HEADER ================= */}
 
       <div className="mb-6">
-
         <h1 className="text-2xl font-extrabold text-gray-900">
-          Story & Poetry Requests
+          Story, Poetry & Special Submissions
         </h1>
 
         <p className="text-sm text-stone-500 mt-1">
-          Review and manage user Story and Poetry submissions.
+          View all Story, Poetry and Special submissions from contributors.
         </p>
-
       </div>
-
 
       {/* ================= ERROR ================= */}
 
@@ -118,67 +115,50 @@ export default function AdminStoryPoetry() {
         </div>
       )}
 
-
       {/* ================= LOADING ================= */}
 
       {loading ? (
-
         <div className="bg-white border border-stone-200 rounded-2xl py-20 flex items-center justify-center">
-
           <Loader2 className="h-6 w-6 animate-spin text-emerald-900" />
 
           <span className="ml-2 text-sm text-stone-500">
             Loading submissions...
           </span>
-
         </div>
-
       ) : submissions.length === 0 ? (
-
         /* ================= EMPTY ================= */
 
         <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
-
           <BookOpen className="h-10 w-10 mx-auto text-stone-300 mb-3" />
 
-          <h3 className="font-bold text-gray-900">
-            No submissions found
-          </h3>
+          <h3 className="font-bold text-gray-900">No submissions found</h3>
 
           <p className="text-sm text-stone-500 mt-1">
-            There are currently no Story or Poetry submissions.
+            There are currently no Story, Poetry or Special submissions.
           </p>
-
         </div>
-
       ) : (
-
         /* ================= TABLE ================= */
 
         <div className="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
-
           <div className="overflow-x-auto">
-
             <table className="w-full text-sm">
-
               <thead className="bg-stone-50 border-b border-stone-200">
-
                 <tr>
-
                   <th className="text-left px-5 py-4 font-bold text-gray-700">
                     Submission
                   </th>
 
                   <th className="text-left px-5 py-4 font-bold text-gray-700">
-                    User
+                    Contributor
                   </th>
 
                   <th className="text-left px-5 py-4 font-bold text-gray-700">
-                    Category
+                    Type
                   </th>
 
                   <th className="text-left px-5 py-4 font-bold text-gray-700">
-                    Status
+                    Payment
                   </th>
 
                   <th className="text-left px-5 py-4 font-bold text-gray-700">
@@ -186,213 +166,127 @@ export default function AdminStoryPoetry() {
                   </th>
 
                   <th className="text-right px-5 py-4 font-bold text-gray-700">
-                    Actions
+                    Details
                   </th>
-
                 </tr>
-
               </thead>
 
-
               <tbody className="divide-y divide-stone-100">
-
                 {submissions.map((item) => (
-
                   <tr
                     key={item.storyPoetryId}
                     className="hover:bg-stone-50 transition-colors"
                   >
-
-                    {/* Submission */}
+                    {/* SUBMISSION */}
 
                     <td className="px-5 py-4">
-
                       <div className="flex items-center gap-3">
-
                         <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-
-                          {item.type === 'Poetry' ? (
-                            <Leaf className="h-4 w-4 text-emerald-800" />
-                          ) : (
-                            <BookOpen className="h-4 w-4 text-emerald-800" />
-                          )}
-
+                          {renderTypeIcon(item.type)}
                         </div>
 
                         <div>
-
                           <p className="font-bold text-gray-900">
                             {item.title}
                           </p>
 
                           <p className="text-[11px] text-stone-500 mt-0.5">
-                            {item.type} · ID #{item.storyPoetryId}
+                            ID #{item.storyPoetryId}
                           </p>
-
                         </div>
-
                       </div>
-
                     </td>
 
-
-                    {/* User */}
+                    {/* CONTRIBUTOR */}
 
                     <td className="px-5 py-4">
-
                       <p className="font-semibold text-gray-800">
-                        {item.userName}
+                        {item.contributorNameMalayalam || "-"}
                       </p>
-
-                      <p className="text-[11px] text-stone-400">
-                        User ID: {item.userId}
-                      </p>
-
                     </td>
 
-
-                    {/* Category */}
-
-                    <td className="px-5 py-4">
-
-                      <span className="text-stone-600 font-medium">
-                        {item.categoryName}
-                      </span>
-
-                    </td>
-
-
-                    {/* Status */}
+                    {/* TYPE */}
 
                     <td className="px-5 py-4">
-
                       <span
-                        className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${
-                          item.status === 'Approved'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : item.status === 'Rejected'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
+                        className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getTypeStyle(
+                          item.type,
+                        )}`}
                       >
-                        {item.status || 'Pending'}
+                        {item.type || "-"}
                       </span>
-
                     </td>
 
+                    {/* PAYMENT */}
 
-                    {/* Created Date */}
+                    <td className="px-5 py-4">
+                      <span
+                        className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getPaymentStyle(
+                          item.paymentStatus,
+                        )}`}
+                      >
+                        {item.paymentStatus || "Pending"}
+                      </span>
+                    </td>
+
+                    {/* DATE */}
 
                     <td className="px-5 py-4 text-stone-600 text-xs font-medium">
                       {formatDate(item.createdDate)}
                     </td>
 
-
-                    {/* Actions */}
+                    {/* VIEW */}
 
                     <td className="px-5 py-4">
-
-                      <div className="flex justify-end gap-2">
-
-                        {/* View */}
-
+                      <div className="flex justify-end">
                         <button
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setRemarks(item.adminRemarks || '');
-                          }}
-                          className="p-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer"
-                          title="View submission"
+                          onClick={() =>
+                            navigate(
+                              `/admin/story/${item.storyPoetryId}`,
+                            )
+                          }
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1b3b2b] hover:bg-emerald-950 text-white text-xs font-bold cursor-pointer transition-colors"
                         >
                           <Eye className="h-4 w-4" />
+                          View
                         </button>
-
-
-                        {/* Approve */}
-
-                        {item.status !== 'Approved' && (
-                          <button
-                            onClick={() => {
-                              setSelectedItem(item);
-                              setRemarks('');
-                            }}
-                            className="p-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 cursor-pointer"
-                            title="Approve"
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                        )}
-
-
-                        {/* Reject */}
-
-                        {item.status !== 'Rejected' && (
-                          <button
-                            onClick={() => {
-                              setSelectedItem(item);
-                              setRemarks('');
-                            }}
-                            className="p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 cursor-pointer"
-                            title="Reject"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
-
                       </div>
-
                     </td>
-
                   </tr>
-
                 ))}
-
               </tbody>
-
             </table>
-
           </div>
-
         </div>
-
       )}
 
-
-      {/* ================= VIEW MODAL ================= */}
+      {/* ================= DETAILS MODAL ================= */}
 
       {selectedItem && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            {/* ================= MODAL HEADER ================= */}
 
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-
-
-            {/* Modal Header */}
-
-            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
-
+            <div className="flex items-start justify-between px-6 py-5 border-b border-stone-200">
               <div>
-
                 <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                    {renderTypeIcon(selectedItem.type)}
+                  </div>
 
-                  {selectedItem.type === 'Poetry' ? (
-                    <Leaf className="h-4 w-4 text-emerald-800" />
-                  ) : (
-                    <BookOpen className="h-4 w-4 text-emerald-800" />
-                  )}
-
-                  <span className="text-xs font-bold text-emerald-800">
+                  <span
+                    className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${getTypeStyle(
+                      selectedItem.type,
+                    )}`}
+                  >
                     {selectedItem.type}
                   </span>
-
                 </div>
 
-                <h2 className="text-lg font-bold text-gray-900 mt-1">
+                <h2 className="text-xl font-bold text-gray-900 mt-3">
                   {selectedItem.title}
                 </h2>
-
               </div>
-
 
               <button
                 onClick={() => setSelectedItem(null)}
@@ -400,182 +294,211 @@ export default function AdminStoryPoetry() {
               >
                 <X className="h-5 w-5" />
               </button>
-
             </div>
 
+            {/* ================= MODAL BODY ================= */}
 
-            {/* Modal Body */}
+            <div className="p-6">
+              {/* ================= CONTRIBUTOR SECTION ================= */}
 
-            <div className="p-6 space-y-5">
+              <div className="flex flex-col md:flex-row justify-between gap-8">
+                {/* LEFT SIDE - CONTRIBUTOR DETAILS */}
 
+                <div className="flex-1">
+                  <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-5">
+                    Contributor Details
+                  </h3>
 
-              {/* Information */}
+                  <div className="space-y-4">
+                    {/* NAME */}
 
-              <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
+                        <UserCircle className="h-5 w-5 text-stone-600" />
+                      </div>
 
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-stone-400">
-                    Author
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-stone-400">
+                          Name
+                        </p>
+
+                        <p className="text-sm font-bold text-gray-800">
+                          {selectedItem.contributorNameMalayalam || "-"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* EMAIL */}
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
+                        <Mail className="h-4 w-4 text-stone-600" />
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-stone-400">
+                          Email
+                        </p>
+
+                        <p className="text-sm font-semibold text-gray-800">
+                          {selectedItem.contributorEmail || "-"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* PHONE */}
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
+                        <Phone className="h-4 w-4 text-stone-600" />
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-stone-400">
+                          Phone
+                        </p>
+
+                        <p className="text-sm font-semibold text-gray-800">
+                          {selectedItem.contributorPhone || "-"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ADDRESS */}
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
+                        <MapPin className="h-4 w-4 text-stone-600" />
+                      </div>
+
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-stone-400">
+                          Address
+                        </p>
+
+                        <p className="text-sm font-semibold text-gray-800">
+                          {selectedItem.contributorAddressMalayalam || "-"}
+                        </p>
+
+                        <p className="text-xs text-stone-500 mt-1">
+                          {selectedItem.contributorCityMalayalam || "-"}
+                          {selectedItem.contributorDistrictMalayalam &&
+                            `, ${selectedItem.contributorDistrictMalayalam}`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT SIDE - PROFILE IMAGE */}
+
+                <div className="flex flex-col items-center md:w-52">
+                  <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-4">
+                    Contributor
+                  </h3>
+
+                  {selectedItem.contributorProfileImageUrl ? (
+                    <img
+                      src={selectedItem.contributorProfileImageUrl}
+                      alt={selectedItem.contributorNameMalayalam}
+                      className="w-36 h-36 rounded-2xl object-cover border-4 border-stone-100 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-36 h-36 rounded-2xl bg-emerald-50 border-4 border-stone-100 flex items-center justify-center">
+                      <UserCircle className="h-16 w-16 text-emerald-800" />
+                    </div>
+                  )}
+
+                  <p className="text-sm font-bold text-gray-800 mt-3 text-center">
+                    {selectedItem.contributorNameMalayalam}
                   </p>
+                </div>
+              </div>
 
-                  <p className="text-sm font-semibold text-gray-800 mt-1">
-                    {selectedItem.userName}
+              {/* ================= SUBMISSION INFO ================= */}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-6 border-t border-stone-200">
+                {/* TYPE */}
+
+                <div className="bg-stone-50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-stone-400 mb-2">
+                    <FileText className="h-4 w-4" />
+
+                    <span className="text-[10px] uppercase font-bold">
+                      Submission Type
+                    </span>
+                  </div>
+
+                  <p className="text-sm font-bold text-gray-800">
+                    {selectedItem.type || "-"}
                   </p>
                 </div>
 
+                {/* PAYMENT */}
 
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-stone-400">
-                    Category
-                  </p>
+                <div className="bg-stone-50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-stone-400 mb-2">
+                    <CreditCard className="h-4 w-4" />
 
-                  <p className="text-sm font-semibold text-gray-800 mt-1">
-                    {selectedItem.categoryName}
-                  </p>
+                    <span className="text-[10px] uppercase font-bold">
+                      Payment Status
+                    </span>
+                  </div>
+
+                  <span
+                    className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${getPaymentStyle(
+                      selectedItem.paymentStatus,
+                    )}`}
+                  >
+                    {selectedItem.paymentStatus || "Pending"}
+                  </span>
                 </div>
 
+                {/* DATE */}
 
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-stone-400">
-                    Submitted
-                  </p>
+                <div className="bg-stone-50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-stone-400 mb-2">
+                    <CalendarDays className="h-4 w-4" />
 
-                  <p className="text-sm font-semibold text-gray-800 mt-1">
+                    <span className="text-[10px] uppercase font-bold">
+                      Submitted
+                    </span>
+                  </div>
+
+                  <p className="text-sm font-bold text-gray-800">
                     {formatDate(selectedItem.createdDate)}
                   </p>
                 </div>
-
-
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-stone-400">
-                    Status
-                  </p>
-
-                  <span
-                    className={`inline-flex mt-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                      selectedItem.status === 'Approved'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : selectedItem.status === 'Rejected'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}
-                  >
-                    {selectedItem.status || 'Pending'}
-                  </span>
-
-                </div>
-
               </div>
 
+              {/* ================= FULL CONTENT ================= */}
 
-              {/* Content */}
+              <div className="mt-8">
+                <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">
+                  Full {selectedItem.type} Content
+                </h3>
 
-              <div>
-
-                <p className="text-xs font-bold text-stone-500 mb-2">
-                  CONTENT
-                </p>
-
-                <div className="bg-stone-50 border border-stone-200 rounded-xl p-5 max-h-72 overflow-y-auto">
-
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                <div className="bg-stone-50 border border-stone-200 rounded-xl p-5 max-h-[400px] overflow-y-auto">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-7">
                     {selectedItem.content}
                   </p>
-
                 </div>
-
               </div>
-
-
-              {/* Existing Remarks */}
-
-              {selectedItem.adminRemarks && (
-
-                <div>
-
-                  <p className="text-xs font-bold text-stone-500 mb-2">
-                    PREVIOUS ADMIN REMARKS
-                  </p>
-
-                  <div className="bg-stone-50 border border-stone-200 rounded-xl p-4">
-
-                    <p className="text-sm text-stone-600">
-                      {selectedItem.adminRemarks}
-                    </p>
-
-                  </div>
-
-                </div>
-
-              )}
-
-
-              {/* Admin Remarks */}
-
-              {selectedItem.status !== 'Approved' &&
-               selectedItem.status !== 'Rejected' && (
-
-                <div>
-
-                  <label className="block text-xs font-bold text-gray-700 mb-2">
-                    Admin Remarks
-                  </label>
-
-                  <textarea
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    rows="3"
-                    placeholder="Enter remarks (optional)..."
-                    className="w-full border border-stone-200 rounded-xl p-3 text-sm focus:outline-none focus:border-emerald-800 resize-none"
-                  />
-
-                </div>
-
-              )}
-
             </div>
 
+            {/* ================= MODAL FOOTER ================= */}
 
-            {/* Modal Footer */}
-
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-stone-200">
-
+            <div className="flex justify-end px-6 py-4 border-t border-stone-200">
               <button
                 onClick={() => setSelectedItem(null)}
-                className="px-4 py-2.5 border border-stone-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-stone-50 cursor-pointer"
+                className="px-5 py-2.5 bg-[#1b3b2b] hover:bg-emerald-950 text-white rounded-xl text-sm font-bold cursor-pointer transition-colors"
               >
                 Close
               </button>
-
-
-              {selectedItem.status !== 'Rejected' && (
-                <button
-                  onClick={() => handleReject(selectedItem.storyPoetryId)}
-                  className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold cursor-pointer"
-                >
-                  Reject
-                </button>
-              )}
-
-
-              {selectedItem.status !== 'Approved' && (
-                <button
-                  onClick={() => handleApprove(selectedItem.storyPoetryId)}
-                  className="px-4 py-2.5 bg-[#1b3b2b] hover:bg-emerald-950 text-white rounded-xl text-sm font-bold cursor-pointer"
-                >
-                  Approve
-                </button>
-              )}
-
             </div>
-
           </div>
-
         </div>
-
       )}
-
     </div>
   );
 }
-

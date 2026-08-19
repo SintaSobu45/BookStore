@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   User,
   Mail,
@@ -9,401 +9,605 @@ import {
   Loader2,
   Pencil,
   X,
-  Save
-} from 'lucide-react';
+  Save,
+  Camera,
+  Languages,
+} from "lucide-react";
 
-import Navbar from '../Components/Navbar';
-import Footer from '../Components/Footer';
+import Navbar from "../Components/Navbar";
+import Footer from "../Components/Footer";
 
 import {
   getProfile,
-  updateProfile
-} from '../services/profileService';
+  updateProfile,
+  uploadProfileImage,
+} from "../services/profileService";
+
+// =========================================================
+// INPUT FIELD
+// IMPORTANT:
+// This component is OUTSIDE Profile so it won't remount
+// every time formData changes.
+// =========================================================
+
+const InputField = ({
+  label,
+  name,
+  value,
+  icon: Icon,
+  placeholder,
+  required = false,
+  maxLength,
+  type = "text",
+  onChange,
+}) => {
+  return (
+    <div>
+      <label className="block text-xs font-bold text-gray-700 mb-2">
+        {label}
+
+        {required && (
+          <span className="text-red-500 ml-1">*</span>
+        )}
+      </label>
+
+      <div className="relative">
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
+
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          maxLength={maxLength}
+          className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800 focus:ring-1 focus:ring-emerald-800/20 transition"
+        />
+      </div>
+    </div>
+  );
+};
+
+// =========================================================
+// TEXTAREA FIELD
+// =========================================================
+
+const TextareaField = ({
+  label,
+  name,
+  value,
+  icon: Icon,
+  placeholder,
+  maxLength,
+  onChange,
+}) => {
+  return (
+    <div className="sm:col-span-2">
+      <label className="block text-xs font-bold text-gray-700 mb-2">
+        {label}
+      </label>
+
+      <div className="relative">
+        <Icon className="absolute left-3 top-3.5 h-4 w-4 text-stone-400 pointer-events-none" />
+
+        <textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          rows={3}
+          className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800 focus:ring-1 focus:ring-emerald-800/20 resize-none transition"
+        />
+      </div>
+    </div>
+  );
+};
+
+// =========================================================
+// INFO CARD
+// =========================================================
+
+const InfoCard = ({
+  icon: Icon,
+  label,
+  value,
+  fullWidth = false,
+}) => {
+  return (
+    <div
+      className={`bg-stone-50 border border-stone-200 rounded-2xl p-4 ${
+        fullWidth ? "sm:col-span-2" : ""
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <Icon className="h-4 w-4 text-emerald-800 shrink-0" />
+
+        <span className="text-xs font-semibold text-stone-500">
+          {label}
+        </span>
+      </div>
+
+      <p className="text-sm font-bold text-gray-900 break-words whitespace-pre-wrap">
+        {value || "Not provided"}
+      </p>
+    </div>
+  );
+};
+
+// =========================================================
+// PROFILE
+// =========================================================
 
 export default function Profile() {
-
   const [profile, setProfile] = useState(null);
 
   const [loading, setLoading] = useState(true);
-
-  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
 
-  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const [success, setSuccess] = useState('');
+  // =========================================================
+  // FORM DATA
+  // Matches GetProfileResponse from backend
+  // =========================================================
 
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: ''
+    name: "",
+    phone: "",
+    address: "",
+    city: "",
+    district: "",
+    state: "",
+    pincode: "",
+
+    nameMalayalam: "",
+    addressMalayalam: "",
+    cityMalayalam: "",
+    districtMalayalam: "",
+    stateMalayalam: "",
   });
 
+  // =========================================================
+  // CREATE FORM DATA FROM PROFILE
+  // =========================================================
 
-  // =========================
-  // Load Profile
-  // =========================
+  const createFormData = (data) => {
+    return {
+      name: data?.name || "",
+      phone: data?.phone || "",
+      address: data?.address || "",
+      city: data?.city || "",
+      district: data?.district || "",
+      state: data?.state || "",
+      pincode: data?.pincode || "",
+
+      nameMalayalam: data?.nameMalayalam || "",
+      addressMalayalam: data?.addressMalayalam || "",
+      cityMalayalam: data?.cityMalayalam || "",
+      districtMalayalam: data?.districtMalayalam || "",
+      stateMalayalam: data?.stateMalayalam || "",
+    };
+  };
+
+  // =========================================================
+  // LOAD PROFILE
+  // =========================================================
 
   const loadProfile = async () => {
-
     try {
-
       setLoading(true);
-      setError('');
+      setError("");
 
       const data = await getProfile();
 
-      console.log('Profile:', data);
+      console.log("Profile:", data);
 
       setProfile(data);
 
-      setFormData({
-        firstName: data.firstName || '',
-        lastName: data.lastName || '',
-        phone: data.phone || '',
-        address: data.address || '',
-        city: data.city || '',
-        state: data.state || '',
-        pincode: data.pincode || ''
-      });
-
+      setFormData(createFormData(data));
     } catch (error) {
-
-      console.error(
-        'Failed to load profile:',
-        error
-      );
+      console.error("Failed to load profile:", error);
 
       setError(
-        error.message || 'Failed to load profile'
+        error.message || "Failed to load profile."
       );
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
-
   useEffect(() => {
-
     loadProfile();
-
   }, []);
 
-
-  // =========================
-  // Handle Input
-  // =========================
+  // =========================================================
+  // HANDLE INPUT
+  // =========================================================
 
   const handleChange = (e) => {
-
     const { name, value } = e.target;
 
     setFormData((previous) => ({
       ...previous,
-      [name]: value
+      [name]: value,
     }));
-
   };
 
-
-  // =========================
-  // Edit
-  // =========================
+  // =========================================================
+  // EDIT
+  // =========================================================
 
   const handleEdit = () => {
-
-    setSuccess('');
-    setError('');
+    setError("");
+    setSuccess("");
     setEditMode(true);
-
   };
 
-
-  // =========================
-  // Cancel
-  // =========================
+  // =========================================================
+  // CANCEL
+  // =========================================================
 
   const handleCancel = () => {
-
-    setFormData({
-      firstName: profile.firstName || '',
-      lastName: profile.lastName || '',
-      phone: profile.phone || '',
-      address: profile.address || '',
-      city: profile.city || '',
-      state: profile.state || '',
-      pincode: profile.pincode || ''
-    });
+    setFormData(createFormData(profile));
 
     setEditMode(false);
-
-    setError('');
-    setSuccess('');
-
+    setError("");
+    setSuccess("");
   };
 
-
-  // =========================
-  // Update Profile
-  // =========================
+  // =========================================================
+  // UPDATE PROFILE
+  // =========================================================
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
 
     try {
-
       setSaving(true);
-
-      setError('');
-      setSuccess('');
+      setError("");
+      setSuccess("");
 
       const response = await updateProfile(formData);
 
-      console.log(
-        'Updated profile:',
-        response
-      );
-
-      /*
-        Backend returns:
-
-        {
-          message: "...",
-          profile: {...}
-        }
-      */
+      console.log("Updated profile:", response);
 
       const updatedProfile =
         response.profile || response;
 
       setProfile(updatedProfile);
 
-      setFormData({
-        firstName: updatedProfile.firstName || '',
-        lastName: updatedProfile.lastName || '',
-        phone: updatedProfile.phone || '',
-        address: updatedProfile.address || '',
-        city: updatedProfile.city || '',
-        state: updatedProfile.state || '',
-        pincode: updatedProfile.pincode || ''
-      });
+      setFormData(createFormData(updatedProfile));
 
       setEditMode(false);
 
       setSuccess(
         response.message ||
-        'Profile updated successfully'
+          "Profile updated successfully."
       );
-
     } catch (error) {
-
       console.error(
-        'Failed to update profile:',
+        "Failed to update profile:",
         error
       );
 
       setError(
         error.message ||
-        'Failed to update profile'
+          "Failed to update profile."
       );
-
     } finally {
-
       setSaving(false);
-
     }
-
   };
 
+  // =========================================================
+  // UPLOAD PROFILE IMAGE
+  // =========================================================
 
-  // =========================
-  // Loading
-  // =========================
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    // Only images
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image.");
+      e.target.value = "";
+      return;
+    }
+
+    // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
+      setError(
+        "Image size must be less than 5MB."
+      );
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setError("");
+      setSuccess("");
+
+      const response =
+        await uploadProfileImage(file);
+
+      console.log(
+        "Uploaded profile image:",
+        response
+      );
+
+      const updatedProfile =
+        response.profile || response;
+
+      setProfile(updatedProfile);
+
+      setFormData(createFormData(updatedProfile));
+
+      setSuccess(
+        response.message ||
+          "Profile image updated successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Failed to upload profile image:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Failed to upload profile image."
+      );
+    } finally {
+      setUploadingImage(false);
+
+      // Allow selecting the same image again
+      e.target.value = "";
+    }
+  };
+
+  // =========================================================
+  // LOADING
+  // =========================================================
 
   if (loading) {
-
     return (
       <>
         <Navbar />
 
-        <div className="min-h-screen flex items-center justify-center bg-stone-100/60">
+        <main className="min-h-screen bg-stone-100/60 px-4 py-8 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden">
 
-          <div className="flex items-center space-x-2 text-gray-500">
+              {/* Header Skeleton */}
 
-            <Loader2 className="h-5 w-5 animate-spin" />
+              <div className="bg-[#1b3b2b] px-5 sm:px-8 py-8">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
 
-            <span className="text-sm">
-              Loading profile...
-            </span>
+                  <div className="w-20 h-20 rounded-full bg-white/20 animate-pulse shrink-0" />
 
+                  <div className="flex-1 w-full text-center sm:text-left">
+                    <div className="h-6 w-40 bg-white/20 rounded-lg animate-pulse mx-auto sm:mx-0" />
+
+                    <div className="h-4 w-52 bg-white/15 rounded-lg animate-pulse mt-3 mx-auto sm:mx-0" />
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Content Skeleton */}
+
+              <div className="p-5 sm:p-8">
+
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <Loader2 className="h-4 w-4 text-emerald-800 animate-spin" />
+                  </div>
+
+                  <div>
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+
+                    <div className="h-3 w-44 bg-gray-100 rounded animate-pulse mt-2" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[1, 2, 3, 4, 5, 6].map(
+                    (item) => (
+                      <div
+                        key={item}
+                        className="border border-gray-100 bg-gray-50 rounded-2xl p-4"
+                      >
+                        <div className="h-3 w-20 bg-gray-200 rounded animate-pulse mb-3" />
+
+                        <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
+                      </div>
+                    )
+                  )}
+                </div>
+
+                <div className="flex justify-center mt-8">
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <Loader2 className="h-5 w-5 text-emerald-800 animate-spin" />
+
+                    <span className="text-sm font-medium">
+                      Loading profile...
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
           </div>
-
-        </div>
+        </main>
 
         <Footer />
       </>
     );
-
   }
 
-
-  // =========================
-  // Error / No Profile
-  // =========================
+  // =========================================================
+  // ERROR
+  // =========================================================
 
   if (error && !profile) {
-
     return (
       <>
         <Navbar />
 
-        <div className="min-h-screen flex items-center justify-center bg-stone-100/60">
+        <main className="min-h-screen flex items-center justify-center bg-stone-100/60 px-4">
+          <div className="text-center max-w-md">
 
-          <div className="text-center">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+              <User className="w-8 h-8 text-red-500" />
+            </div>
 
             <h2 className="text-xl font-bold text-gray-900 mb-2">
               Unable to load profile
             </h2>
 
-            <p className="text-sm text-red-500">
+            <p className="text-sm text-red-500 break-words">
               {error}
             </p>
 
           </div>
-
-        </div>
+        </main>
 
         <Footer />
       </>
     );
-
   }
 
+  // =========================================================
+  // RETURN
+  // =========================================================
 
   return (
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-stone-100/60 py-10 px-4 sm:px-6 lg:px-8">
-
+      <main className="min-h-screen bg-stone-100/60 py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
 
+          {/* =================================================
+              PAGE HEADER
+          ================================================= */}
 
-          {/* =========================
-              Header
-          ========================= */}
-
-          <div className="mb-8 flex items-center justify-between">
+          <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 
             <div>
-
-              <h1 className="text-3xl font-extrabold text-gray-900">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
                 My Profile
               </h1>
 
               <p className="text-sm text-stone-500 mt-1">
                 Manage your personal information
               </p>
-
             </div>
 
-
             {!editMode && (
-
               <button
                 onClick={handleEdit}
-                className="flex items-center space-x-2 bg-[#1b3b2b] hover:bg-emerald-950 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1b3b2b] hover:bg-emerald-950 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
               >
-
                 <Pencil className="h-4 w-4" />
 
-                <span>
-                  Edit Profile
-                </span>
-
+                <span>Edit Profile</span>
               </button>
-
             )}
 
           </div>
 
-
-          {/* =========================
-              Success Message
-          ========================= */}
+          {/* =================================================
+              SUCCESS MESSAGE
+          ================================================= */}
 
           {success && (
-
             <div className="mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-sm font-medium">
-
               {success}
-
             </div>
-
           )}
 
-
-          {/* =========================
-              Error Message
-          ========================= */}
+          {/* =================================================
+              ERROR MESSAGE
+          ================================================= */}
 
           {error && profile && (
-
             <div className="mb-5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
-
               {error}
-
             </div>
-
           )}
 
-
-          {/* =========================
-              Profile Card
-          ========================= */}
+          {/* =================================================
+              PROFILE CARD
+          ================================================= */}
 
           <div className="bg-white border border-stone-200/80 rounded-3xl shadow-sm overflow-hidden">
 
+            {/* =================================================
+                PROFILE HEADER
+            ================================================= */}
 
-            {/* Profile Header */}
+            <div className="bg-[#1b3b2b] px-5 sm:px-8 py-7 sm:py-8">
 
-            <div className="bg-[#1b3b2b] px-6 sm:px-8 py-8">
+              <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5">
 
-              <div className="flex items-center space-x-5">
+                {/* PROFILE IMAGE */}
 
-                {/* Avatar */}
+                <div className="relative h-20 w-20 shrink-0">
 
-                <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-md">
+                  {profile.profileImageUrl ? (
+                    <img
+                      src={profile.profileImageUrl}
+                      alt="Profile"
+                      className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-md"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-md">
+                      <User className="h-10 w-10 text-emerald-900" />
+                    </div>
+                  )}
 
-                  <User className="h-10 w-10 text-emerald-900" />
+                  {/* CAMERA BUTTON */}
+
+                  <label
+                    htmlFor="profile-image-upload"
+                    className="absolute bottom-0 right-0 h-7 w-7 bg-white text-emerald-900 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-emerald-50 transition"
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
+                  </label>
+
+                  <input
+                    id="profile-image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={uploadingImage}
+                  />
 
                 </div>
 
+                {/* USER NAME */}
 
-                {/* Name */}
+                <div className="text-center sm:text-left min-w-0">
 
-                <div>
-
-                  <h2 className="text-2xl font-bold text-white">
-
-                    {profile.firstName} {profile.lastName}
-
+                  <h2 className="text-xl sm:text-2xl font-bold text-white break-words">
+                    {profile.name || "User"}
                   </h2>
 
-                  <p className="text-sm text-emerald-100 mt-1">
-
+                  <p className="text-sm text-emerald-100 mt-1 break-all">
                     {profile.email}
-
                   </p>
 
                 </div>
@@ -412,331 +616,313 @@ export default function Profile() {
 
             </div>
 
+            {/* =================================================
+                CONTENT
+            ================================================= */}
 
-            {/* =========================
-                Content
-            ========================= */}
-
-            <div className="p-6 sm:p-8">
-
-
-              {/* =========================
-                  Edit Form
-              ========================= */}
+            <div className="p-5 sm:p-8">
 
               {editMode ? (
 
+                // =================================================
+                // EDIT MODE
+                // =================================================
+
                 <form
                   onSubmit={handleSubmit}
-                  className="space-y-8"
+                  className="space-y-10"
                 >
 
-                  {/* Personal Information */}
+                  {/* =================================================
+                      PERSONAL INFORMATION
+                  ================================================= */}
 
-                  <div>
+                  <section>
 
-                    <h3 className="text-lg font-bold text-gray-900 mb-5">
-                      Personal Information
-                    </h3>
+                    <div className="mb-5">
+                      <h3 className="text-lg font-bold text-gray-900">
+                        Personal Information
+                      </h3>
 
+                      <p className="text-xs text-stone-500 mt-1">
+                        Update your basic account information.
+                      </p>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
+                      {/* NAME */}
 
-                      {/* First Name */}
+                      <InputField
+                        label="Full Name"
+                        name="name"
+                        value={formData.name}
+                        icon={User}
+                        placeholder="Enter your full name"
+                        required
+                        maxLength={200}
+                        onChange={handleChange}
+                      />
 
-                      <div>
-
-                        <label className="block text-xs font-bold text-gray-700 mb-2">
-                          First Name
-                        </label>
-
-                        <div className="relative">
-
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-
-                          <input
-                            type="text"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            required
-                            maxLength={100}
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800"
-                          />
-
-                        </div>
-
-                      </div>
-
-
-                      {/* Last Name */}
+                      {/* EMAIL */}
 
                       <div>
-
-                        <label className="block text-xs font-bold text-gray-700 mb-2">
-                          Last Name
-                        </label>
-
-                        <div className="relative">
-
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-
-                          <input
-                            type="text"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            required
-                            maxLength={100}
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800"
-                          />
-
-                        </div>
-
-                      </div>
-
-
-                      {/* Email - Read Only */}
-
-                      <div>
-
                         <label className="block text-xs font-bold text-gray-700 mb-2">
                           Email Address
                         </label>
 
                         <div className="relative">
-
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
 
                           <input
                             type="email"
-                            value={profile.email}
+                            value={profile.email || ""}
                             disabled
                             className="w-full bg-stone-100 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-500 cursor-not-allowed"
                           />
-
                         </div>
 
                         <p className="text-[11px] text-stone-400 mt-1">
                           Email cannot be changed.
                         </p>
-
                       </div>
 
+                      {/* PHONE */}
 
-                      {/* Phone */}
-
-                      <div>
-
-                        <label className="block text-xs font-bold text-gray-700 mb-2">
-                          Phone Number
-                        </label>
-
-                        <div className="relative">
-
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-
-                          <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            required
-                            maxLength={10}
-                            pattern="[6-9][0-9]{9}"
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800"
-                          />
-
-                        </div>
-
-                        <p className="text-[11px] text-stone-400 mt-1">
-                          Enter a valid 10-digit Indian phone number.
-                        </p>
-
-                      </div>
+                      <InputField
+                        label="Phone Number"
+                        name="phone"
+                        value={formData.phone}
+                        icon={Phone}
+                        placeholder="Enter 10-digit phone number"
+                        required
+                        maxLength={10}
+                        type="tel"
+                        onChange={handleChange}
+                      />
 
                     </div>
 
-                  </div>
+                  </section>
 
+                  {/* =================================================
+                      ADDRESS INFORMATION
+                  ================================================= */}
 
-                  {/* =========================
-                      Address
-                  ========================= */}
+                  <section>
 
-                  <div>
+                    <div className="mb-5">
+                      <h3 className="text-lg font-bold text-gray-900">
+                        Address Information
+                      </h3>
 
-                    <h3 className="text-lg font-bold text-gray-900 mb-5">
-                      Address Information
-                    </h3>
-
+                      <p className="text-xs text-stone-500 mt-1">
+                        Add your location and contact address.
+                      </p>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
+                      {/* ADDRESS */}
 
-                      {/* Address */}
+                      <TextareaField
+                        label="Address"
+                        name="address"
+                        value={formData.address}
+                        icon={MapPin}
+                        placeholder="Enter your address"
+                        maxLength={500}
+                        onChange={handleChange}
+                      />
 
-                      <div className="sm:col-span-2">
+                      {/* CITY */}
 
-                        <label className="block text-xs font-bold text-gray-700 mb-2">
-                          Address
-                        </label>
+                      <InputField
+                        label="City"
+                        name="city"
+                        value={formData.city}
+                        icon={Building2}
+                        placeholder="Enter your city"
+                        maxLength={100}
+                        onChange={handleChange}
+                      />
 
-                        <div className="relative">
+                      {/* DISTRICT */}
 
-                          <MapPin className="absolute left-3 top-3.5 h-4 w-4 text-stone-400" />
+                      <InputField
+                        label="District"
+                        name="district"
+                        value={formData.district}
+                        icon={MapPin}
+                        placeholder="Enter your district"
+                        maxLength={100}
+                        onChange={handleChange}
+                      />
 
-                          <textarea
-                            name="address"
-                            value={formData.address}
-                            onChange={handleChange}
-                            maxLength={500}
-                            rows={3}
-                            placeholder="Enter your address"
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800 resize-none"
-                          />
+                      {/* STATE */}
 
+                      <InputField
+                        label="State"
+                        name="state"
+                        value={formData.state}
+                        icon={MapPin}
+                        placeholder="Enter your state"
+                        maxLength={100}
+                        onChange={handleChange}
+                      />
+
+                      {/* PINCODE */}
+
+                      <InputField
+                        label="Pincode"
+                        name="pincode"
+                        value={formData.pincode}
+                        icon={Hash}
+                        placeholder="Enter your pincode"
+                        maxLength={10}
+                        type="text"
+                        onChange={handleChange}
+                      />
+
+                    </div>
+
+                  </section>
+
+                  {/* =================================================
+                      MALAYALAM DETAILS
+                  ================================================= */}
+
+                  <section>
+
+                    <div className="mb-5">
+
+                      <div className="flex items-center gap-3">
+
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                          <Languages className="h-5 w-5 text-emerald-900" />
                         </div>
 
-                      </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">
+                            Malayalam Details
+                          </h3>
 
-
-                      {/* City */}
-
-                      <div>
-
-                        <label className="block text-xs font-bold text-gray-700 mb-2">
-                          City
-                        </label>
-
-                        <div className="relative">
-
-                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-
-                          <input
-                            type="text"
-                            name="city"
-                            value={formData.city}
-                            onChange={handleChange}
-                            maxLength={100}
-                            placeholder="Enter your city"
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800"
-                          />
-
-                        </div>
-
-                      </div>
-
-
-                      {/* State */}
-
-                      <div>
-
-                        <label className="block text-xs font-bold text-gray-700 mb-2">
-                          State
-                        </label>
-
-                        <div className="relative">
-
-                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-
-                          <input
-                            type="text"
-                            name="state"
-                            value={formData.state}
-                            onChange={handleChange}
-                            maxLength={100}
-                            placeholder="Enter your state"
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800"
-                          />
-
-                        </div>
-
-                      </div>
-
-
-                      {/* Pincode */}
-
-                      <div>
-
-                        <label className="block text-xs font-bold text-gray-700 mb-2">
-                          Pincode
-                        </label>
-
-                        <div className="relative">
-
-                          <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-
-                          <input
-                            type="text"
-                            name="pincode"
-                            value={formData.pincode}
-                            onChange={handleChange}
-                            maxLength={10}
-                            placeholder="Enter your pincode"
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800"
-                          />
-
+                          <p className="text-xs text-stone-500 mt-1">
+                            Add your information in Malayalam.
+                          </p>
                         </div>
 
                       </div>
 
                     </div>
 
-                  </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
+                      {/* MALAYALAM NAME */}
 
-                  {/* =========================
-                      Action Buttons
-                  ========================= */}
+                      <InputField
+                        label="Name in Malayalam"
+                        name="nameMalayalam"
+                        value={formData.nameMalayalam}
+                        icon={User}
+                        placeholder="മലയാളത്തിൽ പേര്"
+                        maxLength={200}
+                        onChange={handleChange}
+                      />
 
-                  <div className="flex justify-end space-x-3 pt-4 border-t border-stone-100">
+                      {/* MALAYALAM CITY */}
+
+                      <InputField
+                        label="City in Malayalam"
+                        name="cityMalayalam"
+                        value={formData.cityMalayalam}
+                        icon={Building2}
+                        placeholder="നഗരം"
+                        maxLength={100}
+                        onChange={handleChange}
+                      />
+
+                      {/* MALAYALAM DISTRICT */}
+
+                      <InputField
+                        label="District in Malayalam"
+                        name="districtMalayalam"
+                        value={formData.districtMalayalam}
+                        icon={MapPin}
+                        placeholder="ജില്ല"
+                        maxLength={100}
+                        onChange={handleChange}
+                      />
+
+                      {/* MALAYALAM STATE */}
+
+                      <InputField
+                        label="State in Malayalam"
+                        name="stateMalayalam"
+                        value={formData.stateMalayalam}
+                        icon={MapPin}
+                        placeholder="സംസ്ഥാനം"
+                        maxLength={100}
+                        onChange={handleChange}
+                      />
+
+                      {/* MALAYALAM ADDRESS */}
+
+                      <TextareaField
+                        label="Address in Malayalam"
+                        name="addressMalayalam"
+                        value={formData.addressMalayalam}
+                        icon={MapPin}
+                        placeholder="വിലാസം മലയാളത്തിൽ"
+                        maxLength={500}
+                        onChange={handleChange}
+                      />
+
+                    </div>
+
+                  </section>
+
+                  {/* =================================================
+                      ACTION BUTTONS
+                  ================================================= */}
+
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-5 border-t border-stone-100">
 
                     <button
                       type="button"
                       onClick={handleCancel}
                       disabled={saving}
-                      className="flex items-center space-x-2 border border-stone-200 hover:bg-stone-50 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 border border-stone-200 hover:bg-stone-50 text-gray-700 px-5 py-3 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
                     >
-
-                      <X className="h-4 w-4" />
+                      <X className="h-4 w-4 shrink-0" />
 
                       <span>
                         Cancel
                       </span>
-
                     </button>
-
 
                     <button
                       type="submit"
                       disabled={saving}
-                      className="flex items-center space-x-2 bg-[#1b3b2b] hover:bg-emerald-950 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1b3b2b] hover:bg-emerald-950 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
                     >
-
                       {saving ? (
-
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin shrink-0" />
 
                           <span>
                             Saving...
                           </span>
                         </>
-
                       ) : (
-
                         <>
-                          <Save className="h-4 w-4" />
+                          <Save className="h-4 w-4 shrink-0" />
 
                           <span>
                             Save Changes
                           </span>
                         </>
-
                       )}
-
                     </button>
 
                   </div>
@@ -745,214 +931,161 @@ export default function Profile() {
 
               ) : (
 
-                /* =========================
-                    View Mode
-                ========================= */
+                // =================================================
+                // VIEW MODE
+                // =================================================
 
-                <>
+                <div className="space-y-10">
 
-                  {/* Personal Information */}
+                  {/* =================================================
+                      PERSONAL INFORMATION
+                  ================================================= */}
 
-                  <h3 className="text-lg font-bold text-gray-900 mb-5">
-                    Personal Information
-                  </h3>
+                  <section>
 
+                    <h3 className="text-lg font-bold text-gray-900 mb-5">
+                      Personal Information
+                    </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
+                      <InfoCard
+                        icon={User}
+                        label="Full Name"
+                        value={profile.name}
+                      />
 
-                    {/* First Name */}
+                      <InfoCard
+                        icon={Mail}
+                        label="Email Address"
+                        value={profile.email}
+                      />
 
-                    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
-
-                      <div className="flex items-center space-x-2 mb-2">
-
-                        <User className="h-4 w-4 text-emerald-800" />
-
-                        <span className="text-xs font-semibold text-stone-500">
-                          First Name
-                        </span>
-
-                      </div>
-
-                      <p className="text-sm font-bold text-gray-900">
-                        {profile.firstName || '-'}
-                      </p>
-
-                    </div>
-
-
-                    {/* Last Name */}
-
-                    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
-
-                      <div className="flex items-center space-x-2 mb-2">
-
-                        <User className="h-4 w-4 text-emerald-800" />
-
-                        <span className="text-xs font-semibold text-stone-500">
-                          Last Name
-                        </span>
-
-                      </div>
-
-                      <p className="text-sm font-bold text-gray-900">
-                        {profile.lastName || '-'}
-                      </p>
+                      <InfoCard
+                        icon={Phone}
+                        label="Phone Number"
+                        value={profile.phone}
+                      />
 
                     </div>
 
+                  </section>
 
-                    {/* Email */}
+                  {/* =================================================
+                      ADDRESS INFORMATION
+                  ================================================= */}
 
-                    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
+                  <section>
 
-                      <div className="flex items-center space-x-2 mb-2">
+                    <h3 className="text-lg font-bold text-gray-900 mb-5">
+                      Address Information
+                    </h3>
 
-                        <Mail className="h-4 w-4 text-emerald-800" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
-                        <span className="text-xs font-semibold text-stone-500">
-                          Email Address
-                        </span>
+                      <InfoCard
+                        icon={MapPin}
+                        label="Address"
+                        value={profile.address}
+                        fullWidth
+                      />
 
-                      </div>
+                      <InfoCard
+                        icon={Building2}
+                        label="City"
+                        value={profile.city}
+                      />
 
-                      <p className="text-sm font-bold text-gray-900 break-all">
-                        {profile.email || '-'}
-                      </p>
+                      <InfoCard
+                        icon={MapPin}
+                        label="District"
+                        value={profile.district}
+                      />
 
-                    </div>
+                      <InfoCard
+                        icon={MapPin}
+                        label="State"
+                        value={profile.state}
+                      />
 
-
-                    {/* Phone */}
-
-                    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
-
-                      <div className="flex items-center space-x-2 mb-2">
-
-                        <Phone className="h-4 w-4 text-emerald-800" />
-
-                        <span className="text-xs font-semibold text-stone-500">
-                          Phone Number
-                        </span>
-
-                      </div>
-
-                      <p className="text-sm font-bold text-gray-900">
-                        {profile.phone || '-'}
-                      </p>
-
-                    </div>
-
-                  </div>
-
-
-                  {/* Address */}
-
-                  <h3 className="text-lg font-bold text-gray-900 mt-10 mb-5">
-                    Address Information
-                  </h3>
-
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-
-                    {/* Address */}
-
-                    <div className="sm:col-span-2 bg-stone-50 border border-stone-200 rounded-2xl p-4">
-
-                      <div className="flex items-center space-x-2 mb-2">
-
-                        <MapPin className="h-4 w-4 text-emerald-800" />
-
-                        <span className="text-xs font-semibold text-stone-500">
-                          Address
-                        </span>
-
-                      </div>
-
-                      <p className="text-sm font-bold text-gray-900">
-                        {profile.address || 'Not provided'}
-                      </p>
+                      <InfoCard
+                        icon={Hash}
+                        label="Pincode"
+                        value={profile.pincode}
+                      />
 
                     </div>
 
+                  </section>
 
-                    {/* City */}
+                  {/* =================================================
+                      MALAYALAM INFORMATION
+                  ================================================= */}
 
-                    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
+                  <section>
 
-                      <div className="flex items-center space-x-2 mb-2">
+                    <div className="flex items-center gap-3 mb-5">
 
-                        <Building2 className="h-4 w-4 text-emerald-800" />
-
-                        <span className="text-xs font-semibold text-stone-500">
-                          City
-                        </span>
-
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                        <Languages className="h-5 w-5 text-emerald-900" />
                       </div>
 
-                      <p className="text-sm font-bold text-gray-900">
-                        {profile.city || 'Not provided'}
-                      </p>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">
+                          Malayalam Details
+                        </h3>
+
+                        <p className="text-xs text-stone-500">
+                          Your profile information in Malayalam.
+                        </p>
+                      </div>
 
                     </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
-                    {/* State */}
+                      <InfoCard
+                        icon={User}
+                        label="Name"
+                        value={profile.nameMalayalam}
+                      />
 
-                    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
+                      <InfoCard
+                        icon={Building2}
+                        label="City"
+                        value={profile.cityMalayalam}
+                      />
 
-                      <div className="flex items-center space-x-2 mb-2">
+                      <InfoCard
+                        icon={MapPin}
+                        label="District"
+                        value={profile.districtMalayalam}
+                      />
 
-                        <MapPin className="h-4 w-4 text-emerald-800" />
+                      <InfoCard
+                        icon={MapPin}
+                        label="State"
+                        value={profile.stateMalayalam}
+                      />
 
-                        <span className="text-xs font-semibold text-stone-500">
-                          State
-                        </span>
-
-                      </div>
-
-                      <p className="text-sm font-bold text-gray-900">
-                        {profile.state || 'Not provided'}
-                      </p>
-
-                    </div>
-
-
-                    {/* Pincode */}
-
-                    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
-
-                      <div className="flex items-center space-x-2 mb-2">
-
-                        <Hash className="h-4 w-4 text-emerald-800" />
-
-                        <span className="text-xs font-semibold text-stone-500">
-                          Pincode
-                        </span>
-
-                      </div>
-
-                      <p className="text-sm font-bold text-gray-900">
-                        {profile.pincode || 'Not provided'}
-                      </p>
+                      <InfoCard
+                        icon={MapPin}
+                        label="Address"
+                        value={profile.addressMalayalam}
+                        fullWidth
+                      />
 
                     </div>
 
-                  </div>
+                  </section>
 
-                </>
-
+                </div>
               )}
 
             </div>
-
           </div>
-
         </div>
-
-      </div>
+      </main>
 
       <Footer />
     </>

@@ -1,39 +1,118 @@
-import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-
+import { getEvents } from '../services/eventService';
 
 export default function HeroSection() {
-  return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="bg-[#FAF8F5] border border-stone-200/80 rounded-3xl p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center justify-between relative overflow-hidden shadow-sm">
-        
-        {/* Left Content */}
-        <div className="max-w-xl z-10 mb-8 lg:mb-0">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-[1.15] mb-6">
-            Discover Your Next <span className="text-emerald-800">Favorite Book</span>
-          </h1>
-          <p className="text-gray-600 text-base sm:text-lg mb-8 leading-relaxed">
-            Explore thousands of books, stories, poems and more.
-          </p>
-          <Link className="inline-flex items-center space-x-2 bg-emerald-900 hover:bg-emerald-800 text-white font-medium px-7 py-3.5 rounded-full transition-all shadow-md group cursor-pointer" to={'/all/books'}>
-            <span>Explore Now</span>
-            <ChevronRight className="h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
+  const [events, setEvents] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-        {/* Right Image Section */}
-        <div className="relative z-10 w-full lg:w-[45%] flex justify-center">
-          <div className="relative rounded-2xl overflow-hidden shadow-md border border-stone-100 bg-white p-2">
-            <img 
-              src="https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80" 
-              alt="Books and plant stack" 
-              className="rounded-xl object-cover w-full h-[280px] sm:h-[320px]"
-            />
-          </div>
+  // Get events from backend
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const data = await getEvents();
+
+        console.log('Events from backend:', data);
+
+        setEvents(data);
+      } catch (error) {
+        console.error('Failed to load events:', error);
+      }
+    };
+
+    loadEvents();
+  }, []);
+
+  // Auto slide
+  useEffect(() => {
+    if (events.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) =>
+        prev === events.length - 1 ? 0 : prev + 1
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [events.length]);
+
+  // No events
+  if (events.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
+
+      {/* =========================
+          BANNER
+      ========================= */}
+
+      <div className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-md" >
+
+        {/* Slides */}
+        <div className="relative w-full aspect-[16/7] sm:aspect-[6/1.4]">
+
+          {events.map((item, index) => (
+
+            <Link
+              key={item.eventId || index}
+              to={`/events/${item.eventId}`}
+              className={`
+                absolute inset-0
+                transition-opacity duration-700 ease-in-out
+                ${
+                  index === currentSlide
+                    ? 'opacity-100 z-10'
+                    : 'opacity-0 z-0 pointer-events-none'
+                }
+              `}
+            >
+
+              {/* Event Banner */}
+              <img
+                src={item.imageUrl}
+                alt={item.eventName || 'Event Banner'}
+                className="w-full h-full object-fit"
+              />
+
+            </Link>
+
+          ))}
+
+          {/* =========================
+              SLIDE INDICATORS
+          ========================= */}
+
+          {events.length > 1 && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5">
+
+              {events.map((_, index) => (
+
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setCurrentSlide(index)}
+                  aria-label={`Go to event ${index + 1}`}
+                  className={`
+                    rounded-full transition-all duration-300
+                    ${
+                      index === currentSlide
+                        ? 'w-5 h-2 bg-emerald-600'
+                        : 'w-2 h-2 bg-white/70 hover:bg-white'
+                    }
+                  `}
+                />
+
+              ))}
+
+            </div>
+          )}
+
         </div>
 
       </div>
+
     </section>
   );
 }
