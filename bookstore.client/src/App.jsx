@@ -32,6 +32,7 @@ import AdminStoryPoetry from "./Pages/admin/AdminPoetry";
 import MyRegistrations from "./Pages/MyRegistrations";
 import AdminStoryPoetryDetails from "./Pages/admin/AdminStoryPoetryDetails";
 import Cart from "./Pages/cart";
+import MyOrders from "./Pages/Orders";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -67,6 +68,8 @@ function App() {
         <Route path="/my/registrations" element={<MyRegistrations />} />
 
         <Route path="/cart" element={<Cart />} />
+
+        <Route path="/orders" element={<MyOrders />} />
 
         <Route path="/checkout" element={<Checkout />} />
 

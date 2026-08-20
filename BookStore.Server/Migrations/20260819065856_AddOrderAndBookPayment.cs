@@ -11,10 +11,6 @@ namespace BookStore.Server.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_CartItems_CartId",
-                table: "CartItems");
-
             migrationBuilder.DropColumn(
                 name: "OrderId",
                 table: "Payments");
@@ -42,6 +38,7 @@ namespace BookStore.Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Orders", x => x.OrderId);
+
                     table.ForeignKey(
                         name: "FK_Orders_Users_UserId",
                         column: x => x.UserId,
@@ -71,12 +68,14 @@ namespace BookStore.Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_BookPayments", x => x.BookPaymentId);
+
                     table.ForeignKey(
                         name: "FK_BookPayments_Orders_OrderId",
                         column: x => x.OrderId,
                         principalTable: "Orders",
                         principalColumn: "OrderId",
                         onDelete: ReferentialAction.Restrict);
+
                     table.ForeignKey(
                         name: "FK_BookPayments_Users_UserId",
                         column: x => x.UserId,
@@ -100,12 +99,14 @@ namespace BookStore.Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_OrderItems", x => x.OrderItemId);
+
                     table.ForeignKey(
                         name: "FK_OrderItems_Books_BookId",
                         column: x => x.BookId,
                         principalTable: "Books",
                         principalColumn: "BookId",
                         onDelete: ReferentialAction.Restrict);
+
                     table.ForeignKey(
                         name: "FK_OrderItems_Orders_OrderId",
                         column: x => x.OrderId,
@@ -113,19 +114,6 @@ namespace BookStore.Server.Migrations
                         principalColumn: "OrderId",
                         onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Carts_GuestCartId",
-                table: "Carts",
-                column: "GuestCartId",
-                unique: true,
-                filter: "[GuestCartId] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CartItems_CartId_BookId",
-                table: "CartItems",
-                columns: new[] { "CartId", "BookId" },
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_BookPayments_OrderId",
@@ -165,24 +153,11 @@ namespace BookStore.Server.Migrations
             migrationBuilder.DropTable(
                 name: "Orders");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Carts_GuestCartId",
-                table: "Carts");
-
-            migrationBuilder.DropIndex(
-                name: "IX_CartItems_CartId_BookId",
-                table: "CartItems");
-
             migrationBuilder.AddColumn<int>(
                 name: "OrderId",
                 table: "Payments",
                 type: "int",
                 nullable: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CartItems_CartId",
-                table: "CartItems",
-                column: "CartId");
         }
     }
 }
