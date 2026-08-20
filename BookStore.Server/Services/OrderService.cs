@@ -409,11 +409,18 @@ namespace BookStore.Server.Services
         // GET ORDER BY ID
         // =========================================================
 
-        public async Task<Order?> GetOrderByIdAsync(
+        public async Task<OrderResponse?> GetOrderByIdAsync(
             int orderId)
         {
-            return await _orderRepository
+            var order = await _orderRepository
                 .GetByIdAsync(orderId);
+
+            if (order == null)
+            {
+                return null;
+            }
+
+            return MapToOrderResponse(order);
         }
 
 
@@ -421,11 +428,15 @@ namespace BookStore.Server.Services
         // GET USER ORDERS
         // =========================================================
 
-        public async Task<List<Order>> GetUserOrdersAsync(
+        public async Task<List<OrderResponse>> GetUserOrdersAsync(
             int userId)
         {
-            return await _orderRepository
+            var orders = await _orderRepository
                 .GetByUserIdAsync(userId);
+
+            return orders
+                .Select(MapToOrderResponse)
+                .ToList();
         }
 
 
@@ -433,11 +444,18 @@ namespace BookStore.Server.Services
         // GET GUEST ORDER
         // =========================================================
 
-        public async Task<Order?> GetGuestOrderAsync(
+        public async Task<OrderResponse?> GetGuestOrderAsync(
             string guestOrderId)
         {
-            return await _orderRepository
+            var order = await _orderRepository
                 .GetByGuestOrderIdAsync(guestOrderId);
+
+            if (order == null)
+            {
+                return null;
+            }
+
+            return MapToOrderResponse(order);
         }
 
 
@@ -445,10 +463,77 @@ namespace BookStore.Server.Services
         // GET ALL ORDERS
         // =========================================================
 
-        public async Task<List<Order>> GetAllOrdersAsync()
+        public async Task<List<OrderResponse>> GetAllOrdersAsync()
         {
-            return await _orderRepository
+            var orders = await _orderRepository
                 .GetAllAsync();
+
+            return orders
+                .Select(MapToOrderResponse)
+                .ToList();
+        }
+
+
+        // =========================================================
+        // MAP ORDER ENTITY TO ORDER RESPONSE DTO
+        // =========================================================
+
+        private OrderResponse MapToOrderResponse(Order order)
+        {
+            return new OrderResponse
+            {
+                OrderId = order.OrderId,
+
+                UserId = order.UserId,
+
+                GuestCartId = order.GuestCartId,
+
+                GuestOrderId = order.GuestOrderId,
+
+                CustomerName = order.CustomerName,
+
+                CustomerEmail = order.CustomerEmail,
+
+                CustomerPhone = order.CustomerPhone,
+
+                ShippingAddress = order.ShippingAddress,
+
+                City = order.City,
+
+                State = order.State,
+
+                Pincode = order.Pincode,
+
+                SubTotal = order.SubTotal,
+
+                CourierFee = order.CourierFee,
+
+                TotalAmount = order.TotalAmount,
+
+                OrderStatus = order.OrderStatus,
+
+                PaymentStatus = order.PaymentStatus,
+
+                OrderDate = order.OrderDate,
+
+                Items = order.OrderItems
+                    .Select(item => new OrderItemResponse
+                    {
+                        OrderItemId = item.OrderItemId,
+
+                        BookId = item.BookId,
+
+                        BookTitle = item.Book?.Title
+                            ?? string.Empty,
+
+                        Quantity = item.Quantity,
+
+                        UnitPrice = item.UnitPrice,
+
+                        TotalPrice = item.TotalPrice
+                    })
+                    .ToList()
+            };
         }
 
 
