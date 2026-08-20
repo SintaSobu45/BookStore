@@ -353,7 +353,7 @@ namespace BookStore.Server.Services
 
             if (totalQuantity <= 3)
             {
-                courierFee = 37m;
+                courierFee = 1m;
             }
             else if (totalQuantity <= 6)
             {

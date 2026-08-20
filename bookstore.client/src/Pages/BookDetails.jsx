@@ -15,7 +15,6 @@ import {
   Calendar,
 } from "lucide-react";
 
-
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import Navbar from "../Components/Navbar";
@@ -275,26 +274,63 @@ export default function BookDetail() {
   // =========================
 
   const handleAddToCart = async () => {
-  try {
-    setAddingToCart(true);
+    try {
+      setAddingToCart(true);
 
-    const bookId = Number(book.bookId || book.id);
+      const bookId = Number(book.bookId || book.id);
 
-    await addToCart(bookId, 1);
+      await addToCart(bookId, 1);
 
-    notifyCartUpdated();
+      notifyCartUpdated();
 
-    toast.success("Book added to cart!",{
-      autoClose:500,
-    });
-  } catch (error) {
-    console.error("Failed to add to cart:", error);
+      toast.success("Book added to cart!", {
+        autoClose: 500,
+      });
+    } catch (error) {
+      console.error("Failed to add to cart:", error);
 
-    toast.error(error.message || "Failed to add book to cart.");
-  } finally {
-    setAddingToCart(false);
-  }
-};
+      toast.error(error.message || "Failed to add book to cart.");
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  // =========================
+  // Buy Now
+  // =========================
+
+  const handleBuyNow = async () => {
+    try {
+      setAddingToCart(true);
+
+      const bookId = Number(book.bookId || book.id);
+
+      if (!bookId) {
+        toast.error("Invalid book.");
+        return;
+      }
+
+      if (book.stockQuantity <= 0) {
+        toast.error("This book is out of stock.");
+        return;
+      }
+
+      // Add the book to cart
+      await addToCart(bookId, 1);
+
+      // Notify navbar/cart components
+      notifyCartUpdated();
+
+      // Go directly to checkout
+      navigate("/checkout");
+    } catch (error) {
+      console.error("Buy Now failed:", error);
+
+      toast.error(error.message || "Unable to proceed to checkout.");
+    } finally {
+      setAddingToCart(false);
+    }
+  };
 
   // =========================
   // Calculate Average Rating
@@ -614,14 +650,15 @@ export default function BookDetail() {
 
                   <div className="flex space-x-2">
                     <button
-                      disabled={book.stockQuantity <= 0}
+                      onClick={handleBuyNow}
+                      disabled={book.stockQuantity <= 0 || addingToCart}
                       className={`flex-1 border border-emerald-900 text-emerald-900 font-medium py-2.5 px-3 rounded-xl transition-colors text-xs ${
-                        book.stockQuantity > 0
+                        book.stockQuantity > 0 && !addingToCart
                           ? "hover:bg-emerald-50 cursor-pointer"
                           : "opacity-50 cursor-not-allowed"
                       }`}
                     >
-                      Buy Now
+                      {addingToCart ? "Processing..." : "Buy Now"}
                     </button>
                   </div>
                 </div>

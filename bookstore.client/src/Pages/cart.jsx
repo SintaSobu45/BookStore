@@ -467,12 +467,12 @@ export default function Cart() {
                       </div>
                     )}
 
-                    <div className="flex justify-between text-gray-600">
+                    {/* <div className="flex justify-between text-gray-600">
                       <span>Delivery</span>
                       <span className="font-medium text-gray-400">
                         Calculated at checkout
                       </span>
-                    </div>
+                    </div> */}
                   </div>
 
                   <div className="border-t border-stone-200 pt-4">
