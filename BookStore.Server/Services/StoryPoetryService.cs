@@ -8,16 +8,16 @@ namespace BookStore.Server.Services
     {
         private readonly StoryPoetryRepository _storyPoetryRepository;
         private readonly ProfileRepository _profileRepository;
-        private readonly CloudinaryService _cloudinaryService;
+        private readonly FtpImageService _ftpImageService;
 
         public StoryPoetryService(
             StoryPoetryRepository storyPoetryRepository,
             ProfileRepository profileRepository,
-            CloudinaryService cloudinaryService)
+            FtpImageService ftpImageService)
         {
             _storyPoetryRepository = storyPoetryRepository;
             _profileRepository = profileRepository;
-            _cloudinaryService = cloudinaryService;
+            _ftpImageService = ftpImageService;
         }
 
 
@@ -126,16 +126,14 @@ namespace BookStore.Server.Services
 
 
             // =====================================================
-            // UPLOAD PROFILE IMAGE TO CLOUDINARY
+            // UPLOAD PROFILE IMAGE TO FTP
             // =====================================================
 
-            var uploadedImage =
-                await _cloudinaryService.UploadImageAsync(
+            var imageUrl =
+                await _ftpImageService.UploadImageAsync(
                     request.ContributorProfileImage);
 
-            if (uploadedImage == null ||
-                string.IsNullOrWhiteSpace(
-                    uploadedImage.ImageUrl))
+            if (string.IsNullOrWhiteSpace(imageUrl))
             {
                 throw new Exception(
                     "Contributor profile image upload failed.");
@@ -177,9 +175,9 @@ namespace BookStore.Server.Services
                 ContributorPhone =
                     contributorPhone,
 
-                // Cloudinary image
+                // FTP image URL
                 ContributorProfileImageUrl =
-                    uploadedImage.ImageUrl,
+                    imageUrl,
 
                 // =================================================
                 // PAYMENT STATUS

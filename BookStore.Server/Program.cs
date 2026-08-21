@@ -110,11 +110,14 @@ namespace BookStore.Server
             // Helpers
             builder.Services.AddScoped<PasswordHasher>();
             builder.Services.AddScoped<JwtHelper>();
-            builder.Services.Configure<CloudinarySettings>(
-             builder.Configuration.GetSection("CloudinarySettings"));
+            
+            builder.Services.Configure<FtpSettings>(
+            builder.Configuration.GetSection("FtpSettings"));
+
+            builder.Services.AddScoped<FtpImageService>();
 
             builder.Services.Configure<RazorpaySettings>(
-    builder.Configuration.GetSection("Razorpay"));
+            builder.Configuration.GetSection("Razorpay"));
 
             // Service
             builder.Services.AddScoped<AccountService>();
@@ -122,7 +125,7 @@ namespace BookStore.Server
             builder.Services.AddScoped<AuthorService>();
             builder.Services.AddScoped<PublisherService>();
             builder.Services.AddScoped<BookService>();
-            builder.Services.AddScoped<CloudinaryService>();
+           
             builder.Services.AddScoped<BookImageService>();
             builder.Services.AddScoped<ReviewService>();
 

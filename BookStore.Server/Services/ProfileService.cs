@@ -6,14 +6,14 @@ namespace BookStore.Server.Services
     public class ProfileService
     {
         private readonly ProfileRepository _profileRepository;
-        private readonly CloudinaryService _cloudinaryService;
+        private readonly FtpImageService _ftpImageService;
 
         public ProfileService(
             ProfileRepository profileRepository,
-            CloudinaryService cloudinaryService)
+            FtpImageService ftpImageService)
         {
             _profileRepository = profileRepository;
-            _cloudinaryService = cloudinaryService;
+            _ftpImageService = ftpImageService;
         }
 
 
@@ -129,18 +129,24 @@ namespace BookStore.Server.Services
                 return null;
 
 
-            // Upload image to Cloudinary
-            var uploadResult =
-                await _cloudinaryService
+            // =====================================================
+            // UPLOAD IMAGE TO FTP
+            // =====================================================
+
+            var imageUrl =
+                await _ftpImageService
                     .UploadImageAsync(image);
 
-            if (uploadResult == null)
+            if (string.IsNullOrWhiteSpace(imageUrl))
                 return null;
 
 
-            // Save Cloudinary URL
+            // =====================================================
+            // SAVE FTP PUBLIC URL
+            // =====================================================
+
             user.ProfileImageUrl =
-                uploadResult.ImageUrl;
+                imageUrl;
 
             user.UpdatedDate =
                 DateTime.UtcNow;
