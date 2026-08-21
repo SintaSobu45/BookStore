@@ -7,16 +7,16 @@ namespace BookStore.Server.Services
     public class EventService
     {
         private readonly EventRepository _eventRepository;
-        private readonly CloudinaryService _cloudinaryService;
+        private readonly FtpImageService _ftpImageService;
         private readonly EventImageService _eventImageService;
 
         public EventService(
             EventRepository eventRepository,
-            CloudinaryService cloudinaryService,
+            FtpImageService ftpImageService,
             EventImageService eventImageService)
         {
             _eventRepository = eventRepository;
-            _cloudinaryService = cloudinaryService;
+            _ftpImageService = ftpImageService;
             _eventImageService = eventImageService;
         }
 
@@ -86,22 +86,22 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // UPLOAD EVENT IMAGE
+            // UPLOAD EVENT IMAGE TO FTP
             // -----------------------------------------------------
 
             if (request.Image != null)
             {
-                var uploadResult =
-                    await _cloudinaryService
+                var imageUrl =
+                    await _ftpImageService
                         .UploadImageAsync(request.Image);
 
-                if (uploadResult != null)
+                if (imageUrl != null)
                 {
                     var eventImage = new EventImage
                     {
                         EventId = eventItem.EventId,
 
-                        ImageUrl = uploadResult.ImageUrl,
+                        ImageUrl = imageUrl,
 
                         IsPrimary = true
                     };
@@ -233,13 +233,13 @@ namespace BookStore.Server.Services
                 }
 
 
-                // Upload new image
-                var uploadResult =
-                    await _cloudinaryService
+                // Upload new image to FTP
+                var imageUrl =
+                    await _ftpImageService
                         .UploadImageAsync(request.Image);
 
 
-                if (uploadResult != null)
+                if (imageUrl != null)
                 {
                     var newImage = new EventImage
                     {
@@ -247,7 +247,7 @@ namespace BookStore.Server.Services
                             eventItem.EventId,
 
                         ImageUrl =
-                            uploadResult.ImageUrl,
+                            imageUrl,
 
                         IsPrimary = true
                     };
