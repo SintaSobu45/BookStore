@@ -42,13 +42,16 @@ export default function BookSections() {
 
             </div>
 
-           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-3 gap-y-8">
+            {/* Flex horizontal scroll on mobile & tablets, structured grid on desktop */}
+            <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 overflow-x-auto md:overflow-visible pb-4 md:pb-0 -mx-6 px-6 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-none">
 
                 {books.map((book) => (
-                    <BookCard
-                        key={book.bookId}
-                        book={book}
-                    />
+                    <div 
+                        key={book.bookId} 
+                        className="shrink-0 w-40 sm:w-48 md:w-auto snap-start"
+                    >
+                        <BookCard book={book} />
+                    </div>
                 ))}
 
             </div>
@@ -69,4 +72,4 @@ export default function BookSections() {
             )}
         </>
     );
-}
+}   

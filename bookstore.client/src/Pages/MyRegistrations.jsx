@@ -46,9 +46,7 @@ export default function MyRegistrations() {
     } catch (err) {
       console.error("Failed to load registrations:", err);
 
-      setError(
-        err.message || "Failed to load your registrations."
-      );
+      setError(err.message || "Failed to load your registrations.");
     } finally {
       setLoading(false);
     }
@@ -70,23 +68,19 @@ export default function MyRegistrations() {
 
       console.log(
         "Retrying payment for registration:",
-        registration.registrationId
+        registration.registrationId,
       );
 
       // -------------------------------------------------
       // 1. Create new Razorpay order
       // -------------------------------------------------
 
-      const payment = await createEventPayment(
-        registration.registrationId
-      );
+      const payment = await createEventPayment(registration.registrationId);
 
       console.log("Retry payment order:", payment);
 
       if (!payment.razorpayOrderId) {
-        throw new Error(
-          "Razorpay order was not created."
-        );
+        throw new Error("Razorpay order was not created.");
       }
 
       // -------------------------------------------------
@@ -95,7 +89,7 @@ export default function MyRegistrations() {
 
       if (!window.Razorpay) {
         throw new Error(
-          "Razorpay Checkout failed to load. Please refresh the page."
+          "Razorpay Checkout failed to load. Please refresh the page.",
         );
       }
 
@@ -106,9 +100,7 @@ export default function MyRegistrations() {
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
 
-        amount: Math.round(
-          Number(payment.amount) * 100
-        ),
+        amount: Math.round(Number(payment.amount) * 100),
 
         currency: "INR",
 
@@ -120,36 +112,26 @@ export default function MyRegistrations() {
 
         handler: async function (response) {
           try {
-            console.log(
-              "Retry payment successful:",
-              response
-            );
+            console.log("Retry payment successful:", response);
 
             // -------------------------------------------------
             // 4. Verify payment
             // -------------------------------------------------
 
-            const verification =
-              await verifyEventPayment({
-                paymentId: payment.paymentId,
+            const verification = await verifyEventPayment({
+              paymentId: payment.paymentId,
 
-                razorpayOrderId:
-                  response.razorpay_order_id,
+              razorpayOrderId: response.razorpay_order_id,
 
-                razorpayPaymentId:
-                  response.razorpay_payment_id,
+              razorpayPaymentId: response.razorpay_payment_id,
 
-                razorpaySignature:
-                  response.razorpay_signature,
-              });
+              razorpaySignature: response.razorpay_signature,
+            });
 
-            console.log(
-              "Retry payment verified:",
-              verification
-            );
+            console.log("Retry payment verified:", verification);
 
             setSuccess(
-              "Payment successful! Your event registration is confirmed."
+              "Payment successful! Your event registration is confirmed.",
             );
 
             // -------------------------------------------------
@@ -157,17 +139,10 @@ export default function MyRegistrations() {
             // -------------------------------------------------
 
             await loadRegistrations();
-
           } catch (err) {
-            console.error(
-              "Retry payment verification failed:",
-              err
-            );
+            console.error("Retry payment verification failed:", err);
 
-            setError(
-              err.message ||
-                "Payment verification failed."
-            );
+            setError(err.message || "Payment verification failed.");
           } finally {
             setRetryingId(null);
           }
@@ -175,14 +150,12 @@ export default function MyRegistrations() {
 
         modal: {
           ondismiss: function () {
-            console.log(
-              "Razorpay checkout closed."
-            );
+            console.log("Razorpay checkout closed.");
 
             setRetryingId(null);
 
             setError(
-              "Payment was cancelled. Your registration is still pending."
+              "Payment was cancelled. Your registration is still pending.",
             );
           },
         },
@@ -198,21 +171,13 @@ export default function MyRegistrations() {
         },
       };
 
-      const razorpay =
-        new window.Razorpay(options);
+      const razorpay = new window.Razorpay(options);
 
       razorpay.open();
-
     } catch (err) {
-      console.error(
-        "Retry payment failed:",
-        err
-      );
+      console.error("Retry payment failed:", err);
 
-      setError(
-        err.message ||
-          "Unable to start payment."
-      );
+      setError(err.message || "Unable to start payment.");
 
       setRetryingId(null);
     }
@@ -223,8 +188,7 @@ export default function MyRegistrations() {
   // =====================================================
 
   const getStatus = (status) => {
-    const normalized =
-      status?.toLowerCase();
+    const normalized = status?.toLowerCase();
 
     if (
       normalized === "registered" ||
@@ -233,8 +197,7 @@ export default function MyRegistrations() {
     ) {
       return {
         label: "Confirmed",
-        className:
-          "bg-emerald-50 text-emerald-700 border-emerald-200",
+        className: "bg-emerald-50 text-emerald-700 border-emerald-200",
         icon: CheckCircle,
       };
     }
@@ -242,28 +205,22 @@ export default function MyRegistrations() {
     if (normalized === "pending") {
       return {
         label: "Payment Pending",
-        className:
-          "bg-amber-50 text-amber-700 border-amber-200",
+        className: "bg-amber-50 text-amber-700 border-amber-200",
         icon: Clock3,
       };
     }
 
-    if (
-      normalized === "cancelled" ||
-      normalized === "failed"
-    ) {
+    if (normalized === "cancelled" || normalized === "failed") {
       return {
         label: status,
-        className:
-          "bg-red-50 text-red-700 border-red-200",
+        className: "bg-red-50 text-red-700 border-red-200",
         icon: XCircle,
       };
     }
 
     return {
       label: status || "Unknown",
-      className:
-        "bg-stone-50 text-stone-600 border-stone-200",
+      className: "bg-stone-50 text-stone-600 border-stone-200",
       icon: Clock3,
     };
   };
@@ -302,7 +259,6 @@ export default function MyRegistrations() {
 
       <main className="min-h-screen bg-stone-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
           {/* HEADER */}
 
           <div className="mb-8">
@@ -335,7 +291,6 @@ export default function MyRegistrations() {
 
           {registrations.length === 0 ? (
             <div className="bg-white border border-stone-200 rounded-3xl p-10 text-center shadow-sm">
-
               <CalendarDays className="w-12 h-12 text-stone-300 mx-auto mb-4" />
 
               <h2 className="text-lg font-bold text-gray-900">
@@ -352,50 +307,35 @@ export default function MyRegistrations() {
               >
                 Browse Events
               </Link>
-
             </div>
           ) : (
             <div className="space-y-5">
-
               {registrations.map((registration) => {
-                const status =
-                  getStatus(
-                    registration.status
-                  );
+                const status = getStatus(registration.status);
 
-                const StatusIcon =
-                  status.icon;
+                const StatusIcon = status.icon;
 
                 const isPending =
-                  registration.status?.toLowerCase() ===
-                  "pending";
+                  registration.status?.toLowerCase() === "pending";
 
-                const isRetrying =
-                  retryingId ===
-                  registration.registrationId;
+                const isRetrying = retryingId === registration.registrationId;
 
                 return (
                   <div
-                    key={
-                      registration.registrationId
-                    }
+                    key={registration.registrationId}
                     className="bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden"
                   >
-
                     <div className="p-6 sm:p-7">
-
                       {/* TOP */}
 
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-
                         <div>
                           <h2 className="text-lg font-extrabold text-gray-900">
                             {registration.eventName}
                           </h2>
 
                           <p className="text-xs text-stone-400 mt-1">
-                            Registration #
-                            {registration.registrationId}
+                            Registration #{registration.registrationId}
                           </p>
                         </div>
 
@@ -406,13 +346,11 @@ export default function MyRegistrations() {
 
                           {status.label}
                         </div>
-
                       </div>
 
                       {/* DETAILS */}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
                             <CalendarDays className="w-4 h-4 text-emerald-800" />
@@ -425,15 +363,12 @@ export default function MyRegistrations() {
 
                             <p className="text-xs font-semibold text-gray-800">
                               {new Date(
-                                registration.eventDate
-                              ).toLocaleDateString(
-                                "en-IN",
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                }
-                              )}
+                                registration.eventDate,
+                              ).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
                             </p>
                           </div>
                         </div>
@@ -449,7 +384,15 @@ export default function MyRegistrations() {
                             </p>
 
                             <p className="text-xs font-semibold text-gray-800">
-                              4:00 PM - 7:00 PM
+                              {event.eventTime
+                                ? new Date(
+                                    `1970-01-01T${event.eventTime}`,
+                                  ).toLocaleTimeString("en-IN", {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  })
+                                : "Time not available"}
                             </p>
                           </div>
                         </div>
@@ -485,23 +428,18 @@ export default function MyRegistrations() {
                             </p>
                           </div>
                         </div>
-
                       </div>
 
                       {/* BOTTOM */}
 
                       <div className="border-t border-stone-100 mt-6 pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-
                         <div>
                           <p className="text-[10px] uppercase tracking-wider font-bold text-stone-400">
                             Registration Amount
                           </p>
 
                           <p className="text-xl font-black text-emerald-900">
-                            ₹
-                            {Number(
-                              registration.totalAmount
-                            ).toFixed(2)}
+                            ₹{Number(registration.totalAmount).toFixed(2)}
                           </p>
                         </div>
 
@@ -509,24 +447,18 @@ export default function MyRegistrations() {
 
                         {isPending && (
                           <button
-                            onClick={() =>
-                              handleRetryPayment(
-                                registration
-                              )
-                            }
+                            onClick={() => handleRetryPayment(registration)}
                             disabled={isRetrying}
                             className="inline-flex items-center justify-center gap-2 bg-[#1b3b2b] hover:bg-emerald-950 disabled:opacity-60 text-white font-bold text-sm px-5 py-3 rounded-xl transition"
                           >
                             {isRetrying ? (
                               <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-
                                 Processing...
                               </>
                             ) : (
                               <>
                                 <RefreshCcw className="w-4 h-4" />
-
                                 Retry Payment
                               </>
                             )}
@@ -536,21 +468,16 @@ export default function MyRegistrations() {
                         {!isPending && (
                           <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
                             <CheckCircle className="w-4 h-4" />
-
                             Registration confirmed
                           </div>
                         )}
-
                       </div>
-
                     </div>
                   </div>
                 );
               })}
-
             </div>
           )}
-
         </div>
       </main>
 

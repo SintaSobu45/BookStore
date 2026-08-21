@@ -8,6 +8,7 @@ import {
 
 function Categories() {
   const [categories, setCategories] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -182,6 +183,25 @@ function Categories() {
     }
   };
 
+  // =========================
+  // SEARCH CATEGORIES
+  // =========================
+  const normalizeSearchText = (text) => {
+    return String(text || "")
+      .normalize("NFC")
+      .toLocaleLowerCase();
+  };
+
+  const filteredCategories = categories.filter((category) => {
+    const search = normalizeSearchText(searchTerm);
+
+    if (!search) return true;
+
+    return [category.categoryName, category.description].some((value) =>
+      normalizeSearchText(value).includes(search),
+    );
+  });
+
   return (
     <div className="w-full">
       {/* ================= HEADER ================= */}
@@ -286,28 +306,109 @@ function Categories() {
 
       <div
         className="
-      bg-white
-      rounded-2xl
-      border
-      border-gray-200
-      shadow-sm
-      overflow-hidden
-    "
+    bg-white
+    rounded-2xl
+    border
+    border-gray-200
+    shadow-sm
+    overflow-hidden
+  "
       >
+        {/* ================= SEARCH BAR ================= */}
+
+        {!loading && categories.length > 0 && (
+          <div className="px-5 sm:px-6 py-4 border-b border-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              {/* Category Count */}
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  All Categories
+                </p>
+
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {filteredCategories.length} of {categories.length} categories
+                </p>
+              </div>
+
+              {/* Search Input */}
+              <div className="relative w-full sm:w-80">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  🔍
+                </span>
+
+                <input
+                  type="search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search categories..."
+                  className="
+              w-full
+              pl-10
+              pr-10
+              py-2.5
+              bg-gray-50
+              border
+              border-gray-200
+              rounded-xl
+              text-sm
+              text-gray-900
+              placeholder-gray-400
+              outline-none
+              transition-all
+              focus:bg-white
+              focus:border-gray-900
+              focus:ring-2
+              focus:ring-gray-900/10
+            "
+                />
+
+                {/* Clear Search */}
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="
+                absolute
+                right-3
+                top-1/2
+                -translate-y-1/2
+                w-6
+                h-6
+                rounded-full
+                flex
+                items-center
+                justify-center
+                text-gray-400
+                hover:text-gray-700
+                hover:bg-gray-200
+                transition-colors
+              "
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= CONTENT ================= */}
+
         {loading ? (
           /* Loading */
 
           <div className="flex flex-col items-center justify-center py-20">
             <div
               className="
-            w-10
-            h-10
-            border-4
-            border-gray-200
-            border-t-gray-900
-            rounded-full
-            animate-spin
-          "
+          w-10
+          h-10
+          border-4
+          border-gray-200
+          border-t-gray-900
+          rounded-full
+          animate-spin
+        "
             />
 
             <p className="mt-4 text-sm text-gray-500">Loading categories...</p>
@@ -318,16 +419,16 @@ function Categories() {
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
             <div
               className="
-            w-16
-            h-16
-            rounded-2xl
-            bg-gray-100
-            flex
-            items-center
-            justify-center
-            text-3xl
-            mb-4
-          "
+          w-16
+          h-16
+          rounded-2xl
+          bg-gray-100
+          flex
+          items-center
+          justify-center
+          text-3xl
+          mb-4
+        "
             >
               📂
             </div>
@@ -343,77 +444,127 @@ function Categories() {
             <button
               onClick={openAddModal}
               className="
-              px-5
-              py-2.5
-              bg-gray-900
-              hover:bg-gray-800
-              text-white
-              rounded-xl
-              text-sm
-              font-semibold
-              transition
-              active:scale-95
-            "
+          px-5
+          py-2.5
+          bg-gray-900
+          hover:bg-gray-800
+          text-white
+          rounded-xl
+          text-sm
+          font-semibold
+          transition
+          active:scale-95
+        "
             >
               + Add Category
             </button>
           </div>
+        ) : filteredCategories.length === 0 ? (
+          /* ================= NO SEARCH RESULTS ================= */
+
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <div
+              className="
+          w-16
+          h-16
+          rounded-2xl
+          bg-gray-100
+          flex
+          items-center
+          justify-center
+          text-3xl
+          mb-4
+        "
+            >
+              🔍
+            </div>
+
+            <h5 className="text-lg font-bold text-gray-900">
+              No categories found
+            </h5>
+
+            <p className="text-sm text-gray-500 mt-1 mb-5">
+              No category matches "{searchTerm}".
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setSearchTerm("")}
+              className="
+          px-5
+          py-2.5
+          bg-gray-900
+          hover:bg-gray-800
+          text-white
+          rounded-xl
+          text-sm
+          font-semibold
+          transition
+          active:scale-95
+        "
+            >
+              Clear Search
+            </button>
+          </div>
         ) : (
-          /* Category List */
+          /* ================= CATEGORY LIST ================= */
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
+                  {/* Number */}
                   <th
                     className="
-                  px-5
-                  py-4
-                  text-left
-                  font-semibold
-                  text-gray-500
-                  whitespace-nowrap
-                "
+                px-5
+                py-4
+                text-left
+                font-semibold
+                text-gray-500
+                whitespace-nowrap
+              "
                   >
                     #
                   </th>
 
+                  {/* Category */}
                   <th
                     className="
-                  px-5
-                  py-4
-                  text-left
-                  font-semibold
-                  text-gray-500
-                  whitespace-nowrap
-                "
+                px-5
+                py-4
+                text-left
+                font-semibold
+                text-gray-500
+                whitespace-nowrap
+              "
                   >
                     Category
                   </th>
 
+                  {/* Description */}
                   <th
                     className="
-                  px-5
-                  py-4
-                  text-left
-                  font-semibold
-                  text-gray-500
-                  whitespace-nowrap
-                "
+                px-5
+                py-4
+                text-left
+                font-semibold
+                text-gray-500
+                whitespace-nowrap
+              "
                   >
                     Description
                   </th>
 
-
+                  {/* Actions */}
                   <th
                     className="
-                  px-5
-                  py-4
-                  text-right
-                  font-semibold
-                  text-gray-500
-                  whitespace-nowrap
-                "
+                px-5
+                py-4
+                text-right
+                font-semibold
+                text-gray-500
+                whitespace-nowrap
+              "
                   >
                     Actions
                   </th>
@@ -421,35 +572,33 @@ function Categories() {
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {categories.map((category, index) => (
+                {filteredCategories.map((category, index) => (
                   <tr
                     key={category.categoryId}
                     className="
-                    hover:bg-gray-50/70
-                    transition-colors
-                  "
+                hover:bg-gray-50/70
+                transition-colors
+              "
                   >
                     {/* Number */}
-
                     <td className="px-5 py-4 text-gray-400 font-medium">
                       {index + 1}
                     </td>
 
                     {/* Category Name */}
-
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div
                           className="
-                        w-9
-                        h-9
-                        rounded-lg
-                        bg-gray-100
-                        flex
-                        items-center
-                        justify-center
-                        shrink-0
-                      "
+                      w-9
+                      h-9
+                      rounded-lg
+                      bg-gray-100
+                      flex
+                      items-center
+                      justify-center
+                      shrink-0
+                    "
                         >
                           📂
                         </div>
@@ -461,59 +610,55 @@ function Categories() {
                     </td>
 
                     {/* Description */}
-
                     <td className="px-5 py-4 max-w-sm">
                       <p className="text-gray-500 line-clamp-2">
                         {category.description || "No description"}
                       </p>
                     </td>
-                    
-
-                   
-
 
                     {/* Actions */}
-
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-2">
+                        {/* Edit */}
                         <button
                           onClick={() => openEditModal(category)}
                           className="
-                          px-3
-                          py-1.5
-                          rounded-lg
-                          border
-                          border-gray-200
-                          bg-white
-                          text-gray-700
-                          text-xs
-                          font-semibold
-                          hover:bg-gray-900
-                          hover:text-white
-                          hover:border-gray-900
-                          transition-all
-                        "
+                      px-3
+                      py-1.5
+                      rounded-lg
+                      border
+                      border-gray-200
+                      bg-white
+                      text-gray-700
+                      text-xs
+                      font-semibold
+                      hover:bg-gray-900
+                      hover:text-white
+                      hover:border-gray-900
+                      transition-all
+                    "
                         >
                           Edit
                         </button>
 
+                        {/* Delete */}
                         <button
                           onClick={() => openDeleteModal(category)}
                           className="
-                          px-3
-                          py-1.5
-                          rounded-lg
-                          border
-                          border-red-200
-                          bg-white
-                          text-red-600
-                          text-xs
-                          font-semibold
-                          hover:bg-red-600
-                          hover:text-white
-                          hover:border-red-600
-                          transition-all
-                        "
+                      px-3
+                      py-1.5
+                      rounded-lg
+                      border
+                      border-red-200
+                      bg-white
+                      text-red-600
+                      text-xs
+                      font-semibold
+                      hover:bg-red-600
+                      hover:text-white
+                      hover:border-red-600
+                      transition-all
+                    "
                         >
                           Delete
                         </button>
@@ -631,118 +776,118 @@ function Categories() {
       {/* EDIT CATEGORY MODAL */}
       {/* ================================================= */}
 
-     {showEditModal && selectedCategory && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden max-h-[85vh] overflow-y-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <div>
-          <h3 className="text-base font-bold text-gray-900">
-            Edit Category
-          </h3>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Update category information
-          </p>
-        </div>
+      {showEditModal && selectedCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden max-h-[85vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">
+                  Edit Category
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Update category information
+                </p>
+              </div>
 
-        <button
-          type="button"
-          onClick={() => setShowEditModal(false)}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
-        >
-          ✕
-        </button>
-      </div>
-
-      <form onSubmit={handleUpdate}>
-        <div className="px-5 py-4 space-y-4">
-          {error && (
-            <div className="px-3 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
-              {error}
-            </div>
-          )}
-
-          {/* Name */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              Category Name
-            </label>
-            <input
-              type="text"
-              value={categoryName}
-              onChange={(e) => setCategoryName(e.target.value)}
-              maxLength={100}
-              className="w-full px-3.5 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 outline-none transition focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-gray-700">
-                Description
-              </label>
-              <span className="text-xs text-gray-400">
-                {description.length}/500
-              </span>
-            </div>
-            <textarea
-              rows="3"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={500}
-              className="w-full px-3.5 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 outline-none resize-none transition focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
-            />
-          </div>
-
-          {/* Active Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-200">
-            <div>
-              <p className="text-xs font-semibold text-gray-900">
-                Category Status
-              </p>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                Enable or disable this category
-              </p>
+              <button
+                type="button"
+                onClick={() => setShowEditModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
+              >
+                ✕
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsActive(!isActive)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${
-                isActive ? "bg-gray-900" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 mt-0.5 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                  isActive ? "translate-x-5" : "translate-x-0.5"
-                }`}
-              />
-            </button>
+            <form onSubmit={handleUpdate}>
+              <div className="px-5 py-4 space-y-4">
+                {error && (
+                  <div className="px-3 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+                    {error}
+                  </div>
+                )}
+
+                {/* Name */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                    Category Name
+                  </label>
+                  <input
+                    type="text"
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    maxLength={100}
+                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 outline-none transition focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Description
+                    </label>
+                    <span className="text-xs text-gray-400">
+                      {description.length}/500
+                    </span>
+                  </div>
+                  <textarea
+                    rows="3"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    maxLength={500}
+                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 outline-none resize-none transition focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                  />
+                </div>
+
+                {/* Active Toggle */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-200">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-900">
+                      Category Status
+                    </p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Enable or disable this category
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsActive(!isActive)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${
+                      isActive ? "bg-gray-900" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 mt-0.5 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                        isActive ? "translate-x-5" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 px-5 py-3 bg-gray-50 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-100 transition"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold transition active:scale-95"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 px-5 py-3 bg-gray-50 border-t border-gray-100">
-          <button
-            type="button"
-            onClick={() => setShowEditModal(false)}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-100 transition"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold transition active:scale-95"
-          >
-            Save Changes
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
+      )}
 
       {/* ================================================= */}
       {/* DELETE CONFIRMATION MODAL */}
