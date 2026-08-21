@@ -10,9 +10,17 @@ namespace BookStore.Server.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_CartItems_CartId",
-                table: "CartItems");
+            migrationBuilder.Sql(@"
+        IF EXISTS (
+            SELECT 1
+            FROM sys.indexes
+            WHERE name = 'IX_CartItems_CartId'
+              AND object_id = OBJECT_ID('CartItems')
+        )
+        BEGIN
+            DROP INDEX [IX_CartItems_CartId] ON [CartItems];
+        END
+    ");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Carts_GuestCartId",
