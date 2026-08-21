@@ -27,16 +27,16 @@ import {
   CalendarDays,
 } from "lucide-react";
 
-
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 
 import { getEventById } from "../services/eventService";
 import { getProfile } from "../services/profileService";
-import { registerForEvent, createEventPayment,verifyEventPayment } from "../services/eventRegistrationService";
-
-
-
+import {
+  registerForEvent,
+  createEventPayment,
+  verifyEventPayment,
+} from "../services/eventRegistrationService";
 
 export default function EventRegistration() {
   const navigate = useNavigate();
@@ -170,7 +170,7 @@ export default function EventRegistration() {
     So frontend preview follows that.
   */
 
-  const totalAmount = entryFee ;
+  const totalAmount = entryFee;
 
   const totalCopies = requestedBookCopies;
 
@@ -179,247 +179,179 @@ export default function EventRegistration() {
   // =========================
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  setError("");
-  setSuccess("");
+    setError("");
+    setSuccess("");
 
-  if (!event) {
-    setError("Event information is not available.");
-    return;
-  }
-
-  if (!agreed) {
-    setError("Please agree to the Terms & Conditions and Privacy Policy.");
-    return;
-  }
-
-  if (seats < 1) {
-    setError("Please select at least one seat.");
-    return;
-  }
-
-  if (seats > event.availableSeats) {
-    setError(`Only ${event.availableSeats} seats are available.`);
-    return;
-  }
-
-  try {
-    setSubmitting(true);
-
-    // =====================================================
-    // STEP 1 — Create Pending Event Registration
-    // =====================================================
-
-    const registrationData = {
-      eventId: Number(id),
-      numberOfSeats: seats,
-    };
-
-    console.log("Creating event registration:", registrationData);
-
-    const registrationResult =
-      await registerForEvent(registrationData);
-
-    console.log(
-      "Registration created:",
-      registrationResult
-    );
-
-    const registrationId =
-      registrationResult.registrationId;
-
-    if (!registrationId) {
-      throw new Error(
-        "Registration was created but Registration ID was not returned."
-      );
+    if (!event) {
+      setError("Event information is not available.");
+      return;
     }
 
-    // =====================================================
-    // STEP 2 — Create Razorpay Order
-    // =====================================================
-
-    console.log(
-      "Creating Razorpay order for registration:",
-      registrationId
-    );
-
-    const payment =
-      await createEventPayment(registrationId);
-
-    console.log(
-      "Razorpay order created:",
-      payment
-    );
-
-    if (!payment.razorpayOrderId) {
-      throw new Error(
-        "Razorpay order was not created."
-      );
+    if (!agreed) {
+      setError("Please agree to the Terms & Conditions and Privacy Policy.");
+      return;
     }
 
-    // =====================================================
-    // STEP 3 — Open Razorpay Checkout
-    // =====================================================
-
-    if (!window.Razorpay) {
-      throw new Error(
-        "Razorpay Checkout failed to load. Please refresh the page."
-      );
+    if (seats < 1) {
+      setError("Please select at least one seat.");
+      return;
     }
 
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+    if (seats > event.availableSeats) {
+      setError(`Only ${event.availableSeats} seats are available.`);
+      return;
+    }
 
-      amount: Math.round(
-        Number(payment.amount) * 100
-      ),
+    try {
+      setSubmitting(true);
 
-      currency: "INR",
+      // =====================================================
+      // STEP 1 — Create Pending Event Registration
+      // =====================================================
 
-      name: "BookStore",
+      const registrationData = {
+        eventId: Number(id),
+        numberOfSeats: seats,
+      };
 
-      description: event.eventName,
+      console.log("Creating event registration:", registrationData);
 
-      order_id: payment.razorpayOrderId,
+      const registrationResult = await registerForEvent(registrationData);
 
-      handler: async function (response) {
+      console.log("Registration created:", registrationResult);
 
-        try {
+      const registrationId = registrationResult.registrationId;
 
-          console.log(
-            "Razorpay payment successful:",
-            response
-          );
+      if (!registrationId) {
+        throw new Error(
+          "Registration was created but Registration ID was not returned.",
+        );
+      }
 
-          // =================================================
-          // STEP 4 — Verify Payment With Backend
-          // =================================================
+      // =====================================================
+      // STEP 2 — Create Razorpay Order
+      // =====================================================
 
-          const verification =
-            await verifyEventPayment({
+      console.log("Creating Razorpay order for registration:", registrationId);
 
-              paymentId:
-                payment.paymentId,
+      const payment = await createEventPayment(registrationId);
 
-              razorpayOrderId:
-                response.razorpay_order_id,
+      console.log("Razorpay order created:", payment);
 
-              razorpayPaymentId:
-                response.razorpay_payment_id,
+      if (!payment.razorpayOrderId) {
+        throw new Error("Razorpay order was not created.");
+      }
 
-              razorpaySignature:
-                response.razorpay_signature,
+      // =====================================================
+      // STEP 3 — Open Razorpay Checkout
+      // =====================================================
+
+      if (!window.Razorpay) {
+        throw new Error(
+          "Razorpay Checkout failed to load. Please refresh the page.",
+        );
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+
+        amount: Math.round(Number(payment.amount) * 100),
+
+        currency: "INR",
+
+        name: "BookStore",
+
+        description: event.eventName,
+
+        order_id: payment.razorpayOrderId,
+
+        handler: async function (response) {
+          try {
+            console.log("Razorpay payment successful:", response);
+
+            // =================================================
+            // STEP 4 — Verify Payment With Backend
+            // =================================================
+
+            const verification = await verifyEventPayment({
+              paymentId: payment.paymentId,
+
+              razorpayOrderId: response.razorpay_order_id,
+
+              razorpayPaymentId: response.razorpay_payment_id,
+
+              razorpaySignature: response.razorpay_signature,
             });
 
-          console.log(
-            "Payment verified:",
-            verification
-          );
+            console.log("Payment verified:", verification);
 
-          setSuccess(
-            "Payment successful! Your event registration is confirmed."
-          );
+            setSuccess(
+              "Payment successful! Your event registration is confirmed.",
+            );
 
-          // =================================================
-          // STEP 5 — Redirect
-          // =================================================
+            // =================================================
+            // STEP 5 — Redirect
+            // =================================================
 
-          setTimeout(() => {
-            navigate("/my/registrations");
-          }, 1500);
+            setTimeout(() => {
+              navigate("/my/registrations");
+            }, 1500);
+          } catch (err) {
+            console.error("Payment verification failed:", err);
 
-        } catch (err) {
-
-          console.error(
-            "Payment verification failed:",
-            err
-          );
-
-          setError(
-            err.message ||
-            "Payment verification failed."
-          );
-
-        } finally {
-
-          setSubmitting(false);
-
-        }
-      },
-
-      modal: {
-        ondismiss: function () {
-
-          console.log(
-            "Razorpay checkout closed."
-          );
-
-          setSubmitting(false);
-
-          setError(
-            "Payment was cancelled. Your registration is still pending."
-          );
+            setError(err.message || "Payment verification failed.");
+          } finally {
+            setSubmitting(false);
+          }
         },
-      },
 
-      prefill: {
-        name:
-          profile?.fullName ||
-          profile?.name ||
-          "",
+        modal: {
+          ondismiss: function () {
+            console.log("Razorpay checkout closed.");
 
-        email:
-          profile?.email ||
-          "",
+            setSubmitting(false);
 
-        contact:
-          profile?.phone ||
-          "",
-      },
+            setError(
+              "Payment was cancelled. Your registration is still pending.",
+            );
+          },
+        },
 
-      theme: {
-        color: "#1b3b2b",
-      },
-    };
+        prefill: {
+          name: profile?.fullName || profile?.name || "",
 
-    const razorpay =
-      new window.Razorpay(options);
+          email: profile?.email || "",
 
-    razorpay.open();
+          contact: profile?.phone || "",
+        },
 
-  } catch (err) {
-    setSubmitting(false);
-  console.error(
-    "Event registration/payment failed:",
-    err
-  );
+        theme: {
+          color: "#1b3b2b",
+        },
+      };
 
-  if (
-    err.message ===
-    "You have already registered for this event."
-  ) {
-    toast.error(
-      "You have already registered and paid for this event.",
-      {
-        position: "top-right",
-        autoClose: 4000,
+      const razorpay = new window.Razorpay(options);
+
+      razorpay.open();
+    } catch (err) {
+      setSubmitting(false);
+      console.error("Event registration/payment failed:", err);
+
+      if (err.message === "You have already registered for this event.") {
+        toast.error("You have already registered and paid for this event.", {
+          position: "top-right",
+          autoClose: 4000,
+        });
+      } else {
+        toast.error(err.message || "Unable to process registration.", {
+          position: "top-right",
+          autoClose: 4000,
+        });
       }
-    );
-  } else {
-    toast.error(
-      err.message ||
-      "Unable to process registration.",
-      {
-        position: "top-right",
-        autoClose: 4000,
-      }
-    );
-  }
-
-  
-}
-};
+    }
+  };
 
   // =========================
   // Loading
@@ -659,7 +591,17 @@ export default function EventRegistration() {
                             <Clock className="h-3.5 w-3.5 text-emerald-800" />
                           </div>
 
-                          <span>4:00 PM - 7:00 PM</span>
+                          <span>
+                            {event.eventTime
+                              ? new Date(
+                                  `1970-01-01T${event.eventTime}`,
+                                ).toLocaleTimeString("en-IN", {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })
+                              : "Time not available"}
+                          </span>
                         </div>
 
                         {/* Venue */}
@@ -736,7 +678,7 @@ export default function EventRegistration() {
           REGISTER BUTTON
       ========================= */}
                     <button
-                    onClick={handleSubmit}
+                      onClick={handleSubmit}
                       type="submit"
                       className="w-full bg-[#1b3b2b] hover:bg-emerald-950 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm"
                     >

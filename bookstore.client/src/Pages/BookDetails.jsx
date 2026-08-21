@@ -669,49 +669,6 @@ export default function BookDetail() {
               <div className="bg-white border border-stone-200/80 rounded-2xl p-5 space-y-4 shadow-sm text-sm">
                 {/* Free Shipping */}
 
-                <div className="flex items-start space-x-3">
-                  <Truck className="h-5 w-5 text-emerald-800 shrink-0 mt-0.5" />
-
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-xs sm:text-sm">
-                      Free Shipping
-                    </h4>
-
-                    <p className="text-xs text-gray-500">
-                      On orders above ₹499
-                    </p>
-                  </div>
-                </div>
-
-                {/* COD */}
-
-                <div className="flex items-start space-x-3">
-                  <ShieldCheck className="h-5 w-5 text-emerald-800 shrink-0 mt-0.5" />
-
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-xs sm:text-sm">
-                      Cash on Delivery
-                    </h4>
-
-                    <p className="text-xs text-gray-500">Available</p>
-                  </div>
-                </div>
-
-                {/* Returns */}
-
-                <div className="flex items-start space-x-3">
-                  <RefreshCw className="h-5 w-5 text-emerald-800 shrink-0 mt-0.5" />
-
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-xs sm:text-sm">
-                      Easy Returns
-                    </h4>
-
-                    <p className="text-xs text-gray-500">
-                      7 days return policy
-                    </p>
-                  </div>
-                </div>
 
                 {/* Payment */}
 

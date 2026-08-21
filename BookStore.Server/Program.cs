@@ -25,7 +25,8 @@ namespace BookStore.Server
                 options.AddPolicy("ReactPolicy", policy =>
                 {
                     policy.WithOrigins(
-                            "new.kl47drones.in",
+                            "https://new.kl47drones.in",
+                            "http://new.kl47drones.in",
                             "https://localhost:5173",
                             "http://localhost:5173"
                         )

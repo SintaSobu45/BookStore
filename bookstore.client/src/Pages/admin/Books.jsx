@@ -5,9 +5,12 @@ import {
   updateBook,
   deleteBook,
 } from "../../services/bookService";
-import { getAuthors } from "../../services/authorService";
+import { createAuthor, getAuthors } from "../../services/authorService";
 import { getCategories } from "../../services/categoryService";
-import { getPublishers } from "../../services/publisherService";
+import {
+  createPublisher,
+  getPublishers,
+} from "../../services/publisherService";
 
 function Books() {
   // =========================
@@ -17,6 +20,8 @@ function Books() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [searchTerm, setSearchTerm] = useState("");
 
   // =========================
   // Dropdown data
@@ -45,7 +50,9 @@ function Books() {
     description: "",
     categoryId: "",
     authorId: "",
+    authorName: "",
     publisherId: "",
+    publisherName: "",
     isActive: true,
     image: null,
   });
@@ -138,18 +145,21 @@ function Books() {
       title: "",
       isbn: "",
       price: "",
+      stockQuantity: "",
       discountPercentage: "",
       publishedDate: "",
       description: "",
       categoryId: "",
       authorId: "",
+      authorName: "",
       publisherId: "",
+      publisherName: "",
       isActive: true,
       image: null,
     });
     setEditingBookId(null);
     setEditMode(false);
-    setImagePreview(null); 
+    setImagePreview(null);
     setShowForm(false);
   };
 
@@ -189,6 +199,101 @@ function Books() {
   };
 
   // =========================
+  // Find or Create Author
+  // =========================
+  const findOrCreateAuthor = async (authorName) => {
+    const cleanName = authorName.trim();
+
+    // Check if author already exists
+    const existingAuthor = authors.find(
+      (author) =>
+        author.authorName.trim().toLowerCase() === cleanName.toLowerCase(),
+    );
+
+    if (existingAuthor) {
+      return existingAuthor.authorId;
+    }
+
+    // Create new author
+    await createAuthor({
+      authorName: cleanName,
+    });
+
+    // Get updated author list
+    const updatedAuthors = await getAuthors();
+
+    // Keep React state updated
+    setAuthors(updatedAuthors);
+
+    // Find the author we just created
+    const newAuthor = updatedAuthors.find(
+      (author) =>
+        author.authorName.trim().toLowerCase() === cleanName.toLowerCase(),
+    );
+
+    if (!newAuthor) {
+      throw new Error("Author was created but could not be found.");
+    }
+
+    return newAuthor.authorId;
+  };
+
+  // =========================
+  // Find or Create Publisher
+  // =========================
+  const findOrCreatePublisher = async (publisherName) => {
+    const cleanName = publisherName.trim();
+
+    // Check if publisher already exists
+    const existingPublisher = publishers.find(
+      (publisher) =>
+        publisher.publisherName.trim().toLowerCase() ===
+        cleanName.toLowerCase(),
+    );
+
+    if (existingPublisher) {
+      return existingPublisher.publisherId;
+    }
+
+    // Get admin token
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Authentication token not found. Please login again.");
+    }
+
+    // Create new publisher
+    await createPublisher(
+      {
+        publisherName: cleanName,
+      },
+      token,
+    );
+
+    // Get updated publisher list
+    const updatedPublishers = await getPublishers();
+
+    // Keep React state updated
+    setPublishers(updatedPublishers);
+
+    // Find the publisher we just created
+    const newPublisher = updatedPublishers.find(
+      (publisher) =>
+        publisher.publisherName.trim().toLowerCase() ===
+        cleanName.toLowerCase(),
+    );
+
+    if (!newPublisher) {
+      throw new Error("Publisher was created but could not be found.");
+    }
+
+    return newPublisher.publisherId;
+  };
+
+  // =========================
+  // Create / Update
+  // =========================
+  // =========================
   // Create / Update
   // =========================
   const handleSubmit = async (e) => {
@@ -197,20 +302,36 @@ function Books() {
     setSuccess("");
 
     try {
+      // Find existing author or create a new one
+      const authorId = await findOrCreateAuthor(formData.authorName);
+
+      // Find existing publisher or create a new one
+      const publisherId = await findOrCreatePublisher(formData.publisherName);
+
+      // Create updated form data with correct IDs
+      const updatedFormData = {
+        ...formData,
+        authorId,
+        publisherId,
+      };
+
       if (editMode) {
-        const updateData = buildBookFormData(formData, true);
+        const updateData = buildBookFormData(updatedFormData, true);
         await updateBook(editingBookId, updateData);
         setSuccess("Book updated successfully.");
       } else {
-        const bookData = buildBookFormData(formData, false);
+        const bookData = buildBookFormData(updatedFormData, false);
         await createBook(bookData);
         setSuccess("Book added successfully.");
       }
 
       resetForm();
       await loadBooks();
+      await loadAuthors();
+      await loadPublishers();
     } catch (err) {
-      setError(err.message);
+      console.error(err);
+      setError(err.message || "Failed to save book.");
     }
   };
 
@@ -229,7 +350,9 @@ function Books() {
       description: book.description || "",
       categoryId: getIdValue(book.categoryId, categories, book.categoryName),
       authorId: getIdValue(book.authorId, authors, book.authorName),
+      authorName: book.authorName || "",
       publisherId: getIdValue(book.publisherId, publishers, book.publisherName),
+      publisherName: book.publisherName || "",
       isActive: book.isActive,
       image: null,
     });
@@ -289,6 +412,30 @@ function Books() {
   };
 
   // =========================
+  // Search
+  // =========================
+  const normalizeSearchText = (text) => {
+    return String(text || "")
+      .normalize("NFC")
+      .toLocaleLowerCase();
+  };
+
+  const filteredBooks = books.filter((book) => {
+    const search = normalizeSearchText(searchTerm);
+
+    if (!search) return true;
+
+    return [
+      book.title,
+      book.authorName,
+      book.publisherName,
+      book.categoryName,
+      book.isbn,
+      book.description,
+    ].some((value) => normalizeSearchText(value).includes(search));
+  });
+
+  // =========================
   // UI
   // =========================
   return (
@@ -311,7 +458,7 @@ function Books() {
             } else {
               setEditMode(false);
               setEditingBookId(null);
-               setImagePreview(null);
+              setImagePreview(null);
               setShowForm(true);
             }
           }}
@@ -498,20 +645,16 @@ function Books() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Author
                   </label>
-                  <select
-                    name="authorId"
-                    value={formData.authorId}
+
+                  <input
+                    type="text"
+                    name="authorName"
+                    placeholder="Enter author name"
+                    value={formData.authorName}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
-                  >
-                    <option value="">Select Author</option>
-                    {authors.map((author) => (
-                      <option key={author.authorId} value={author.authorId}>
-                        {author.authorName}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                  />
                 </div>
 
                 {/* Publisher */}
@@ -519,25 +662,16 @@ function Books() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Publisher
                   </label>
-                  <select
-                    name="publisherId"
-                    value={formData.publisherId}
+
+                  <input
+                    type="text"
+                    name="publisherName"
+                    placeholder="Enter publisher name"
+                    value={formData.publisherName}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
-                  >
-                    <option value="">Select Publisher</option>
-                    {publishers
-                      .filter((publisher) => publisher.isActive)
-                      .map((publisher) => (
-                        <option
-                          key={publisher.publisherId}
-                          value={publisher.publisherId}
-                        >
-                          {publisher.publisherName}
-                        </option>
-                      ))}
-                  </select>
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                  />
                 </div>
 
                 {/* Description */}
@@ -638,13 +772,41 @@ function Books() {
       {/* Books List Table */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="px-5 sm:px-6 py-5 border-b border-gray-100">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-gray-900">All Books</h2>
+
               <p className="text-sm text-gray-500 mt-1">
-                {books.length} book{books.length !== 1 ? "s" : ""} in your store
-                (Click any row to view details)
+                {filteredBooks.length} book
+                {filteredBooks.length !== 1 ? "s" : ""} found
+                {searchTerm && ` for "${searchTerm}"`}
               </p>
+            </div>
+
+            {/* Search */}
+            <div className="relative w-full lg:w-80">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                🔍
+              </span>
+
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search books"
+                className="w-full pl-11 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+              />
+
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors"
+                  aria-label="Clear search"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -697,7 +859,7 @@ function Books() {
               )}
 
               {!loading &&
-                books.map((book, index) => (
+                filteredBooks.map((book, index) => (
                   <tr
                     key={book.bookId}
                     onClick={() => setModalBook(book)}
@@ -740,6 +902,34 @@ function Books() {
                     </td>
                   </tr>
                 ))}
+
+              {!loading && books.length > 0 && filteredBooks.length === 0 && (
+                <tr>
+                  <td colSpan="3" className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-3xl mb-4">
+                        🔍
+                      </div>
+
+                      <h3 className="font-semibold text-gray-900">
+                        No books found
+                      </h3>
+
+                      <p className="text-sm text-gray-500 mt-1">
+                        No books match "{searchTerm}".
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => setSearchTerm("")}
+                        className="mt-4 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-semibold transition-colors"
+                      >
+                        Clear Search
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
