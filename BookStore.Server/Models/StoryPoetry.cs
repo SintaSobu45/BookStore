@@ -14,7 +14,7 @@ namespace BookStore.Server.Models
         // =========================================================
 
         // Logged-in user -> UserId has value
-        // Guest -> UserId is null
+       
 
         [Required]
         public int UserId { get; set; }
@@ -83,7 +83,7 @@ namespace BookStore.Server.Models
         public string ContributorPhone { get; set; } = string.Empty;
 
 
-        // Cloudinary image URL
+        // FTP image public URL
         [Required]
         public string ContributorProfileImageUrl { get; set; } = string.Empty;
 

@@ -7,16 +7,16 @@ namespace BookStore.Server.Services
     public class BookService
     {
         private readonly BookRepository _bookRepository;
-        private readonly CloudinaryService _cloudinaryService;
+        private readonly FtpImageService _ftpImageService;
         private readonly BookImageService _bookImageService;
 
         public BookService(
             BookRepository bookRepository,
-            CloudinaryService cloudinaryService,
+            FtpImageService ftpImageService,
             BookImageService bookImageService)
         {
             _bookRepository = bookRepository;
-            _cloudinaryService = cloudinaryService;
+            _ftpImageService = ftpImageService;
             _bookImageService = bookImageService;
         }
 
@@ -102,20 +102,21 @@ namespace BookStore.Server.Services
 
 
             // =====================================================
-            // UPLOAD BOOK IMAGE
+            // UPLOAD BOOK IMAGE TO FTP
             // =====================================================
 
             if (request.Image != null)
             {
-                var uploadResult =
-                    await _cloudinaryService.UploadImageAsync(request.Image);
+                var imageUrl =
+                    await _ftpImageService
+                        .UploadImageAsync(request.Image);
 
-                if (uploadResult != null)
+                if (imageUrl != null)
                 {
                     var bookImage = new BookImage
                     {
                         BookId = book.BookId,
-                        ImageUrl = uploadResult.ImageUrl,
+                        ImageUrl = imageUrl,
                         IsPrimary = true
                     };
 
@@ -174,29 +175,33 @@ namespace BookStore.Server.Services
             {
                 // Get old primary image
                 var oldImage =
-                    await _bookImageService.GetPrimaryImageAsync(book.BookId);
+                    await _bookImageService
+                        .GetPrimaryImageAsync(book.BookId);
 
                 // Delete old image record
                 if (oldImage != null)
                 {
-                    await _bookImageService.DeleteAsync(oldImage);
+                    await _bookImageService
+                        .DeleteAsync(oldImage);
                 }
 
 
-                // Upload new image
-                var uploadResult =
-                    await _cloudinaryService.UploadImageAsync(request.Image);
+                // Upload new image to FTP
+                var imageUrl =
+                    await _ftpImageService
+                        .UploadImageAsync(request.Image);
 
-                if (uploadResult != null)
+                if (imageUrl != null)
                 {
                     var newImage = new BookImage
                     {
                         BookId = book.BookId,
-                        ImageUrl = uploadResult.ImageUrl,
+                        ImageUrl = imageUrl,
                         IsPrimary = true
                     };
 
-                    await _bookImageService.AddAsync(newImage);
+                    await _bookImageService
+                        .AddAsync(newImage);
                 }
             }
 
