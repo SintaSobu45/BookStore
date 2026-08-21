@@ -16,13 +16,16 @@
 
         public decimal EntryFee { get; set; }
 
-
         public int MaxSeats { get; set; }
 
         public int AvailableSeats { get; set; }
 
         public bool IsActive { get; set; }
 
+        // Event Card Image
         public string? ImageUrl { get; set; }
+
+        // Website Banner Image
+        public string? BannerImageUrl { get; set; }
     }
 }

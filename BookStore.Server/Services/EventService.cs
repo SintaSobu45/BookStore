@@ -62,7 +62,6 @@ namespace BookStore.Server.Services
                 Venue = request.Venue,
 
                 // Fixed registration fee for the event
-                // Same amount regardless of number of seats
                 EntryFee = request.EntryFee,
 
                 MaxSeats = request.MaxSeats,
@@ -85,9 +84,9 @@ namespace BookStore.Server.Services
                     .AddAsync(eventItem);
 
 
-            // -----------------------------------------------------
-            // UPLOAD EVENT IMAGE TO FTP
-            // -----------------------------------------------------
+            // =====================================================
+            // UPLOAD EVENT CARD IMAGE
+            // =====================================================
 
             if (request.Image != null)
             {
@@ -103,7 +102,7 @@ namespace BookStore.Server.Services
 
                         ImageUrl = imageUrl,
 
-                        IsPrimary = true
+                        ImageType = "Primary"
                     };
 
                     await _eventImageService
@@ -111,6 +110,37 @@ namespace BookStore.Server.Services
                 }
             }
 
+
+            // =====================================================
+            // UPLOAD EVENT BANNER IMAGE
+            // =====================================================
+
+            if (request.BannerImage != null)
+            {
+                var bannerImageUrl =
+                    await _ftpImageService
+                        .UploadImageAsync(request.BannerImage);
+
+                if (bannerImageUrl != null)
+                {
+                    var bannerImage = new EventImage
+                    {
+                        EventId = eventItem.EventId,
+
+                        ImageUrl = bannerImageUrl,
+
+                        ImageType = "Banner"
+                    };
+
+                    await _eventImageService
+                        .AddAsync(bannerImage);
+                }
+            }
+
+
+            // -----------------------------------------------------
+            // RETURN CREATED EVENT
+            // -----------------------------------------------------
 
             return await _eventRepository
                 .GetResponseByIdAsync(
@@ -147,9 +177,6 @@ namespace BookStore.Server.Services
             // VALIDATE NEW MAX SEATS
             // -----------------------------------------------------
 
-            // Admin cannot reduce MaxSeats below
-            // the number of already booked seats.
-
             if (request.MaxSeats < bookedSeats)
             {
                 throw new ArgumentException(
@@ -177,7 +204,6 @@ namespace BookStore.Server.Services
                 request.Venue;
 
             // Fixed registration fee
-            // Same amount regardless of number of seats
             eventItem.EntryFee =
                 request.EntryFee;
 
@@ -213,12 +239,12 @@ namespace BookStore.Server.Services
 
 
             // =====================================================
-            // REPLACE EVENT IMAGE
+            // REPLACE EVENT CARD IMAGE
             // =====================================================
 
             if (request.Image != null)
             {
-                // Get old primary image
+                // Get old Primary image
                 var oldImage =
                     await _eventImageService
                         .GetPrimaryImageAsync(
@@ -249,7 +275,7 @@ namespace BookStore.Server.Services
                         ImageUrl =
                             imageUrl,
 
-                        IsPrimary = true
+                        ImageType = "Primary"
                     };
 
                     await _eventImageService
@@ -257,6 +283,57 @@ namespace BookStore.Server.Services
                 }
             }
 
+
+            // =====================================================
+            // REPLACE EVENT BANNER IMAGE
+            // =====================================================
+
+            if (request.BannerImage != null)
+            {
+                // Get old Banner image
+                var oldBannerImage =
+                    await _eventImageService
+                        .GetBannerImageAsync(
+                            eventItem.EventId);
+
+
+                // Delete old banner image record
+                if (oldBannerImage != null)
+                {
+                    await _eventImageService
+                        .DeleteAsync(oldBannerImage);
+                }
+
+
+                // Upload new banner image to FTP
+                var bannerImageUrl =
+                    await _ftpImageService
+                        .UploadImageAsync(
+                            request.BannerImage);
+
+
+                if (bannerImageUrl != null)
+                {
+                    var newBannerImage = new EventImage
+                    {
+                        EventId =
+                            eventItem.EventId,
+
+                        ImageUrl =
+                            bannerImageUrl,
+
+                        ImageType = "Banner"
+                    };
+
+                    await _eventImageService
+                        .AddAsync(newBannerImage);
+                }
+            }
+
+
+            // -----------------------------------------------------
+            // RETURN UPDATED EVENT
+            // -----------------------------------------------------
 
             return await _eventRepository
                 .GetResponseByIdAsync(

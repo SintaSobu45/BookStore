@@ -14,7 +14,11 @@ namespace BookStore.Server.Repositories
             _context = context;
         }
 
-        // Get All Events
+
+        // =========================================================
+        // GET ALL EVENTS
+        // =========================================================
+
         public async Task<List<EventResponse>> GetAllAsync()
         {
             return await _context.Events
@@ -28,13 +32,20 @@ namespace BookStore.Server.Repositories
                     EventTime = e.EventTime,
                     Venue = e.Venue,
                     EntryFee = e.EntryFee,
-                  
+
                     MaxSeats = e.MaxSeats,
                     AvailableSeats = e.AvailableSeats,
                     IsActive = e.IsActive,
 
+                    // Event Card Image
                     ImageUrl = e.EventImages
-                        .Where(i => i.IsPrimary)
+                        .Where(i => i.ImageType == "Primary")
+                        .Select(i => i.ImageUrl)
+                        .FirstOrDefault(),
+
+                    // Website Banner Image
+                    BannerImageUrl = e.EventImages
+                        .Where(i => i.ImageType == "Banner")
                         .Select(i => i.ImageUrl)
                         .FirstOrDefault()
                 })
@@ -42,7 +53,10 @@ namespace BookStore.Server.Repositories
         }
 
 
-        // Get Event Entity By Id
+        // =========================================================
+        // GET EVENT ENTITY BY ID
+        // =========================================================
+
         public async Task<Event?> GetByIdAsync(int id)
         {
             return await _context.Events
@@ -51,7 +65,10 @@ namespace BookStore.Server.Repositories
         }
 
 
-        // Get Event Response By Id
+        // =========================================================
+        // GET EVENT RESPONSE BY ID
+        // =========================================================
+
         public async Task<EventResponse?> GetResponseByIdAsync(int id)
         {
             return await _context.Events
@@ -66,13 +83,20 @@ namespace BookStore.Server.Repositories
                     EventTime = e.EventTime,
                     Venue = e.Venue,
                     EntryFee = e.EntryFee,
-                
+
                     MaxSeats = e.MaxSeats,
                     AvailableSeats = e.AvailableSeats,
                     IsActive = e.IsActive,
 
+                    // Event Card Image
                     ImageUrl = e.EventImages
-                        .Where(i => i.IsPrimary)
+                        .Where(i => i.ImageType == "Primary")
+                        .Select(i => i.ImageUrl)
+                        .FirstOrDefault(),
+
+                    // Website Banner Image
+                    BannerImageUrl = e.EventImages
+                        .Where(i => i.ImageType == "Banner")
                         .Select(i => i.ImageUrl)
                         .FirstOrDefault()
                 })
@@ -80,7 +104,10 @@ namespace BookStore.Server.Repositories
         }
 
 
-        // Add Event
+        // =========================================================
+        // ADD EVENT
+        // =========================================================
+
         public async Task<Event> AddAsync(Event eventItem)
         {
             _context.Events.Add(eventItem);
@@ -90,7 +117,10 @@ namespace BookStore.Server.Repositories
         }
 
 
-        // Update Event
+        // =========================================================
+        // UPDATE EVENT
+        // =========================================================
+
         public async Task<Event?> UpdateAsync(Event eventItem)
         {
             _context.Events.Update(eventItem);
@@ -100,7 +130,10 @@ namespace BookStore.Server.Repositories
         }
 
 
-        // Delete Event
+        // =========================================================
+        // DELETE EVENT
+        // =========================================================
+
         public async Task<bool> DeleteAsync(Event eventItem)
         {
             _context.Events.Remove(eventItem);
@@ -110,7 +143,10 @@ namespace BookStore.Server.Repositories
         }
 
 
-        // Check Event Exists
+        // =========================================================
+        // CHECK EVENT EXISTS
+        // =========================================================
+
         public async Task<bool> ExistsAsync(int id)
         {
             return await _context.Events

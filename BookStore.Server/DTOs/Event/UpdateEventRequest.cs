@@ -27,7 +27,6 @@ namespace BookStore.Server.DTOs.Event
         [Range(0, 100000)]
         public decimal EntryFee { get; set; }
 
-
         [Required]
         [Range(1, 10000)]
         public int MaxSeats { get; set; }
@@ -35,6 +34,10 @@ namespace BookStore.Server.DTOs.Event
         [Required]
         public bool IsActive { get; set; }
 
+        // Event card image
         public IFormFile? Image { get; set; }
+
+        // Website banner image
+        public IFormFile? BannerImage { get; set; }
     }
 }

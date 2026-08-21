@@ -24,7 +24,18 @@ namespace BookStore.Server.Repositories
         public async Task<EventImage?> GetPrimaryImageAsync(int eventId)
         {
             return await _context.EventImages
-                .FirstOrDefaultAsync(i => i.EventId == eventId && i.IsPrimary);
+                .FirstOrDefaultAsync(i =>
+                    i.EventId == eventId &&
+                    i.ImageType == "Primary");
+        }
+
+        // Get Banner Image
+        public async Task<EventImage?> GetBannerImageAsync(int eventId)
+        {
+            return await _context.EventImages
+                .FirstOrDefaultAsync(i =>
+                    i.EventId == eventId &&
+                    i.ImageType == "Banner");
         }
 
         // Delete Image
