@@ -18,6 +18,8 @@ namespace BookStore.Server.Models.Event
         [StringLength(500)]
         public string ImageUrl { get; set; } = string.Empty;
 
-        public bool IsPrimary { get; set; } = true;
+        [Required]
+        [StringLength(50)]
+        public string ImageType { get; set; } = "Primary";
     }
 }
