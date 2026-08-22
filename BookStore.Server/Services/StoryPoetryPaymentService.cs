@@ -14,17 +14,23 @@ namespace BookStore.Server.Services
         private readonly StoryPoetryRepository _storyPoetryRepository;
         private readonly PaymentSettingsService _paymentSettingsService;
         private readonly RazorpaySettings _razorpaySettings;
+        private readonly EmailService _emailService;
+        private readonly PaymentReceiptService _paymentReceiptService;
 
         public StoryPoetryPaymentService(
             PaymentRepository paymentRepository,
             StoryPoetryRepository storyPoetryRepository,
             PaymentSettingsService paymentSettingsService,
-            IOptions<RazorpaySettings> razorpayOptions)
+            IOptions<RazorpaySettings> razorpayOptions,
+            EmailService emailService,
+            PaymentReceiptService paymentReceiptService)
         {
             _paymentRepository = paymentRepository;
             _storyPoetryRepository = storyPoetryRepository;
             _paymentSettingsService = paymentSettingsService;
             _razorpaySettings = razorpayOptions.Value;
+            _emailService = emailService;
+            _paymentReceiptService = paymentReceiptService;
         }
 
 
@@ -38,7 +44,7 @@ namespace BookStore.Server.Services
                 int userId)
         {
             // -----------------------------------------------------
-            // 1. Get Story / Poetry
+            // 1. Get Story / Poetry / Special submission
             // -----------------------------------------------------
 
             var storyPoetry =
@@ -176,8 +182,6 @@ namespace BookStore.Server.Services
                     EventRegistrationId =
                         null,
 
-                   
-
                     Amount =
                         totalAmount,
 
@@ -241,7 +245,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 2. Make Sure This Is Story / Poetry Payment
+            // 2. Make Sure This Is Story / Poetry / Special Payment
             // -----------------------------------------------------
 
             if (payment.StoryPoetryId == null)
@@ -373,7 +377,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 11. Get Story / Poetry
+            // 11. Get Story / Poetry / Special
             // -----------------------------------------------------
 
             var storyPoetry =
@@ -461,8 +465,181 @@ namespace BookStore.Server.Services
                 .UpdateAsync(storyPoetry);
 
 
+            // =====================================================
+            // 18. GENERATE RECEIPT + SEND EMAIL
+            // =====================================================
+
+            if (storyPoetry.User != null &&
+                !string.IsNullOrWhiteSpace(
+                    storyPoetry.User.Email))
+            {
+                try
+                {
+                    // -------------------------------------------------
+                    // TYPE COMES DIRECTLY FROM DATABASE
+                    //
+                    // Story
+                    // Poetry
+                    // Special
+                    // -------------------------------------------------
+
+                    string submissionType =
+                        storyPoetry.Type;
+
+
+                    // -------------------------------------------------
+                    // Generate PDF Receipt
+                    // -------------------------------------------------
+
+                    byte[] pdfBytes =
+                        _paymentReceiptService
+                            .GenerateStoryPoetryPaymentReceipt(
+                                storyPoetry.StoryPoetryId,
+                                storyPoetry.User.Name,
+                                storyPoetry.User.Email,
+                                submissionType,
+                                storyPoetry.Title,
+                                storyPoetry.ContributorNameMalayalam,
+                                storyPoetry.ContributorEmail,
+                                storyPoetry.ContributorPhone,
+                                payment.Amount,
+                                paymentMethod,
+                                request.RazorpayPaymentId,
+                                DateTime.UtcNow);
+
+
+                    // -------------------------------------------------
+                    // Professional Email
+                    // -------------------------------------------------
+
+                    string emailBody = $@"
+<html>
+<body style='font-family: Arial, sans-serif; color: #333;'>
+
+    <div style='max-width: 600px; margin: auto;'>
+
+        <h2 style='text-align: center;'>
+            The Old Library
+        </h2>
+
+        <h3>
+            Payment Confirmation
+        </h3>
+
+        <p>
+            Dear <strong>{storyPoetry.User.Name}</strong>,
+        </p>
+
+        <p>
+            Your payment for the following submission has been
+            successfully completed.
+        </p>
+
+        <table style='width: 100%; border-collapse: collapse;'>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Submission Type</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {submissionType}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Title</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.Title}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Amount Paid</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    ₹{payment.Amount:F2}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Payment Method</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {paymentMethod ?? "N/A"}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Payment ID</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {request.RazorpayPaymentId}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Payment Status</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    Paid
+                </td>
+            </tr>
+
+        </table>
+
+        <p>
+            Your official payment receipt is attached to this email
+            as a PDF document.
+        </p>
+
+        <p>
+            Please keep the receipt for your records.
+        </p>
+
+        <p>
+            Thank you for your submission.
+        </p>
+
+        <p>
+            Regards,<br/>
+            <strong>The Old Library</strong>
+        </p>
+
+    </div>
+
+</body>
+</html>";
+
+
+                    // -------------------------------------------------
+                    // Send Email With PDF Attachment
+                    // -------------------------------------------------
+
+                    await _emailService.SendEmailAsync(
+                        storyPoetry.User.Email,
+                        "The Old Library - Payment Receipt",
+                        emailBody,
+                        true,
+                        pdfBytes,
+                        $"StoryPoetry-Payment-Receipt-{storyPoetry.StoryPoetryId}.pdf");
+                }
+                catch (Exception ex)
+                {
+                    // Payment remains successful even if email fails.
+                    Console.WriteLine(
+                        $"Story/Poetry payment receipt email failed: {ex.Message}");
+                }
+            }
+
+
             // -----------------------------------------------------
-            // 18. Return Response
+            // 19. Return Response
             // -----------------------------------------------------
 
             return MapToResponse(
@@ -512,7 +689,6 @@ namespace BookStore.Server.Services
 
                 EventRegistrationId =
                     payment.EventRegistrationId,
-
 
                 Amount =
                     payment.Amount,

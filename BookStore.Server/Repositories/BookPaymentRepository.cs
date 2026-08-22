@@ -33,10 +33,12 @@ namespace BookStore.Server.Repositories
         // =========================================================
 
         public async Task<BookPayment?> GetByIdAsync(
-            int bookPaymentId)
+      int bookPaymentId)
         {
             return await _context.BookPayments
                 .Include(p => p.Order)
+                    .ThenInclude(o => o.OrderItems)
+                        .ThenInclude(oi => oi.Book)
                 .FirstOrDefaultAsync(
                     p => p.BookPaymentId == bookPaymentId);
         }

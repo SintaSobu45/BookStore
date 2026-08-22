@@ -144,10 +144,13 @@ namespace BookStore.Server
 
             builder.Services.AddScoped<CartService>();
 
-           
 
             builder.Services.AddScoped<OrderService>();
             builder.Services.AddScoped<BookPaymentService>();
+
+            builder.Services.AddScoped<EmailService>();
+            builder.Services.AddScoped<PaymentReceiptService>();
+            builder.Services.AddScoped<BookInvoiceService>();
 
 
             // JWT Authentication

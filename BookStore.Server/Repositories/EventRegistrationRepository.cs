@@ -22,10 +22,11 @@ namespace BookStore.Server.Repositories
         // =========================================================
 
         public async Task<EventRegistration?> GetRegistrationAsync(
-            int registrationId)
+      int registrationId)
         {
             return await _context.EventRegistrations
                 .Include(r => r.Event)
+                .Include(r => r.User)
                 .FirstOrDefaultAsync(
                     r => r.RegistrationId == registrationId);
         }
