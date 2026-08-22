@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
 
+
 namespace BookStore.Server.Services
 {
     public class PaymentService
@@ -12,15 +13,21 @@ namespace BookStore.Server.Services
         private readonly PaymentRepository _paymentRepository;
         private readonly EventRegistrationRepository _eventRegistrationRepository;
         private readonly RazorpaySettings _razorpaySettings;
+        private readonly EmailService _emailService;
+        private readonly PaymentReceiptService _paymentReceiptService;
 
         public PaymentService(
             PaymentRepository paymentRepository,
             EventRegistrationRepository eventRegistrationRepository,
-            IOptions<RazorpaySettings> razorpayOptions)
+            IOptions<RazorpaySettings> razorpayOptions,
+            EmailService emailService,
+            PaymentReceiptService paymentReceiptService)
         {
             _paymentRepository = paymentRepository;
             _eventRegistrationRepository = eventRegistrationRepository;
             _razorpaySettings = razorpayOptions.Value;
+            _emailService = emailService;
+            _paymentReceiptService = paymentReceiptService;
         }
 
 
@@ -40,7 +47,7 @@ namespace BookStore.Server.Services
                 UserId = p.UserId,
                 StoryPoetryId = p.StoryPoetryId,
                 EventRegistrationId = p.EventRegistrationId,
-               
+
                 Amount = p.Amount,
                 PaymentType = p.PaymentType,
                 PaymentMethod = p.PaymentMethod,
@@ -72,7 +79,7 @@ namespace BookStore.Server.Services
                 UserId = payment.UserId,
                 StoryPoetryId = payment.StoryPoetryId,
                 EventRegistrationId = payment.EventRegistrationId,
-              
+
                 Amount = payment.Amount,
                 PaymentType = payment.PaymentType,
                 PaymentMethod = payment.PaymentMethod,
@@ -199,8 +206,6 @@ namespace BookStore.Server.Services
                     PaymentType =
                         "Razorpay",
 
-                    // Payment method is known only after
-                    // successful Razorpay payment.
                     PaymentMethod =
                         null,
 
@@ -262,17 +267,6 @@ namespace BookStore.Server.Services
 
         // =========================================================
         // VERIFY RAZORPAY PAYMENT
-        // =========================================================
-        //
-        // Payment becomes Paid ONLY after signature verification.
-        //
-        // After successful verification:
-        //
-        // 1. Payment -> Paid
-        // 2. PaymentMethod -> fetched from Razorpay
-        // 3. EventRegistration -> Registered
-        // 4. AvailableSeats -> Reduced
-        //
         // =========================================================
 
         public async Task<PaymentResponseDto?>
@@ -528,8 +522,131 @@ namespace BookStore.Server.Services
                 .SaveChangesAsync();
 
 
+            // =====================================================
+            // 19. GENERATE PAYMENT RECEIPT + SEND EMAIL
+            // =====================================================
+
+            if (registration.User != null &&
+                !string.IsNullOrWhiteSpace(registration.User.Email))
+            {
+                string formattedEventTime =
+                    DateTime.Today
+                        .Add(eventItem.EventTime)
+                        .ToString("hh:mm tt");
+
+                string emailBody = $@"
+<html>
+<body>
+    <h2>Event Registration Confirmed</h2>
+
+    <p>Dear {registration.User.Name},</p>
+
+    <p>
+        Your registration for the event
+        <strong>{eventItem.EventName}</strong>
+        has been successfully confirmed.
+    </p>
+
+    <p>
+        <strong>Event Name:</strong>
+        {eventItem.EventName}
+    </p>
+
+    <p>
+        <strong>Event Date:</strong>
+        {eventItem.EventDate:dd-MM-yyyy}
+    </p>
+
+    <p>
+        <strong>Event Time:</strong>
+        {formattedEventTime}
+    </p>
+
+    <p>
+        <strong>Venue:</strong>
+        {eventItem.Venue}
+    </p>
+
+    <p>
+        <strong>Number of Seats:</strong>
+        {registration.NumberOfSeats}
+    </p>
+
+    <p>
+        <strong>Amount Paid:</strong>
+        ₹{registration.TotalAmount:F2}
+    </p>
+
+    <p>
+        <strong>Payment Method:</strong>
+        {paymentMethod}
+    </p>
+
+    <p>
+        <strong>Payment ID:</strong>
+        {request.RazorpayPaymentId}
+    </p>
+
+    <p>
+        Your payment receipt is attached to this email.
+    </p>
+
+    <p>
+        Thank you for registering for our event.
+    </p>
+
+    <p>
+        Regards,<br/>
+        The Old Library
+    </p>
+</body>
+</html>";
+
+                try
+                {
+                    // =================================================
+                    // GENERATE PAYMENT RECEIPT PDF
+                    // =================================================
+
+                    byte[] pdfBytes =
+                        _paymentReceiptService
+                            .GenerateEventPaymentReceipt(
+                                registration.RegistrationId,
+                                registration.User.Name,
+                                registration.User.Email,
+                                eventItem.EventName,
+                                eventItem.EventDate,
+                                eventItem.EventTime,
+                                eventItem.Venue,
+                                registration.NumberOfSeats,
+                                registration.TotalAmount,
+                                paymentMethod,
+                                request.RazorpayPaymentId,
+                                DateTime.UtcNow);
+
+
+                    // =================================================
+                    // SEND EMAIL WITH PDF ATTACHMENT
+                    // =================================================
+
+                    await _emailService.SendEmailAsync(
+                        registration.User.Email,
+                        "Event Registration Confirmation - Payment Receipt",
+                        emailBody,
+                        true,
+                        pdfBytes,
+                        $"Event-Payment-Receipt-{registration.RegistrationId}.pdf");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(
+                        $"Event confirmation email failed: {ex.Message}");
+                }
+            }
+
+
             // -----------------------------------------------------
-            // 19. Return Response
+            // 20. Return Response
             // -----------------------------------------------------
 
             return new PaymentResponseDto
@@ -545,8 +662,6 @@ namespace BookStore.Server.Services
 
                 EventRegistrationId =
                     updatedPayment.EventRegistrationId,
-
-               
 
                 Amount =
                     updatedPayment.Amount,
@@ -580,18 +695,6 @@ namespace BookStore.Server.Services
 
         // =========================================================
         // GET PAYMENT METHOD FROM RAZORPAY
-        // =========================================================
-        //
-        // Uses Razorpay Payment ID to fetch the actual payment
-        // details from Razorpay.
-        //
-        // Example returned values:
-        //
-        // upi
-        // card
-        // netbanking
-        // wallet
-        //
         // =========================================================
 
         private string? GetRazorpayPaymentMethod(

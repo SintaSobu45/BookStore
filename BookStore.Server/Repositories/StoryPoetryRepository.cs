@@ -37,6 +37,7 @@ namespace BookStore.Server.Repositories
         public async Task<StoryPoetry?> GetByIdAsync(int id)
         {
             return await _context.StoryPoetries
+                .Include(s => s.User)
                 .FirstOrDefaultAsync(
                     s => s.StoryPoetryId == id);
         }

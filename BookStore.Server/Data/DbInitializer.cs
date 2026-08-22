@@ -37,7 +37,7 @@ namespace BookStore.Server.Data
 
 
             // =========================================================
-            // CREATE ADMIN USER
+            // CREATE TEST ADMIN
             // =========================================================
 
             if (!context.Users.Any(
@@ -46,22 +46,12 @@ namespace BookStore.Server.Data
                 var admin = new User
                 {
                     Name = "System Admin",
-
                     Email = "admin@bookstore.com",
-
                     Phone = "9999999999",
-
                     RoleId = adminRole.RoleId,
-
                     IsActive = true,
-
                     CreatedDate = DateTime.UtcNow
                 };
-
-
-                // =====================================================
-                // HASH ADMIN PASSWORD
-                // =====================================================
 
                 var passwordHasher = new PasswordHasher();
 
@@ -71,12 +61,38 @@ namespace BookStore.Server.Data
                         "Admin@123"
                     );
 
-
-                // =====================================================
-                // SAVE ADMIN
-                // =====================================================
-
                 context.Users.Add(admin);
+
+                context.SaveChanges();
+            }
+
+
+            // =========================================================
+            // CREATE REAL ADMIN
+            // =========================================================
+
+            if (!context.Users.Any(
+                u => u.Email == "YOUR_REAL_ADMIN_EMAIL"))
+            {
+                var realAdmin = new User
+                {
+                    Name = "Real Admin",
+                    Email = "theoldlibrary.info@gmail.com",
+                    Phone = "9567913398",
+                    RoleId = adminRole.RoleId,
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                var passwordHasher = new PasswordHasher();
+
+                realAdmin.PasswordHash =
+                    passwordHasher.HashPassword(
+                        realAdmin,
+                        "Admin@123"
+                    );
+
+                context.Users.Add(realAdmin);
 
                 context.SaveChanges();
             }

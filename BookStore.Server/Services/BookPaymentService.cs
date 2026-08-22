@@ -15,19 +15,25 @@ namespace BookStore.Server.Services
         private readonly CartRepository _cartRepository;
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly BookInvoiceService _bookInvoiceService;
+        private readonly EmailService _emailService;
 
         public BookPaymentService(
             BookPaymentRepository bookPaymentRepository,
             OrderRepository orderRepository,
             CartRepository cartRepository,
             ApplicationDbContext context,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            BookInvoiceService bookInvoiceService,
+            EmailService emailService)
         {
             _bookPaymentRepository = bookPaymentRepository;
             _orderRepository = orderRepository;
             _cartRepository = cartRepository;
             _context = context;
             _configuration = configuration;
+            _bookInvoiceService = bookInvoiceService;
+            _emailService = emailService;
         }
 
 
@@ -71,6 +77,10 @@ namespace BookStore.Server.Services
                     );
                 }
             }
+
+            // Guest order:
+            // userId can be null.
+            // Order is identified using OrderId / GuestOrderId.
 
 
             // =====================================================
@@ -181,13 +191,15 @@ namespace BookStore.Server.Services
             {
                 OrderId = order.OrderId,
 
-                // Logged-in -> UserId
-                // Guest -> null
+                // Logged-in customer -> UserId
+                // Guest customer -> null
                 UserId = userId,
 
                 Amount = order.TotalAmount,
 
                 PaymentType = "Razorpay",
+
+                PaymentMethod = null,
 
                 Status = "Pending",
 
@@ -218,9 +230,14 @@ namespace BookStore.Server.Services
             VerifyPaymentAsync(
                 VerifyBookPaymentRequest request)
         {
+            // =====================================================
+            // GET PAYMENT
+            // =====================================================
+
             var payment =
                 await _bookPaymentRepository
-                    .GetByIdAsync(request.BookPaymentId);
+                    .GetByIdAsync(
+                        request.BookPaymentId);
 
             if (payment == null)
             {
@@ -248,10 +265,14 @@ namespace BookStore.Server.Services
             // RAZORPAY CONFIGURATION
             // =====================================================
 
+            var keyId =
+                _configuration["Razorpay:KeyId"];
+
             var keySecret =
                 _configuration["Razorpay:KeySecret"];
 
-            if (string.IsNullOrWhiteSpace(keySecret))
+            if (string.IsNullOrWhiteSpace(keyId) ||
+                string.IsNullOrWhiteSpace(keySecret))
             {
                 return (
                     false,
@@ -265,7 +286,7 @@ namespace BookStore.Server.Services
             // =====================================================
 
             if (string.IsNullOrWhiteSpace(
-                    request.RazorpayOrderId))
+                request.RazorpayOrderId))
             {
                 return (
                     false,
@@ -288,7 +309,7 @@ namespace BookStore.Server.Services
             // =====================================================
 
             if (string.IsNullOrWhiteSpace(
-                    request.RazorpayPaymentId))
+                request.RazorpayPaymentId))
             {
                 return (
                     false,
@@ -302,7 +323,7 @@ namespace BookStore.Server.Services
             // =====================================================
 
             if (string.IsNullOrWhiteSpace(
-                    request.RazorpaySignature))
+                request.RazorpaySignature))
             {
                 return (
                     false,
@@ -364,14 +385,10 @@ namespace BookStore.Server.Services
 
 
             // =====================================================
-            // GET ORDER WITH ORDER ITEMS
+            // GET ORDER WITH ORDER ITEMS + BOOK
             // =====================================================
 
-            var order =
-                await _context.Orders
-                    .Include(o => o.OrderItems)
-                    .FirstOrDefaultAsync(
-                        o => o.OrderId == payment.OrderId);
+            var order = payment.Order;
 
             if (order == null)
             {
@@ -392,6 +409,35 @@ namespace BookStore.Server.Services
                     true,
                     "Order payment has already been completed."
                 );
+            }
+
+
+            // =====================================================
+            // GET PAYMENT METHOD
+            // =====================================================
+
+            string? paymentMethod = null;
+
+            try
+            {
+                RazorpayClient client =
+                    new RazorpayClient(
+                        keyId,
+                        keySecret);
+
+                Razorpay.Api.Payment razorpayPayment =
+                    client.Payment.Fetch(
+                        request.RazorpayPaymentId);
+
+                paymentMethod =
+                    razorpayPayment["method"]?.ToString();
+            }
+            catch
+            {
+                // Payment is still valid.
+                // If Razorpay payment method cannot be fetched,
+                // invoice will show N/A.
+                paymentMethod = null;
             }
 
 
@@ -427,6 +473,7 @@ namespace BookStore.Server.Services
                         );
                     }
 
+
                     if (orderItem.Quantity <= 0)
                     {
                         await transaction.RollbackAsync();
@@ -436,6 +483,7 @@ namespace BookStore.Server.Services
                             $"Invalid quantity for book '{book.Title}'."
                         );
                     }
+
 
                     if (book.StockQuantity <
                         orderItem.Quantity)
@@ -469,10 +517,14 @@ namespace BookStore.Server.Services
 
 
                 // =================================================
-                // UPDATE BOOK PAYMENT
+                // UPDATE PAYMENT
                 // =================================================
 
-                payment.Status = "Paid";
+                payment.Status =
+                    "Paid";
+
+                payment.PaymentMethod =
+                    paymentMethod;
 
                 payment.RazorpayOrderId =
                     request.RazorpayOrderId;
@@ -525,7 +577,8 @@ namespace BookStore.Server.Services
                     cart.CartItems.Any())
                 {
                     _context.CartItems
-                        .RemoveRange(cart.CartItems);
+                        .RemoveRange(
+                            cart.CartItems);
 
                     cart.UpdatedDate =
                         DateTime.UtcNow;
@@ -533,7 +586,7 @@ namespace BookStore.Server.Services
 
 
                 // =================================================
-                // SAVE EVERYTHING TOGETHER
+                // SAVE DATABASE CHANGES
                 // =================================================
 
                 await _context.SaveChangesAsync();
@@ -544,13 +597,6 @@ namespace BookStore.Server.Services
                 // =================================================
 
                 await transaction.CommitAsync();
-
-
-                return (
-                    true,
-                    "Payment verified successfully. " +
-                    "Order confirmed, stock updated and cart cleared."
-                );
             }
             catch
             {
@@ -561,6 +607,229 @@ namespace BookStore.Server.Services
                     "Payment verification succeeded, but order processing failed."
                 );
             }
+
+
+            // =====================================================
+            // GENERATE INVOICE + SEND EMAIL
+            // =====================================================
+            //
+            // IMPORTANT:
+            // This is OUTSIDE the database transaction.
+            //
+            // Payment remains successful even if email fails.
+            // =====================================================
+
+            try
+            {
+                DateTime paymentDate =
+                    payment.PaidDate
+                    ?? DateTime.UtcNow;
+
+
+                // -------------------------------------------------
+                // Generate Invoice PDF
+                // -------------------------------------------------
+
+                byte[] invoiceBytes =
+                    _bookInvoiceService
+                        .GenerateBookInvoice(
+                            order,
+                            paymentMethod,
+                            request.RazorpayPaymentId,
+                            paymentDate);
+
+
+                // -------------------------------------------------
+                // Email Body
+                // -------------------------------------------------
+
+                string customerName =
+                    string.IsNullOrWhiteSpace(
+                        order.CustomerName)
+                            ? "Customer"
+                            : order.CustomerName;
+
+
+                string emailBody = $@"
+<html>
+<body style='font-family: Arial, sans-serif; color: #333;'>
+
+    <div style='max-width: 600px; margin: auto;'>
+
+        <h2 style='text-align: center;'>
+            The Old Library
+        </h2>
+
+        <h3>
+            Order Confirmation
+        </h3>
+
+        <p>
+            Dear <strong>{customerName}</strong>,
+        </p>
+
+        <p>
+            Thank you for your purchase from
+            <strong>The Old Library</strong>.
+        </p>
+
+        <p>
+            Your book order has been successfully
+            paid and confirmed.
+        </p>
+
+        <table style='width: 100%; border-collapse: collapse;'>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Order ID</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {order.OrderId}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Invoice No</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    INV-{order.OrderId:D6}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Order Type</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {(order.UserId.HasValue
+                        ? "Registered Customer"
+                        : "Guest Customer")}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Amount Paid</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    ₹{order.TotalAmount:F2}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Payment Method</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {paymentMethod ?? "N/A"}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Payment ID</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {request.RazorpayPaymentId}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Payment Status</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    Paid
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Order Status</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {order.OrderStatus}
+                </td>
+            </tr>
+
+        </table>
+
+        <p>
+            Your official invoice is attached to this email
+            as a PDF document.
+        </p>
+
+        <p>
+            Please keep the invoice for your records.
+        </p>
+
+        <p>
+            Your order will be processed for delivery
+            to the shipping address provided during checkout.
+        </p>
+
+        <p>
+            Thank you for shopping with us.
+        </p>
+
+        <p>
+            Regards,<br/>
+            <strong>The Old Library</strong>
+        </p>
+
+    </div>
+
+</body>
+</html>";
+
+
+                // -------------------------------------------------
+                // Send Invoice Email
+                // -------------------------------------------------
+
+                if (!string.IsNullOrWhiteSpace(
+                    order.CustomerEmail))
+                {
+                    await _emailService.SendEmailAsync(
+                        order.CustomerEmail,
+                        "The Old Library - Book Order Invoice",
+                        emailBody,
+                        true,
+                        invoiceBytes,
+                        $"Book-Invoice-{order.OrderId}.pdf");
+                }
+            }
+            catch (Exception ex)
+            {
+                // =============================================
+                // IMPORTANT
+                // =============================================
+                //
+                // Do NOT change payment/order status to failed.
+                //
+                // Payment was already successfully verified
+                // and database transaction was committed.
+                //
+                // Only the email/invoice failed.
+                // =============================================
+
+                Console.WriteLine(
+                    $"Book invoice email failed: {ex.Message}");
+            }
+
+
+            // =====================================================
+            // FINAL RESPONSE
+            // =====================================================
+
+            return (
+                true,
+                "Payment verified successfully. " +
+                "Order confirmed, stock updated, cart cleared " +
+                "and invoice email processed."
+            );
         }
     }
 }
