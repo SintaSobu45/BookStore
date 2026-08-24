@@ -22,6 +22,8 @@ namespace BookStore.Server.Models
         [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
 
+        public Certificate? Certificate { get; set; }
+
 
         // =========================================================
         // STORY / POETRY DETAILS

@@ -42,6 +42,19 @@ namespace BookStore.Server.Repositories
                     s => s.StoryPoetryId == id);
         }
 
+        // =========================================================
+        // GET ALL STORY / POETRY ENTITIES
+        // =========================================================
+        // Used internally by CertificateService.
+        // Returns actual StoryPoetry entities instead of DTOs.
+        // =========================================================
+
+        public async Task<List<StoryPoetry>> GetAllEntitiesAsync()
+        {
+            return await _context.StoryPoetries
+                .OrderByDescending(s => s.CreatedDate)
+                .ToListAsync();
+        }
 
         // =========================================================
         // GET ALL SUBMISSIONS
