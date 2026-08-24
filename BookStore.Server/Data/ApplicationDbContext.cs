@@ -49,6 +49,10 @@ namespace BookStore.Server.Data
         public DbSet<BookPayment> BookPayments { get; set; }
 
 
+        // Certificate
+        public DbSet<Certificate> Certificates { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -264,6 +268,31 @@ namespace BookStore.Server.Data
                 .WithMany()
                 .HasForeignKey(bp => bp.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // =========================================================
+            // CERTIFICATE
+            // =========================================================
+
+            // User -> Certificate
+            modelBuilder.Entity<Certificate>()
+                .HasOne(c => c.User)
+                .WithMany(u => u.Certificates)
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // StoryPoetry -> Certificate
+            modelBuilder.Entity<Certificate>()
+                .HasOne(c => c.StoryPoetry)
+                .WithOne(s => s.Certificate)
+                .HasForeignKey<Certificate>(c => c.StoryPoetryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // One StoryPoetry submission can have only one Certificate
+            modelBuilder.Entity<Certificate>()
+                .HasIndex(c => c.StoryPoetryId)
+                .IsUnique();
         }
     }
 }

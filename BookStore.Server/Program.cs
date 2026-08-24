@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuestPDF.Infrastructure;
 using System.Text;
 
 namespace BookStore.Server
@@ -94,7 +95,9 @@ namespace BookStore.Server
             builder.Services.AddScoped<EventRegistrationRepository>();
             builder.Services.AddScoped<StoryPoetryRepository>();
 
-      
+            builder.Services.AddScoped<CertificateRepository>();
+
+
 
             builder.Services.AddScoped<PaymentRepository>();
             builder.Services.AddScoped<PaymentSettingsRepository>();
@@ -118,6 +121,8 @@ namespace BookStore.Server
 
             builder.Services.Configure<RazorpaySettings>(
             builder.Configuration.GetSection("Razorpay"));
+
+            QuestPDF.Settings.License = LicenseType.Evaluation;
 
             // Service
             builder.Services.AddScoped<AccountService>();
@@ -151,6 +156,9 @@ namespace BookStore.Server
             builder.Services.AddScoped<EmailService>();
             builder.Services.AddScoped<PaymentReceiptService>();
             builder.Services.AddScoped<BookInvoiceService>();
+
+            builder.Services.AddScoped<CertificateService>();
+            
 
 
             // JWT Authentication

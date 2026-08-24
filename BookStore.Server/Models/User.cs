@@ -121,5 +121,8 @@ namespace BookStore.Server.Models
 
         public ICollection<Order> Orders { get; set; }
     = new List<Order>();
+
+        public ICollection<Certificate> Certificates { get; set; }
+    = new List<Certificate>();
     }
 }
