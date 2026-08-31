@@ -81,28 +81,28 @@ function AdminLayout() {
         `}
       >
         {/* Sidebar Header with Logo */}
-        <div className="flex items-center justify-between mb-8">
-          <Link
-            to="/admin"
-            onClick={handleNavigation}
-            className="flex items-center cursor-pointer overflow-visible w-100"
-          >
-            <img
-              src={logo}
-              alt="The Old Library"
-              className="h-16 w-auto object-contain -my-3 scale-110 bg-white"
-            />
-          </Link>
+        <div className="flex items-center justify-center mb-8">
+  <Link
+    to="/admin"
+    onClick={handleNavigation}
+    className="w-full h-16 overflow-hidden flex items-center justify-center"
+  >
+    <img
+      src={logo}
+      alt="The Old Library"
+      className="w-full h-full object-cover bg-white rounded-2"
+    />
+  </Link>
 
-          {/* Mobile Close Button */}
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden p-1 rounded-lg hover:bg-gray-800 transition text-stone-400 hover:text-white cursor-pointer"
-            aria-label="Close menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+  {/* Mobile Close Button */}
+  <button
+    onClick={() => setSidebarOpen(false)}
+    className="md:hidden p-1 rounded-lg   transition text-stone-400 hover:text-white cursor-pointer"
+    aria-label="Close menu"
+  >
+    <X className="w-5 h-5" />
+  </button>
+</div>
 
 
         {/* Navigation */}
@@ -110,7 +110,7 @@ function AdminLayout() {
           <Link
             to="/admin"
             onClick={handleNavigation}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
           >
             <LayoutDashboard className="w-5 h-5" />
             <span>Dashboard</span>
@@ -119,7 +119,7 @@ function AdminLayout() {
           <Link
             to="/admin/books"
             onClick={handleNavigation}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
           >
             <BookOpen className="w-5 h-5" />
             <span>Books</span>
@@ -128,7 +128,7 @@ function AdminLayout() {
           <Link
             to="/admin/library"
             onClick={handleNavigation}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
           >
             <Library className="w-5 h-5" />
             <span>Library Management</span>
@@ -137,7 +137,7 @@ function AdminLayout() {
           <Link
             to="/admin/events"
             onClick={handleNavigation}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
           >
             <CalendarDays className="w-5 h-5" />
             <span>Events</span>
@@ -146,7 +146,7 @@ function AdminLayout() {
           <Link
             to="/admin/story"
             onClick={handleNavigation}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
           >
             <CalendarDays className="w-5 h-5" />
             <span>Story & Poetry</span>
@@ -155,7 +155,7 @@ function AdminLayout() {
           <Link
             to="/admin/certificates"
             onClick={handleNavigation}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
           >
             <Paperclip className="w-5 h-5" />
             <span>Certificates</span>
