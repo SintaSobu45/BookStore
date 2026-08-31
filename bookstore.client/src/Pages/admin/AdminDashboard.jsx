@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Users,
   FolderOpen,
   Building2,
-  IndianRupee,
   AlertTriangle,
   PackageX,
   PackageCheck,
@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Search,
   X,
+  ShoppingBag,
 } from "lucide-react";
 
 import { getBooks } from "../../services/bookService";
@@ -21,6 +22,8 @@ import { getCategories } from "../../services/categoryService";
 import { getPublishers } from "../../services/publisherService";
 
 function AdminDashboard() {
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState({
     revenue: 25000,
     books: 0,
@@ -88,7 +91,8 @@ function AdminDashboard() {
         [...safeBooks]
           .sort(
             (a, b) =>
-              new Date(b.publishedDate || 0) - new Date(a.publishedDate || 0),
+              new Date(b.publishedDate || 0) -
+              new Date(a.publishedDate || 0),
           )
           .slice(0, 5),
       );
@@ -112,16 +116,18 @@ function AdminDashboard() {
       // -------------------------------------------------------
 
       setInventory({
-        inStock: safeBooks.filter((b) => Number(b.stockQuantity || 0) > 5)
-          .length,
+        inStock: safeBooks.filter(
+          (b) => Number(b.stockQuantity || 0) > 5,
+        ).length,
 
         lowStock: safeBooks.filter((b) => {
           const stock = Number(b.stockQuantity || 0);
           return stock >= 1 && stock <= 5;
         }).length,
 
-        outStock: safeBooks.filter((b) => Number(b.stockQuantity || 0) === 0)
-          .length,
+        outStock: safeBooks.filter(
+          (b) => Number(b.stockQuantity || 0) === 0,
+        ).length,
       });
     } catch (err) {
       console.error("Dashboard loading failed:", err);
@@ -150,11 +156,15 @@ function AdminDashboard() {
     }
 
     if (stockFilter === "out") {
-      result = result.filter((book) => Number(book.stockQuantity || 0) === 0);
+      result = result.filter(
+        (book) => Number(book.stockQuantity || 0) === 0,
+      );
     }
 
     if (stockFilter === "in") {
-      result = result.filter((book) => Number(book.stockQuantity || 0) > 5);
+      result = result.filter(
+        (book) => Number(book.stockQuantity || 0) > 5,
+      );
     }
 
     const search = stockSearch.toLowerCase().trim();
@@ -216,14 +226,6 @@ function AdminDashboard() {
 
   const cards = [
     {
-      title: "Revenue",
-      value: `${stats.revenue.toLocaleString("en-IN")}`,
-      subtitle: "Total revenue",
-      icon: IndianRupee,
-      className: "bg-[#1b3b2b] text-white border-[#1b3b2b]",
-      iconClass: "bg-white/10 text-white",
-    },
-    {
       title: "Books",
       value: stats.books,
       subtitle: "Books in catalog",
@@ -257,11 +259,14 @@ function AdminDashboard() {
     },
   ];
 
+  // =========================================================
+  // INVENTORY CLICK
+  // =========================================================
+
   const handleInventoryClick = (filter) => {
     setStockFilter(filter);
     setStockSearch("");
 
-    // Wait for the filter/UI state to update, then scroll
     setTimeout(() => {
       inventoryRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -279,7 +284,10 @@ function AdminDashboard() {
       <div className="min-h-[70vh] flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="h-7 w-7 animate-spin mx-auto text-[#1b3b2b]" />
-          <p className="mt-3 text-sm text-stone-500">Loading dashboard...</p>
+
+          <p className="mt-3 text-sm text-stone-500">
+            Loading dashboard...
+          </p>
         </div>
       </div>
     );
@@ -301,7 +309,9 @@ function AdminDashboard() {
             Dashboard
           </h1>
 
-          <p className="text-sm text-stone-500 mt-1">Welcome back, Admin 👋</p>
+          <p className="text-sm text-stone-500 mt-1">
+            Welcome back, Admin 👋
+          </p>
         </div>
 
         <button
@@ -311,7 +321,9 @@ function AdminDashboard() {
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-sm font-bold text-gray-700 hover:bg-stone-50 disabled:opacity-50 transition"
         >
           <RefreshCw
-            className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+            className={`h-4 w-4 ${
+              refreshing ? "animate-spin" : ""
+            }`}
           />
 
           {refreshing ? "Refreshing..." : "Refresh"}
@@ -319,10 +331,214 @@ function AdminDashboard() {
       </div>
 
       {/* =====================================================
-          STAT CARDS
+          ORDERS + STAT CARDS
       ====================================================== */}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+
+        {/* =================================================
+            MY ORDERS CARD
+        ================================================== */}
+
+        <button
+          type="button"
+          onClick={() => navigate("/admin/orders")}
+          className="
+            group
+            relative
+            overflow-hidden
+            w-full
+            text-left
+            rounded-2xl
+            border
+            border-[#1b3b2b]
+            bg-[#1b3b2b]
+            text-white
+            shadow-sm
+            p-5
+
+            transition-all
+            duration-500
+            ease-out
+
+            hover:-translate-y-2
+            hover:shadow-2xl
+            hover:shadow-emerald-950/30
+
+            active:scale-[0.97]
+
+            focus:outline-none
+            focus:ring-2
+            focus:ring-emerald-600
+            focus:ring-offset-2
+          "
+        >
+          {/* Background Glow 1 */}
+
+          <div
+            className="
+              absolute
+              -right-10
+              -top-10
+              w-32
+              h-32
+              rounded-full
+              bg-white/10
+              blur-2xl
+
+              transition-all
+              duration-700
+
+              group-hover:scale-[2]
+              group-hover:bg-white/15
+            "
+          />
+
+          {/* Background Glow 2 */}
+
+          <div
+            className="
+              absolute
+              -left-10
+              -bottom-10
+              w-24
+              h-24
+              rounded-full
+              bg-emerald-300/10
+              blur-xl
+
+              transition-all
+              duration-700
+
+              group-hover:scale-[2]
+            "
+          />
+
+          {/* Content */}
+
+          <div className="relative flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-white/70">
+                My Orders
+              </p>
+
+              <h2
+                className="
+                  text-2xl
+                  md:text-3xl
+                  font-extrabold
+                  mt-2
+
+                  transition-transform
+                  duration-500
+
+                  group-hover:translate-x-1
+                "
+              >
+                View Orders
+              </h2>
+
+              
+            </div>
+
+            {/* Icon */}
+
+            <div
+              className="
+                w-11
+                h-11
+                rounded-xl
+                bg-white/10
+                flex
+                items-center
+                justify-center
+
+                transition-all
+                duration-500
+
+                group-hover:bg-white/20
+                group-hover:scale-110
+                group-hover:rotate-6
+              "
+            >
+              <ShoppingBag
+                className="
+                  h-5
+                  w-5
+
+                  transition-transform
+                  duration-500
+
+                  group-hover:scale-110
+                "
+              />
+            </div>
+          </div>
+
+          {/* Bottom Action */}
+
+          <div
+            className="
+              relative
+              flex
+              items-center
+              gap-1
+              mt-5
+
+              text-[11px]
+              font-bold
+              text-white/60
+
+              transition-all
+              duration-500
+
+              group-hover:text-white
+              group-hover:gap-2
+            "
+          >
+            Manage orders
+
+            <ArrowRight
+              className="
+                h-3.5
+                w-3.5
+
+                transition-transform
+                duration-500
+
+                group-hover:translate-x-1
+              "
+            />
+          </div>
+
+          {/* Shine Effect */}
+
+          <div
+            className="
+              absolute
+              inset-y-0
+              -left-full
+              w-1/2
+
+              bg-gradient-to-r
+              from-transparent
+              via-white/10
+              to-transparent
+
+              skew-x-[-20deg]
+
+              transition-all
+              duration-700
+
+              group-hover:left-[140%]
+            "
+          />
+        </button>
+
+        {/* =================================================
+            NORMAL STAT CARDS
+        ================================================== */}
+
         {cards.map((card) => {
           const Icon = card.icon;
 
@@ -333,13 +549,7 @@ function AdminDashboard() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p
-                    className={`text-xs font-semibold ${
-                      card.title === "Revenue"
-                        ? "text-white/70"
-                        : "text-stone-500"
-                    }`}
-                  >
+                  <p className="text-xs font-semibold text-stone-500">
                     {card.title}
                   </p>
 
@@ -347,13 +557,7 @@ function AdminDashboard() {
                     {card.value}
                   </h2>
 
-                  <p
-                    className={`text-[11px] mt-1 ${
-                      card.title === "Revenue"
-                        ? "text-white/60"
-                        : "text-stone-400"
-                    }`}
-                  >
+                  <p className="text-[11px] mt-1 text-stone-400">
                     {card.subtitle}
                   </p>
                 </div>
@@ -381,12 +585,16 @@ function AdminDashboard() {
             </div>
 
             <div className="flex-1">
-              <h3 className="font-bold text-red-900">Out-of-stock alert</h3>
+              <h3 className="font-bold text-red-900">
+                Out-of-stock alert
+              </h3>
 
               <p className="text-sm text-red-700 mt-0.5">
                 {inventory.outStock}{" "}
-                {inventory.outStock === 1 ? "book has" : "books have"} gone out
-                of stock.
+                {inventory.outStock === 1
+                  ? "book has"
+                  : "books have"}{" "}
+                gone out of stock.
               </p>
             </div>
 
@@ -396,6 +604,7 @@ function AdminDashboard() {
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition"
             >
               View Books
+
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -407,6 +616,7 @@ function AdminDashboard() {
       ====================================================== */}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
         {/* In Stock */}
 
         <button
@@ -426,7 +636,9 @@ function AdminDashboard() {
             <TrendingUp className="h-5 w-5 text-emerald-500" />
           </div>
 
-          <p className="text-sm font-semibold text-stone-500 mt-4">In Stock</p>
+          <p className="text-sm font-semibold text-stone-500 mt-4">
+            In Stock
+          </p>
 
           <p className="text-3xl font-extrabold text-gray-900 mt-1">
             {inventory.inStock}
@@ -458,13 +670,17 @@ function AdminDashboard() {
             </span>
           </div>
 
-          <p className="text-sm font-semibold text-stone-500 mt-4">Low Stock</p>
+          <p className="text-sm font-semibold text-stone-500 mt-4">
+            Low Stock
+          </p>
 
           <p className="text-3xl font-extrabold text-gray-900 mt-1">
             {inventory.lowStock}
           </p>
 
-          <p className="text-xs text-stone-400 mt-1">1–5 copies available</p>
+          <p className="text-xs text-stone-400 mt-1">
+            1–5 copies available
+          </p>
         </button>
 
         {/* Out of Stock */}
@@ -498,7 +714,9 @@ function AdminDashboard() {
             {inventory.outStock}
           </p>
 
-          <p className="text-xs text-stone-400 mt-1">0 copies available</p>
+          <p className="text-xs text-stone-400 mt-1">
+            0 copies available
+          </p>
         </button>
       </div>
 
@@ -513,10 +731,13 @@ function AdminDashboard() {
         <div className="p-5 border-b border-stone-200">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Inventory</h2>
+              <h2 className="text-base font-bold text-gray-900">
+                Inventory
+              </h2>
 
               <p className="text-xs text-stone-500 mt-1">
-                Monitor stock levels and identify books that need attention.
+                Monitor stock levels and identify books that need
+                attention.
               </p>
             </div>
 
@@ -605,7 +826,9 @@ function AdminDashboard() {
             <div className="py-14 text-center">
               <PackageCheck className="h-9 w-9 mx-auto text-stone-300" />
 
-              <p className="mt-3 font-semibold text-gray-700">No books found</p>
+              <p className="mt-3 font-semibold text-gray-700">
+                No books found
+              </p>
 
               <p className="text-xs text-stone-400 mt-1">
                 Try changing the filter or search term.
@@ -679,7 +902,10 @@ function AdminDashboard() {
                       </td>
 
                       <td className="px-5 py-4 font-semibold">
-                        ₹{Number(book.price || 0).toLocaleString("en-IN")}
+                        ₹
+                        {Number(book.price || 0).toLocaleString(
+                          "en-IN",
+                        )}
                       </td>
 
                       <td className="px-5 py-4">
@@ -728,7 +954,9 @@ function AdminDashboard() {
             <div className="py-14 text-center">
               <PackageCheck className="h-9 w-9 mx-auto text-stone-300" />
 
-              <p className="mt-3 font-semibold text-gray-700">No books found</p>
+              <p className="mt-3 font-semibold text-gray-700">
+                No books found
+              </p>
             </div>
           ) : (
             inventoryBooks.map((book) => {
@@ -791,7 +1019,10 @@ function AdminDashboard() {
                           </p>
 
                           <p className="font-bold text-gray-900">
-                            ₹{Number(book.price || 0).toLocaleString("en-IN")}
+                            ₹
+                            {Number(book.price || 0).toLocaleString(
+                              "en-IN",
+                            )}
                           </p>
                         </div>
                       </div>
@@ -809,12 +1040,15 @@ function AdminDashboard() {
       ====================================================== */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
         {/* Inventory Summary */}
 
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="font-bold text-gray-900">Inventory Health</h3>
+              <h3 className="font-bold text-gray-900">
+                Inventory Health
+              </h3>
 
               <p className="text-xs text-stone-500 mt-1">
                 Current catalog stock
@@ -827,7 +1061,9 @@ function AdminDashboard() {
           <div className="space-y-5">
             <div>
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-stone-600">In Stock</span>
+                <span className="text-stone-600">
+                  In Stock
+                </span>
 
                 <span className="font-bold text-emerald-700">
                   {inventory.inStock}
@@ -839,7 +1075,9 @@ function AdminDashboard() {
                   className="h-full bg-emerald-500 rounded-full"
                   style={{
                     width: `${
-                      stats.books ? (inventory.inStock / stats.books) * 100 : 0
+                      stats.books
+                        ? (inventory.inStock / stats.books) * 100
+                        : 0
                     }%`,
                   }}
                 />
@@ -848,7 +1086,9 @@ function AdminDashboard() {
 
             <div>
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-stone-600">Low Stock</span>
+                <span className="text-stone-600">
+                  Low Stock
+                </span>
 
                 <span className="font-bold text-amber-600">
                   {inventory.lowStock}
@@ -860,7 +1100,9 @@ function AdminDashboard() {
                   className="h-full bg-amber-400 rounded-full"
                   style={{
                     width: `${
-                      stats.books ? (inventory.lowStock / stats.books) * 100 : 0
+                      stats.books
+                        ? (inventory.lowStock / stats.books) * 100
+                        : 0
                     }%`,
                   }}
                 />
@@ -869,7 +1111,9 @@ function AdminDashboard() {
 
             <div>
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-stone-600">Out of Stock</span>
+                <span className="text-stone-600">
+                  Out of Stock
+                </span>
 
                 <span className="font-bold text-red-600">
                   {inventory.outStock}
@@ -881,7 +1125,9 @@ function AdminDashboard() {
                   className="h-full bg-red-500 rounded-full"
                   style={{
                     width: `${
-                      stats.books ? (inventory.outStock / stats.books) * 100 : 0
+                      stats.books
+                        ? (inventory.outStock / stats.books) * 100
+                        : 0
                     }%`,
                   }}
                 />
@@ -895,7 +1141,9 @@ function AdminDashboard() {
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-stone-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-gray-900">Recently Added Books</h3>
+              <h3 className="font-bold text-gray-900">
+                Recently Added Books
+              </h3>
 
               <p className="text-xs text-stone-500 mt-1">
                 Latest books added to the catalog
@@ -905,7 +1153,10 @@ function AdminDashboard() {
 
           <div className="divide-y divide-stone-100">
             {recentBooks.map((book) => (
-              <div key={book.bookId} className="py-3 flex items-center gap-3">
+              <div
+                key={book.bookId}
+                className="py-3 flex items-center gap-3"
+              >
                 <img
                   src={book.imageUrl}
                   alt={book.title}
@@ -924,7 +1175,10 @@ function AdminDashboard() {
 
                 <div className="text-right shrink-0">
                   <p className="font-bold text-gray-900 text-sm">
-                    ₹{Number(book.price || 0).toLocaleString("en-IN")}
+                    ₹
+                    {Number(book.price || 0).toLocaleString(
+                      "en-IN",
+                    )}
                   </p>
 
                   <p className="text-[11px] text-stone-400 mt-1">
@@ -943,7 +1197,9 @@ function AdminDashboard() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5">
         <div className="mb-5">
-          <h3 className="font-bold text-gray-900">Top 5 Expensive Books</h3>
+          <h3 className="font-bold text-gray-900">
+            Top 5 Expensive Books
+          </h3>
 
           <p className="text-xs text-stone-500 mt-1">
             Highest priced books in your catalog
@@ -973,7 +1229,10 @@ function AdminDashboard() {
               </div>
 
               <span className="font-extrabold text-emerald-700 shrink-0">
-                ₹{Number(book.price || 0).toLocaleString("en-IN")}
+                ₹
+                {Number(book.price || 0).toLocaleString(
+                  "en-IN",
+                )}
               </span>
             </div>
           ))}
