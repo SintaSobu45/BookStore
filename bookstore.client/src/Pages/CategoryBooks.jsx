@@ -27,7 +27,8 @@ export default function CategoryBooks() {
       const data = await getBooks();
 
       const filteredBooks = data.filter(
-        (book) => book.categoryId === Number(id),
+        (book) =>
+          book.categoryId === Number(id) && Number(book.stockQuantity || 0) > 0,
       );
 
       setBooks(filteredBooks);

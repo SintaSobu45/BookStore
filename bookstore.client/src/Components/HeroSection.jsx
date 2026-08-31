@@ -1,29 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getEvents } from '../services/eventService';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getEvents } from "../services/eventService";
 
 export default function HeroSection() {
   const [events, setEvents] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Get events from backend
+  // =========================
+  // LOAD EVENTS
+  // =========================
+
   useEffect(() => {
     const loadEvents = async () => {
       try {
         const data = await getEvents();
 
-        console.log('Events from backend:', data);
+        const bannerEvents = data.filter(
+          (event) => event.bannerImageUrl
+        );
 
-        setEvents(data);
+        setEvents(bannerEvents);
       } catch (error) {
-        console.error('Failed to load events:', error);
+        console.error("Failed to load events:", error);
       }
     };
 
     loadEvents();
   }, []);
 
-  // Auto slide
+  // =========================
+  // AUTO SLIDE
+  // =========================
+
   useEffect(() => {
     if (events.length <= 1) return;
 
@@ -36,7 +44,19 @@ export default function HeroSection() {
     return () => clearInterval(interval);
   }, [events.length]);
 
-  // No events
+  // =========================
+  // RESET SLIDE IF NEEDED
+  // =========================
+
+  useEffect(() => {
+    if (
+      events.length > 0 &&
+      currentSlide > events.length - 1
+    ) {
+      setCurrentSlide(0);
+    }
+  }, [events.length, currentSlide]);
+
   if (events.length === 0) {
     return null;
   }
@@ -44,51 +64,45 @@ export default function HeroSection() {
   return (
     <section className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
 
-      {/* =========================
-          BANNER
-      ========================= */}
+      {/* BANNER SLIDER */}
+      <div className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-md">
 
-      <div className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-md" >
-
-        {/* Slides */}
-        <div className="relative w-full aspect-[16/7] sm:aspect-[6/1.4]">
+        {/* 
+          IMPORTANT:
+          No fixed height.
+          No forced aspect ratio.
+          The actual banner image controls its own height.
+        */}
+        <div className="relative w-full">
 
           {events.map((item, index) => (
-
             <Link
-              key={item.eventId || index}
+              key={item.eventId}
               to={`/events/${item.eventId}`}
               className={`
                 absolute inset-0
+                w-full
                 transition-opacity duration-700 ease-in-out
                 ${
                   index === currentSlide
-                    ? 'opacity-100 z-10'
-                    : 'opacity-0 z-0 pointer-events-none'
+                    ? "opacity-100 z-10 relative"
+                    : "opacity-0 z-0 pointer-events-none"
                 }
               `}
             >
-
-              {/* Event Banner */}
               <img
-                src={item.imageUrl}
-                alt={item.eventName || 'Event Banner'}
-                className="w-full h-full object-fit"
+                src={item.bannerImageUrl}
+                alt={item.eventName || "Event Banner"}
+                className="w-full h-auto block"
               />
-
             </Link>
-
           ))}
 
-          {/* =========================
-              SLIDE INDICATORS
-          ========================= */}
-
+          {/* SLIDE INDICATORS */}
           {events.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5">
+            <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5">
 
               {events.map((_, index) => (
-
                 <button
                   key={index}
                   type="button"
@@ -98,21 +112,18 @@ export default function HeroSection() {
                     rounded-full transition-all duration-300
                     ${
                       index === currentSlide
-                        ? 'w-5 h-2 bg-emerald-600'
-                        : 'w-2 h-2 bg-white/70 hover:bg-white'
+                        ? "w-5 h-2 bg-emerald-600"
+                        : "w-2 h-2 bg-white/70 hover:bg-white"
                     }
                   `}
                 />
-
               ))}
 
             </div>
           )}
 
         </div>
-
       </div>
-
     </section>
   );
 }

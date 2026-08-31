@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Home,
   ChevronRight,
@@ -28,6 +28,8 @@ import {
   verifyStoryPoetryPayment,
 } from "../services/paymentService";
 
+import { getProfile } from "../services/profileService";
+
 export default function UploadPoetry() {
   const navigate = useNavigate();
 
@@ -51,7 +53,8 @@ export default function UploadPoetry() {
   // CONTRIBUTOR DETAILS
   // =========================================================
 
-  const [contributorNameMalayalam, setContributorNameMalayalam] = useState("");
+  const [contributorNameMalayalam, setContributorNameMalayalam] =
+    useState("");
 
   const [contributorAddressMalayalam, setContributorAddressMalayalam] =
     useState("");
@@ -59,7 +62,8 @@ export default function UploadPoetry() {
   const [contributorDistrictMalayalam, setContributorDistrictMalayalam] =
     useState("");
 
-  const [contributorCityMalayalam, setContributorCityMalayalam] = useState("");
+  const [contributorCityMalayalam, setContributorCityMalayalam] =
+    useState("");
 
   const [contributorEmail, setContributorEmail] = useState("");
 
@@ -69,7 +73,8 @@ export default function UploadPoetry() {
   // PROFILE IMAGE
   // =========================================================
 
-  const [contributorProfileImage, setContributorProfileImage] = useState(null);
+  const [contributorProfileImage, setContributorProfileImage] =
+    useState(null);
 
   const [profileImagePreview, setProfileImagePreview] = useState("");
 
@@ -85,6 +90,8 @@ export default function UploadPoetry() {
 
   const [success, setSuccess] = useState("");
 
+  const [fieldErrors, setFieldErrors] = useState({});
+
   // =========================================================
   // PAYMENT SUCCESS
   // =========================================================
@@ -92,20 +99,196 @@ export default function UploadPoetry() {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   // =========================================================
-  // CONTENT LIMITS
+  // CONTENT LIMIT CONFIGURATION
+  // =========================================================
+  //
+  // IMPORTANT:
+  //
+  // We DO NOT modify or truncate pasted content.
+  //
+  // We only calculate how many visual/logical lines the
+  // content represents for validation.
+  //
+  // Poetry:
+  // 1 side × 30 lines = 30 lines
+  //
+  // Story:
+  // 4 sides × 30 lines = 120 lines
+  //
+  // Special:
+  // Unlimited pages, but each side follows the same
+  // 30-line / 35-character layout concept.
   // =========================================================
 
-  const MAX_CONTENT_LINES = 30;
+  const LINES_PER_SIDE = 30;
 
-  const contentLineCount = content ? content.split(/\r?\n/).length : 0;
+  const MAX_CHARACTERS_PER_LINE = 35;
 
-  const isContentOverLimit = contentLineCount > MAX_CONTENT_LINES;
+  const STORY_MAX_LINES = LINES_PER_SIDE * 4;
+
+  const POETRY_MAX_LINES = LINES_PER_SIDE;
+
+  // =========================================================
+  // COUNT MALAYALAM GRAPHEME CLUSTERS
+  // =========================================================
+  //
+  // Malayalam characters can contain combining marks.
+  // Intl.Segmenter counts them more accurately as visible
+  // grapheme clusters than simply using text.length.
+  // =========================================================
+
+  const countCharacters = (text) => {
+    if (!text) return 0;
+
+    if (typeof Intl !== "undefined" && Intl.Segmenter) {
+      const segmenter = new Intl.Segmenter("ml", {
+        granularity: "grapheme",
+      });
+
+      return [...segmenter.segment(text)].length;
+    }
+
+    return [...text].length;
+  };
+
+  // =========================================================
+  // CALCULATE VISUAL LINES
+  // =========================================================
+  //
+  // This function NEVER changes the user's content.
+  //
+  // Example:
+  //
+  // User pastes:
+  //
+  // "ഒരു ചെറിയ ഗ്രാമത്തിന്റെ മധ്യത്തിൽ, ആകാശത്തോളം..."
+  //
+  // We calculate how many 35-character visual lines it
+  // represents, but the original paragraph remains untouched.
+  //
+  // Explicit newlines are preserved as line breaks.
+  // =========================================================
+
+  const calculateVisualLineCount = (text) => {
+    if (!text) return 0;
+
+    const explicitLines = text.split(/\r?\n/);
+
+    let visualLineCount = 0;
+
+    explicitLines.forEach((line) => {
+      // An empty line still occupies one visual line.
+      if (line.length === 0) {
+        visualLineCount += 1;
+        return;
+      }
+
+      const characterCount = countCharacters(line);
+
+      visualLineCount += Math.ceil(
+        characterCount / MAX_CHARACTERS_PER_LINE,
+      );
+    });
+
+    return visualLineCount;
+  };
+
+  // =========================================================
+  // CONTENT LINE INFORMATION
+  // =========================================================
+
+  const contentLineCount = useMemo(() => {
+    return calculateVisualLineCount(content);
+  }, [content]);
+
+  // =========================================================
+  // MAXIMUM ALLOWED LINES
+  // =========================================================
+
+  const maxContentLines = useMemo(() => {
+    if (contentType === "Story") {
+      return STORY_MAX_LINES;
+    }
+
+    if (contentType === "Poetry") {
+      return POETRY_MAX_LINES;
+    }
+
+    // Special = unlimited
+    return Infinity;
+  }, [contentType]);
+
+  // =========================================================
+  // REQUIRED PAGES / SIDES
+  // =========================================================
+
+  const requiredSides = useMemo(() => {
+    if (!content.trim()) {
+      return 0;
+    }
+
+    return Math.max(
+      1,
+      Math.ceil(contentLineCount / LINES_PER_SIDE),
+    );
+  }, [content, contentLineCount]);
+
+  // =========================================================
+  // CONTENT OVER LIMIT
+  // =========================================================
+
+  const isContentOverLimit =
+    contentType !== "Special" &&
+    contentLineCount > maxContentLines;
 
   // =========================================================
   // WORD COUNT
   // =========================================================
 
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+  const wordCount = content.trim()
+    ? content.trim().split(/\s+/).length
+    : 0;
+
+  // =========================================================
+  // MALAYALAM VALIDATION
+  // =========================================================
+
+  const isMalayalamText = (text) => {
+    if (!text.trim()) return true;
+
+    /*
+     * Allows:
+     * - Malayalam characters
+     * - punctuation
+     * - numbers
+     * - symbols
+     * - whitespace
+     *
+     * Does not allow English alphabet characters.
+     */
+    const malayalamRegex =
+      /^[\p{Script=Malayalam}\p{P}\p{N}\p{S}\s]+$/u;
+
+    return malayalamRegex.test(text);
+  };
+
+  const validateMalayalamField = (value, fieldName) => {
+    if (value.trim() && !isMalayalamText(value)) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        [fieldName]: "മലയാളത്തിൽ മാത്രം നൽകുക.",
+      }));
+
+      return false;
+    }
+
+    setFieldErrors((prev) => ({
+      ...prev,
+      [fieldName]: "",
+    }));
+
+    return true;
+  };
 
   // =========================================================
   // HANDLE TITLE
@@ -118,11 +301,31 @@ export default function UploadPoetry() {
   // =========================================================
   // HANDLE CONTENT
   // =========================================================
+  //
+  // IMPORTANT:
+  //
+  // DO NOT slice.
+  // DO NOT truncate.
+  // DO NOT automatically split the user's text.
+  // DO NOT prevent paste.
+  //
+  // The complete value is stored exactly as the user entered it.
+  // The limit is checked separately.
+  // =========================================================
 
   const handleContentChange = (e) => {
     const value = e.target.value;
 
     setContent(value);
+
+    if (fieldErrors.content) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        content: "",
+      }));
+    }
+
+    setError("");
   };
 
   // =========================================================
@@ -170,10 +373,15 @@ export default function UploadPoetry() {
     setContributorProfileImage(file);
 
     setProfileImagePreview(URL.createObjectURL(file));
+
+    setFieldErrors((prev) => ({
+      ...prev,
+      contributorProfileImage: "",
+    }));
   };
 
   // =========================================================
-  // OPEN RAZORPAY
+  // OPEN RAZORPAY CHECKOUT
   // =========================================================
 
   const openRazorpayCheckout = async (paymentData) => {
@@ -196,10 +404,15 @@ export default function UploadPoetry() {
       // RAZORPAY KEY
       // -------------------------------------------------------
 
-      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      const razorpayKey =
+        import.meta.env.VITE_RAZORPAY_KEY_ID;
 
       if (!razorpayKey) {
-        reject(new Error("Razorpay Key ID is not configured."));
+        reject(
+          new Error(
+            "Razorpay Key ID is not configured.",
+          ),
+        );
 
         return;
       }
@@ -208,35 +421,57 @@ export default function UploadPoetry() {
       // PAYMENT DATA
       // -------------------------------------------------------
 
-      const payment = paymentData?.data || paymentData;
+      const payment =
+        paymentData?.data || paymentData;
 
       if (!payment) {
-        reject(new Error("Invalid payment response from server."));
+        reject(
+          new Error(
+            "Invalid payment response from server.",
+          ),
+        );
 
         return;
       }
 
       const razorpayOrderId =
-        payment.razorpayOrderId || payment.RazorpayOrderId;
+        payment.razorpayOrderId ||
+        payment.RazorpayOrderId;
 
-      const amount = payment.amount || payment.Amount;
+      const amount =
+        payment.amount ||
+        payment.Amount;
 
-      const paymentId = payment.paymentId || payment.PaymentId;
+      const paymentId =
+        payment.paymentId ||
+        payment.PaymentId;
 
       if (!razorpayOrderId) {
-        reject(new Error("Razorpay Order ID was not received."));
+        reject(
+          new Error(
+            "Razorpay Order ID was not received.",
+          ),
+        );
 
         return;
       }
 
       if (!amount) {
-        reject(new Error("Payment amount was not received."));
+        reject(
+          new Error(
+            "Payment amount was not received.",
+          ),
+        );
 
         return;
       }
 
       if (!paymentId) {
-        reject(new Error("Payment ID was not received."));
+        reject(
+          new Error(
+            "Payment ID was not received.",
+          ),
+        );
 
         return;
       }
@@ -248,7 +483,9 @@ export default function UploadPoetry() {
       const options = {
         key: razorpayKey,
 
-        amount: Math.round(Number(amount) * 100),
+        amount: Math.round(
+          Number(amount) * 100,
+        ),
 
         currency: "INR",
 
@@ -268,28 +505,44 @@ export default function UploadPoetry() {
             // VERIFY PAYMENT
             // -------------------------------------------------
 
-            const verificationResponse = await verifyStoryPoetryPayment({
-              paymentId: paymentId,
+            const verificationResponse =
+              await verifyStoryPoetryPayment({
+                paymentId: paymentId,
 
-              razorpayOrderId: response.razorpay_order_id,
+                razorpayOrderId:
+                  response.razorpay_order_id,
 
-              razorpayPaymentId: response.razorpay_payment_id,
+                razorpayPaymentId:
+                  response.razorpay_payment_id,
 
-              razorpaySignature: response.razorpay_signature,
-            });
+                razorpaySignature:
+                  response.razorpay_signature,
+              });
 
-            console.log("Story/Poetry payment verified:", verificationResponse);
+            console.log(
+              "Story/Poetry payment verified:",
+              verificationResponse,
+            );
 
             // -------------------------------------------------
             // PAYMENT SUCCESS
             // -------------------------------------------------
 
             setPaymentCompleted(true);
-            resolve(verificationResponse);
-          } catch (error) {
-            console.error("Story/Poetry payment verification failed:", error);
 
-            setError(error.message || "Payment verification failed.");
+            resolve(
+              verificationResponse,
+            );
+          } catch (error) {
+            console.error(
+              "Story/Poetry payment verification failed:",
+              error,
+            );
+
+            setError(
+              error.message ||
+                "Payment verification failed.",
+            );
 
             reject(error);
           } finally {
@@ -338,23 +591,39 @@ export default function UploadPoetry() {
       // CREATE RAZORPAY INSTANCE
       // -------------------------------------------------------
 
-      const razorpay = new window.Razorpay(options);
+      const razorpay =
+        new window.Razorpay(options);
 
       // -------------------------------------------------------
       // PAYMENT FAILED
       // -------------------------------------------------------
 
-      razorpay.on("payment.failed", function (response) {
-        console.error("Razorpay payment failed:", response);
+      razorpay.on(
+        "payment.failed",
+        function (response) {
+          console.error(
+            "Razorpay payment failed:",
+            response,
+          );
 
-        const description = response?.error?.description;
+          const description =
+            response?.error?.description;
 
-        setPaymentLoading(false);
+          setPaymentLoading(false);
 
-        setError(description || "Payment failed. Please try again.");
+          setError(
+            description ||
+              "Payment failed. Please try again.",
+          );
 
-        reject(new Error(description || "Payment failed."));
-      });
+          reject(
+            new Error(
+              description ||
+                "Payment failed.",
+            ),
+          );
+        },
+      );
 
       // -------------------------------------------------------
       // OPEN CHECKOUT
@@ -375,14 +644,66 @@ export default function UploadPoetry() {
 
     setPaymentCompleted(false);
 
+    const errors = {};
+
     // =======================================================
-    // LOGIN
+    // MALAYALAM ONLY VALIDATION
     // =======================================================
 
-    if (!isLoggedIn) {
-      setError("Please login to submit your contribution.");
+    if (
+      title.trim() &&
+      !isMalayalamText(title)
+    ) {
+      errors.title =
+        "മലയാളത്തിൽ മാത്രം നൽകുക.";
+    }
 
-      return;
+    if (
+      content.trim() &&
+      !isMalayalamText(content)
+    ) {
+      errors.content =
+        "മലയാളത്തിൽ മാത്രം നൽകുക.";
+    }
+
+    if (
+      contributorNameMalayalam.trim() &&
+      !isMalayalamText(
+        contributorNameMalayalam,
+      )
+    ) {
+      errors.contributorNameMalayalam =
+        "മലയാളത്തിൽ മാത്രം നൽകുക.";
+    }
+
+    if (
+      contributorAddressMalayalam.trim() &&
+      !isMalayalamText(
+        contributorAddressMalayalam,
+      )
+    ) {
+      errors.contributorAddressMalayalam =
+        "മലയാളത്തിൽ മാത്രം നൽകുക.";
+    }
+
+    if (
+      contributorDistrictMalayalam.trim() &&
+      !isMalayalamText(
+        contributorDistrictMalayalam,
+      )
+    ) {
+      errors.contributorDistrictMalayalam =
+        "മലയാളത്തിൽ മാത്രം നൽകുക.";
+    }
+
+    if (
+      contributorCityMalayalam.trim() &&
+      !isMalayalamText(
+        contributorCityMalayalam,
+      )
+    ) {
+      errors.contributorCityMalayalam =
+        "മലയാളത്തിൽ മാത്രം നൽകുക.";
     }
 
     // =======================================================
@@ -390,9 +711,8 @@ export default function UploadPoetry() {
     // =======================================================
 
     if (!title.trim()) {
-      setError("Please enter a title.");
-
-      return;
+      errors.title =
+        "* Please enter a title.";
     }
 
     // =======================================================
@@ -400,19 +720,16 @@ export default function UploadPoetry() {
     // =======================================================
 
     if (!content.trim()) {
-      setError("Please write your content.");
-
-      return;
-    }
-
-    // =======================================================
-    // LINE LIMIT
-    // =======================================================
-
-    if (isContentOverLimit) {
-      setError("Maximum 30 lines are allowed.");
-
-      return;
+      errors.content =
+        "Please write your content.";
+    } else if (isContentOverLimit) {
+      if (contentType === "Story") {
+        errors.content =
+          `കഥയ്ക്ക് പരമാവധി 4 sides (120 visual lines) മാത്രമാണ് അനുവദനീയമായത്. ഇപ്പോൾ ${contentLineCount} visual lines ഉണ്ട്.`;
+      } else if (contentType === "Poetry") {
+        errors.content =
+          `കവിതയ്ക്ക് പരമാവധി 1 side (30 visual lines) മാത്രമാണ് അനുവദനീയമായത്. ഇപ്പോൾ ${contentLineCount} visual lines ഉണ്ട്.`;
+      }
     }
 
     // =======================================================
@@ -420,9 +737,8 @@ export default function UploadPoetry() {
     // =======================================================
 
     if (!contributorNameMalayalam.trim()) {
-      setError("Please enter contributor name.");
-
-      return;
+      errors.contributorNameMalayalam =
+        "* Please enter contributor name.";
     }
 
     // =======================================================
@@ -430,9 +746,8 @@ export default function UploadPoetry() {
     // =======================================================
 
     if (!contributorAddressMalayalam.trim()) {
-      setError("Please enter contributor address.");
-
-      return;
+      errors.contributorAddressMalayalam =
+        "* Please enter contributor address.";
     }
 
     // =======================================================
@@ -440,9 +755,8 @@ export default function UploadPoetry() {
     // =======================================================
 
     if (!contributorDistrictMalayalam.trim()) {
-      setError("Please enter contributor district.");
-
-      return;
+      errors.contributorDistrictMalayalam =
+        "* Please enter contributor district.";
     }
 
     // =======================================================
@@ -450,9 +764,8 @@ export default function UploadPoetry() {
     // =======================================================
 
     if (!contributorCityMalayalam.trim()) {
-      setError("Please enter contributor city.");
-
-      return;
+      errors.contributorCityMalayalam =
+        "* Please enter contributor city.";
     }
 
     // =======================================================
@@ -460,17 +773,20 @@ export default function UploadPoetry() {
     // =======================================================
 
     if (!contributorEmail.trim()) {
-      setError("Please enter contributor email.");
+      errors.contributorEmail =
+        "* Please enter contributor email.";
+    } else {
+      const emailRegex =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(contributorEmail.trim())) {
-      setError("Please enter a valid email address.");
-
-      return;
+      if (
+        !emailRegex.test(
+          contributorEmail.trim(),
+        )
+      ) {
+        errors.contributorEmail =
+          "* Please enter a valid email address.";
+      }
     }
 
     // =======================================================
@@ -480,9 +796,8 @@ export default function UploadPoetry() {
     const phoneRegex = /^[6-9]\d{9}$/;
 
     if (!phoneRegex.test(contributorPhone)) {
-      setError("Phone number must be 10 digits and start with 6, 7, 8, or 9.");
-
-      return;
+      errors.contributorPhone =
+        "Phone number must be 10 digits and start with 6, 7, 8, or 9.";
     }
 
     // =======================================================
@@ -490,7 +805,49 @@ export default function UploadPoetry() {
     // =======================================================
 
     if (!contributorProfileImage) {
-      setError("Please upload your profile image.");
+      errors.contributorProfileImage =
+        "* Please upload your profile image.";
+    }
+
+    // =======================================================
+    // STOP IF THERE ARE ERRORS
+    // =======================================================
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+
+      return;
+    }
+
+    setFieldErrors({});
+
+    // =======================================================
+    // LOGIN
+    // =======================================================
+
+    if (!isLoggedIn) {
+      setError(
+        "Please login to submit your contribution.",
+      );
+
+      return;
+    }
+
+    // =======================================================
+    // EMAIL VALIDATION
+    // =======================================================
+
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (
+      !emailRegex.test(
+        contributorEmail.trim(),
+      )
+    ) {
+      setError(
+        "Please enter a valid email address.",
+      );
 
       return;
     }
@@ -511,41 +868,66 @@ export default function UploadPoetry() {
 
         type: contentType,
 
+        /*
+         * IMPORTANT:
+         *
+         * Send the original content exactly as entered.
+         * We do not split or truncate it.
+         */
         content: content.trim(),
 
-        contributorNameMalayalam: contributorNameMalayalam.trim(),
+        contributorNameMalayalam:
+          contributorNameMalayalam.trim(),
 
-        contributorAddressMalayalam: contributorAddressMalayalam.trim(),
+        contributorAddressMalayalam:
+          contributorAddressMalayalam.trim(),
 
-        contributorDistrictMalayalam: contributorDistrictMalayalam.trim(),
+        contributorDistrictMalayalam:
+          contributorDistrictMalayalam.trim(),
 
-        contributorCityMalayalam: contributorCityMalayalam.trim(),
+        contributorCityMalayalam:
+          contributorCityMalayalam.trim(),
 
-        contributorEmail: contributorEmail.trim(),
+        contributorEmail:
+          contributorEmail.trim(),
 
-        contributorPhone: contributorPhone,
+        contributorPhone:
+          contributorPhone,
 
-        contributorProfileImage: contributorProfileImage,
+        contributorProfileImage:
+          contributorProfileImage,
       };
 
-      console.log("Submitting Story/Poetry:", storyPoetryData);
+      console.log(
+        "Submitting Story/Poetry:",
+        storyPoetryData,
+      );
 
       // -----------------------------------------------------
       // 1. CREATE STORY / POETRY
       // -----------------------------------------------------
 
-      const submissionResponse = await addStoryPoetry(storyPoetryData);
+      const submissionResponse =
+        await addStoryPoetry(
+          storyPoetryData,
+        );
 
-      console.log("Story/Poetry submission response:", submissionResponse);
+      console.log(
+        "Story/Poetry submission response:",
+        submissionResponse,
+      );
 
       // -----------------------------------------------------
       // GET CREATED STORYPOETRY ID
       // -----------------------------------------------------
 
-      const submission = submissionResponse?.data || submissionResponse;
+      const submission =
+        submissionResponse?.data ||
+        submissionResponse;
 
       const storyPoetryId =
-        submission?.storyPoetryId || submission?.StoryPoetryId;
+        submission?.storyPoetryId ||
+        submission?.StoryPoetryId;
 
       if (!storyPoetryId) {
         throw new Error(
@@ -553,14 +935,19 @@ export default function UploadPoetry() {
         );
       }
 
-      console.log("Created StoryPoetryId:", storyPoetryId);
+      console.log(
+        "Created StoryPoetryId:",
+        storyPoetryId,
+      );
 
       // -----------------------------------------------------
       // STORY CREATED
       // PAYMENT NOW REQUIRED
       // -----------------------------------------------------
 
-      setSuccess(`${contentType} submitted successfully. Opening payment...`);
+      setSuccess(
+        `${contentType} submitted successfully. Opening payment...`,
+      );
 
       // -----------------------------------------------------
       // 2. CREATE RAZORPAY ORDER
@@ -568,9 +955,15 @@ export default function UploadPoetry() {
 
       setPaymentLoading(true);
 
-      const paymentResponse = await createStoryPoetryPayment(storyPoetryId);
+      const paymentResponse =
+        await createStoryPoetryPayment(
+          storyPoetryId,
+        );
 
-      console.log("Story/Poetry payment order:", paymentResponse);
+      console.log(
+        "Story/Poetry payment order:",
+        paymentResponse,
+      );
 
       // -----------------------------------------------------
       // STOP SUBMISSION LOADING
@@ -582,7 +975,10 @@ export default function UploadPoetry() {
       // 3. OPEN RAZORPAY CHECKOUT
       // -----------------------------------------------------
 
-      const verificationResult = await openRazorpayCheckout(paymentResponse);
+      const verificationResult =
+        await openRazorpayCheckout(
+          paymentResponse,
+        );
 
       console.log(
         "Final Story/Poetry payment verification:",
@@ -609,9 +1005,15 @@ export default function UploadPoetry() {
         navigate("/");
       }
     } catch (error) {
-      console.error("Story/Poetry submission/payment failed:", error);
+      console.error(
+        "Story/Poetry submission/payment failed:",
+        error,
+      );
 
-      setError(error.message || "Failed to submit Story/Poetry.");
+      setError(
+        error.message ||
+          "Failed to submit Story/Poetry.",
+      );
 
       setLoading(false);
 
@@ -625,7 +1027,9 @@ export default function UploadPoetry() {
 
   const handleSaveDraft = () => {
     if (!isLoggedIn) {
-      setError("Please login to save a draft.");
+      setError(
+        "Please login to save a draft.",
+      );
 
       return;
     }
@@ -650,9 +1054,14 @@ export default function UploadPoetry() {
       contributorPhone,
     };
 
-    localStorage.setItem("storyPoetryDraft", JSON.stringify(draft));
+    localStorage.setItem(
+      "storyPoetryDraft",
+      JSON.stringify(draft),
+    );
 
-    setSuccess("Draft saved successfully.");
+    setSuccess(
+      "Draft saved successfully.",
+    );
   };
 
   // =========================================================
@@ -673,7 +1082,8 @@ export default function UploadPoetry() {
 
       title: "Poetry",
 
-      description: "Poems, verses, and creative expressions",
+      description:
+        "Poems, verses, and creative expressions",
 
       icon: Leaf,
     },
@@ -683,7 +1093,8 @@ export default function UploadPoetry() {
 
       title: "Story",
 
-      description: "Short stories, articles, and write-ups",
+      description:
+        "Short stories, articles, and write-ups",
 
       icon: BookOpen,
     },
@@ -693,11 +1104,58 @@ export default function UploadPoetry() {
 
       title: "Special",
 
-      description: "Special contributions and featured content",
+      description:
+        "Special contributions and featured content",
 
       icon: Sparkles,
     },
   ];
+
+  // =========================================================
+  // LOAD PROFILE
+  // =========================================================
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile =
+          await getProfile();
+
+        console.log(
+          "Logged-in user profile:",
+          profile,
+        );
+
+        setContributorEmail(
+          profile.email || "",
+        );
+
+        setContributorPhone(
+          profile.phone || "",
+        );
+      } catch (error) {
+        console.error(
+          "Failed to load profile:",
+          error,
+        );
+      }
+    };
+
+    if (isLoggedIn) {
+      loadProfile();
+    }
+  }, [isLoggedIn]);
+
+  // =========================================================
+  // LIMIT LABEL
+  // =========================================================
+
+  const limitLabel =
+    contentType === "Story"
+      ? `Story: ${contentLineCount}/${STORY_MAX_LINES} visual lines`
+      : contentType === "Poetry"
+        ? `Poetry: ${contentLineCount}/${POETRY_MAX_LINES} visual lines`
+        : `Special: ${contentLineCount} visual lines (Unlimited pages)`;
 
   // =========================================================
   // RETURN
@@ -712,18 +1170,23 @@ export default function UploadPoetry() {
       ===================================================== */}
 
       <div className="min-h-screen bg-stone-50/60 pb-16">
+
         {/* ===================================================
             HERO
         =================================================== */}
 
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
+
           <div className="bg-[#1b3b2b] border border-emerald-100/80 rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-sm">
+
             <div className="absolute -right-12 -bottom-12 w-56 h-56 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none" />
 
             <div className="max-w-xl z-10 mb-6 md:mb-0">
-              {/* Breadcrumb */}
+
+              {/* BREADCRUMB */}
 
               <div className="flex items-center space-x-2 text-xs sm:text-sm text-emerald-200/80 font-medium mb-3">
+
                 <Link
                   to="/"
                   className="hover:text-white flex items-center transition-colors"
@@ -737,6 +1200,7 @@ export default function UploadPoetry() {
                 <span className="text-white font-semibold">
                   Upload Poetry / Story
                 </span>
+
               </div>
 
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-2">
@@ -747,12 +1211,15 @@ export default function UploadPoetry() {
                 Submit your original poetry, stories, and special contributions
                 to our community.
               </p>
+
             </div>
 
-            {/* Hero image */}
+            {/* HERO IMAGE */}
 
             <div className="relative z-10 w-full md:w-[36%] flex justify-center">
+
               <div className="relative group w-full">
+
                 <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-[#1b3b2b] rounded-2xl blur opacity-15" />
 
                 <img
@@ -760,9 +1227,13 @@ export default function UploadPoetry() {
                   alt="Writing poetry and stories"
                   className="relative rounded-xl sm:rounded-2xl object-cover w-full h-[120px] sm:h-[160px] md:h-[190px] shadow-md border border-white/80"
                 />
+
               </div>
+
             </div>
+
           </div>
+
         </div>
 
         {/* ===================================================
@@ -770,6 +1241,7 @@ export default function UploadPoetry() {
         =================================================== */}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
           {/* =================================================
               MESSAGES
           ================================================= */}
@@ -782,9 +1254,13 @@ export default function UploadPoetry() {
 
           {success && (
             <div className="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-semibold flex items-center gap-2">
-              {paymentCompleted && <CheckCircle className="w-5 h-5" />}
+
+              {paymentCompleted && (
+                <CheckCircle className="w-5 h-5" />
+              )}
 
               <span>{success}</span>
+
             </div>
           )}
 
@@ -794,11 +1270,13 @@ export default function UploadPoetry() {
 
           {paymentLoading && (
             <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm font-semibold flex items-center gap-2">
+
               <Loader2 className="w-5 h-5 animate-spin" />
 
               <span>
                 Processing payment. Please complete the Razorpay checkout...
               </span>
+
             </div>
           )}
 
@@ -807,23 +1285,30 @@ export default function UploadPoetry() {
           ================================================= */}
 
           <div className="relative">
+
             {/* =================================================
                 FORM
             ================================================= */}
 
             <div
               className={
-                !isLoggedIn ? "blur-[1px] pointer-events-none select-none" : ""
+                !isLoggedIn
+                  ? "blur-[1px] pointer-events-none select-none"
+                  : ""
               }
             >
+
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
                 {/* =================================================
                     COLUMN 1
                     TYPE
                 ================================================= */}
 
                 <div className="lg:col-span-3 bg-white border border-stone-200/80 rounded-3xl p-5 shadow-sm">
+
                   <div className="mb-4">
+
                     <h3 className="font-bold text-gray-900 text-sm">
                       1. Choose Type
                     </h3>
@@ -831,26 +1316,44 @@ export default function UploadPoetry() {
                     <p className="text-[11px] text-stone-500">
                       Select your submission type
                     </p>
+
                   </div>
 
                   <div className="space-y-3">
+
                     {typeOptions.map((option) => {
+
                       const Icon = option.icon;
 
-                      const selected = contentType === option.value;
+                      const selected =
+                        contentType === option.value;
 
                       return (
                         <div
                           key={option.value}
-                          onClick={() => setContentType(option.value)}
+                          onClick={() => {
+                            setContentType(
+                              option.value,
+                            );
+
+                            setFieldErrors(
+                              (prev) => ({
+                                ...prev,
+                                content: "",
+                              }),
+                            );
+                          }}
                           className={`border-2 rounded-2xl p-3.5 cursor-pointer transition-all ${
                             selected
                               ? "border-[#1b3b2b] bg-emerald-50/30"
                               : "border-stone-200 hover:border-stone-300"
                           }`}
                         >
+
                           <div className="flex items-start justify-between">
+
                             <div className="flex items-start space-x-3">
+
                               <div
                                 className={`p-2 rounded-xl ${
                                   selected
@@ -862,6 +1365,7 @@ export default function UploadPoetry() {
                               </div>
 
                               <div>
+
                                 <h4 className="font-bold text-gray-900 text-xs">
                                   {option.title}
                                 </h4>
@@ -869,28 +1373,88 @@ export default function UploadPoetry() {
                                 <p className="text-[10px] text-stone-500 mt-0.5 leading-relaxed">
                                   {option.description}
                                 </p>
+
                               </div>
+
                             </div>
 
                             <input
                               type="radio"
                               name="contentType"
                               checked={selected}
-                              onChange={() => setContentType(option.value)}
+                              onChange={() =>
+                                setContentType(
+                                  option.value,
+                                )
+                              }
                               className="accent-[#1b3b2b] mt-1"
                             />
+
                           </div>
+
                         </div>
                       );
                     })}
+
                   </div>
 
+                  {/* LIMIT INFORMATION */}
+
                   <div className="mt-5 bg-stone-50 rounded-2xl p-4 border border-stone-200">
+
+                    <p className="text-[10px] text-stone-600 leading-relaxed">
+
+                      {contentType === "Story" ? (
+                        <>
+                          <strong className="text-stone-800">
+                            Story
+                          </strong>
+                          <br />
+                          4 sides / 2 sheets
+                          <br />
+                          30 visual lines per side
+                          <br />
+                          35 characters per visual line
+                        </>
+                      ) : contentType === "Poetry" ? (
+                        <>
+                          <strong className="text-stone-800">
+                            Poetry
+                          </strong>
+                          <br />
+                          1 side
+                          <br />
+                          30 visual lines
+                          <br />
+                          35 characters per visual line
+                        </>
+                      ) : (
+                        <>
+                          <strong className="text-stone-800">
+                            Special
+                          </strong>
+                          <br />
+                          Unlimited pages
+                          <br />
+                          30 visual lines per side
+                          <br />
+                          35 characters per visual line
+                        </>
+                      )}
+
+                    </p>
+
+                  </div>
+
+                  <div className="mt-3 bg-stone-50 rounded-2xl p-4 border border-stone-200">
+
                     <p className="text-[10px] text-stone-500 leading-relaxed">
                       Your submission will be reviewed by our administrators
                       before it is published.
                     </p>
+
                   </div>
+
                 </div>
 
                 {/* =================================================
@@ -899,7 +1463,9 @@ export default function UploadPoetry() {
                 ================================================= */}
 
                 <div className="lg:col-span-4 bg-white border border-stone-200/80 rounded-3xl p-5 shadow-sm">
+
                   <div className="mb-4">
+
                     <h3 className="font-bold text-gray-900 text-sm">
                       2. Contributor Details
                     </h3>
@@ -907,61 +1473,115 @@ export default function UploadPoetry() {
                     <p className="text-[11px] text-stone-500">
                       Enter your personal information in (malayalam)
                     </p>
+
                   </div>
 
                   <div className="space-y-3.5">
+
                     {/* NAME */}
 
                     <div>
+
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                         പേര്
                         <span className="text-red-500"> *</span>
                       </label>
 
                       <div className="relative">
+
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
 
                         <input
                           type="text"
                           value={contributorNameMalayalam}
-                          onChange={(e) =>
-                            setContributorNameMalayalam(e.target.value)
-                          }
+                          onChange={(e) => {
+                            const value =
+                              e.target.value;
+
+                            setContributorNameMalayalam(
+                              value,
+                            );
+
+                            validateMalayalamField(
+                              value,
+                              "contributorNameMalayalam",
+                            );
+                          }}
                           placeholder="Enter your name"
                           maxLength={200}
-                          className="w-full bg-stone-50/75 border border-stone-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800"
+                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
+                            fieldErrors.contributorNameMalayalam
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }`}
                         />
+
                       </div>
+
+                      {fieldErrors.contributorNameMalayalam && (
+                        <p className="text-[10px] text-red-500 font-medium mt-1">
+                          {fieldErrors.contributorNameMalayalam}
+                        </p>
+                      )}
+
                     </div>
 
                     {/* ADDRESS */}
 
                     <div>
+
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                         വിലാസം
                         <span className="text-red-500"> *</span>
                       </label>
 
                       <div className="relative">
+
                         <MapPin className="absolute left-3 top-3 h-4 w-4 text-stone-400" />
 
                         <textarea
                           value={contributorAddressMalayalam}
-                          onChange={(e) =>
-                            setContributorAddressMalayalam(e.target.value)
-                          }
+                          onChange={(e) => {
+                            const value =
+                              e.target.value;
+
+                            setContributorAddressMalayalam(
+                              value,
+                            );
+
+                            validateMalayalamField(
+                              value,
+                              "contributorAddressMalayalam",
+                            );
+                          }}
                           placeholder="Enter your address"
                           maxLength={500}
                           rows="2"
-                          className="w-full bg-stone-50/75 h-32 border border-stone-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 resize-none"
+                          className={`w-full bg-stone-50/75 h-32 border rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 resize-none ${
+                            fieldErrors.contributorAddressMalayalam
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }`}
                         />
+
                       </div>
+
+                      {fieldErrors.contributorAddressMalayalam && (
+                        <p className="text-[10px] text-red-500 font-medium mt-1">
+                          {fieldErrors.contributorAddressMalayalam}
+                        </p>
+                      )}
+
                     </div>
 
                     {/* DISTRICT + CITY */}
 
                     <div className="grid grid-cols-2 gap-3">
+
+                      {/* DISTRICT */}
+
                       <div>
+
                         <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                           ജില്ല
                           <span className="text-red-500"> *</span>
@@ -970,16 +1590,40 @@ export default function UploadPoetry() {
                         <input
                           type="text"
                           value={contributorDistrictMalayalam}
-                          onChange={(e) =>
-                            setContributorDistrictMalayalam(e.target.value)
-                          }
+                          onChange={(e) => {
+                            const value =
+                              e.target.value;
+
+                            setContributorDistrictMalayalam(
+                              value,
+                            );
+
+                            validateMalayalamField(
+                              value,
+                              "contributorDistrictMalayalam",
+                            );
+                          }}
                           placeholder="District"
                           maxLength={100}
-                          className="w-full bg-stone-50/75 border border-stone-200 rounded-xl py-2.5 px-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800"
+                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 px-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
+                            fieldErrors.contributorDistrictMalayalam
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }`}
                         />
+
+                        {fieldErrors.contributorDistrictMalayalam && (
+                          <p className="text-[10px] text-red-500 font-medium mt-1">
+                            {fieldErrors.contributorDistrictMalayalam}
+                          </p>
+                        )}
+
                       </div>
 
+                      {/* CITY */}
+
                       <div>
+
                         <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                           നഗരം
                           <span className="text-red-500"> *</span>
@@ -988,73 +1632,158 @@ export default function UploadPoetry() {
                         <input
                           type="text"
                           value={contributorCityMalayalam}
-                          onChange={(e) =>
-                            setContributorCityMalayalam(e.target.value)
-                          }
+                          onChange={(e) => {
+                            const value =
+                              e.target.value;
+
+                            setContributorCityMalayalam(
+                              value,
+                            );
+
+                            validateMalayalamField(
+                              value,
+                              "contributorCityMalayalam",
+                            );
+                          }}
                           placeholder="City"
                           maxLength={100}
-                          className="w-full bg-stone-50/75 border border-stone-200 rounded-xl py-2.5 px-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800"
+                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 px-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
+                            fieldErrors.contributorCityMalayalam
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }`}
                         />
+
+                        {fieldErrors.contributorCityMalayalam && (
+                          <p className="text-[10px] text-red-500 font-medium mt-1">
+                            {fieldErrors.contributorCityMalayalam}
+                          </p>
+                        )}
+
                       </div>
+
                     </div>
 
                     {/* EMAIL */}
 
                     <div>
+
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                         Email
                         <span className="text-red-500"> *</span>
                       </label>
 
                       <div className="relative">
+
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
 
                         <input
                           type="email"
                           value={contributorEmail}
-                          onChange={(e) => setContributorEmail(e.target.value)}
+                          onChange={(e) => {
+                            setContributorEmail(
+                              e.target.value,
+                            );
+
+                            if (
+                              fieldErrors.contributorEmail
+                            ) {
+                              setFieldErrors(
+                                (prev) => ({
+                                  ...prev,
+                                  contributorEmail:
+                                    "",
+                                }),
+                              );
+                            }
+                          }}
                           placeholder="Enter your email"
                           maxLength={150}
-                          className="w-full bg-stone-50/75 border border-stone-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800"
+                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
+                            fieldErrors.contributorEmail
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }`}
                         />
+
                       </div>
+
+                      {fieldErrors.contributorEmail && (
+                        <p className="text-[10px] text-red-500 font-medium mt-1">
+                          {fieldErrors.contributorEmail}
+                        </p>
+                      )}
+
                     </div>
 
                     {/* PHONE */}
 
                     <div>
+
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                         Phone Number
                         <span className="text-red-500"> *</span>
                       </label>
 
                       <div className="relative">
+
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
 
                         <input
                           type="text"
                           value={contributorPhone}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value =
+                              e.target.value
+                                .replace(/\D/g, "")
+                                .slice(0, 10);
+
                             setContributorPhone(
-                              e.target.value.replace(/\D/g, "").slice(0, 10),
-                            )
-                          }
+                              value,
+                            );
+
+                            if (
+                              fieldErrors.contributorPhone
+                            ) {
+                              setFieldErrors(
+                                (prev) => ({
+                                  ...prev,
+                                  contributorPhone:
+                                    "",
+                                }),
+                              );
+                            }
+                          }}
                           placeholder="10 digit phone number"
                           maxLength={10}
-                          className="w-full bg-stone-50/75 border border-stone-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800"
+                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
+                            fieldErrors.contributorPhone
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }`}
                         />
+
                       </div>
+
+                      {fieldErrors.contributorPhone && (
+                        <p className="text-[10px] text-red-500 font-medium mt-1">
+                          {fieldErrors.contributorPhone}
+                        </p>
+                      )}
+
                     </div>
 
                     {/* PROFILE IMAGE */}
 
                     <div>
+
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                         പ്രൊഫൈൽ ചിത്രം
                         <span className="text-red-500"> *</span>
                       </label>
 
                       <div className="flex items-center gap-3">
+
                         {profileImagePreview && (
                           <img
                             src={profileImagePreview}
@@ -1064,16 +1793,27 @@ export default function UploadPoetry() {
                         )}
 
                         <label className="flex-1 cursor-pointer">
-                          <div className="border border-dashed border-stone-300 rounded-xl px-3 py-2.5 hover:bg-stone-50 transition-colors">
+
+                          <div
+                            className={`border border-dashed rounded-xl px-3 py-2.5 transition-colors ${
+                              fieldErrors.contributorProfileImage
+                                ? "border-red-400 bg-red-50"
+                                : "border-stone-300 hover:bg-stone-50"
+                            }`}
+                          >
+
                             <p className="text-[10px] font-semibold text-gray-700 truncate">
+
                               {contributorProfileImage
                                 ? contributorProfileImage.name
                                 : "Choose profile image"}
+
                             </p>
 
                             <p className="text-[9px] text-stone-400 mt-0.5">
                               JPG, PNG • Max 5 MB
                             </p>
+
                           </div>
 
                           <input
@@ -1082,10 +1822,21 @@ export default function UploadPoetry() {
                             onChange={handleImageChange}
                             className="hidden"
                           />
+
                         </label>
+
                       </div>
+
+                      {fieldErrors.contributorProfileImage && (
+                        <p className="text-[10px] text-red-500 mt-1 font-medium">
+                          {fieldErrors.contributorProfileImage}
+                        </p>
+                      )}
+
                     </div>
+
                   </div>
+
                 </div>
 
                 {/* =================================================
@@ -1094,8 +1845,11 @@ export default function UploadPoetry() {
                 ================================================= */}
 
                 <div className="lg:col-span-5 bg-white border border-stone-200/80 rounded-3xl p-5 shadow-sm flex flex-col">
+
                   <div className="flex-1">
+
                     <div className="mb-4">
+
                       <h3 className="font-bold text-gray-900 text-sm">
                         3. Write Your {contentType}
                       </h3>
@@ -1103,11 +1857,13 @@ export default function UploadPoetry() {
                       <p className="text-[11px] text-stone-500">
                         Write your title and original content in Malayalam.
                       </p>
+
                     </div>
 
                     {/* TITLE */}
 
                     <div className="mb-4">
+
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                         Title (മലയാളം)
                         <span className="text-red-500"> *</span>
@@ -1123,105 +1879,252 @@ export default function UploadPoetry() {
                               : "രചനയുടെ"
                         } പേര് നൽകുക`}
                         value={title}
-                        onChange={handleTitleChange}
+                        onChange={(e) => {
+                          const value =
+                            e.target.value;
+
+                          handleTitleChange(e);
+
+                          validateMalayalamField(
+                            value,
+                            "title",
+                          );
+                        }}
                         maxLength={200}
                         lang="ml"
-                        className="w-full bg-stone-50/75 border border-stone-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-emerald-800"
+                        className={`w-full bg-stone-50/75 border rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:outline-none ${
+                          fieldErrors.title
+                            ? "border-red-400 focus:border-red-500"
+                            : "border-stone-200 focus:border-emerald-800"
+                        }`}
                       />
 
-                      <p className="text-[9px] text-stone-400 mt-1">
-                        {title.length}/200 characters
-                      </p>
+                      <div className="flex items-center justify-between mt-1">
+
+                        <p
+                          className={`text-[9px] ${
+                            fieldErrors.title
+                              ? "text-red-500"
+                              : "text-stone-400"
+                          }`}
+                        >
+                          {fieldErrors.title ||
+                            `${title.length}/200 characters`}
+                        </p>
+
+                        {!fieldErrors.title && (
+                          <p className="text-[9px] text-stone-400">
+                            {title.length}/200 characters
+                          </p>
+                        )}
+
+                      </div>
+
                     </div>
 
                     {/* CONTENT */}
 
-                    <div
-                      className={`border rounded-2xl overflow-hidden bg-stone-50/30 transition-colors ${
-                        isContentOverLimit
-                          ? "border-red-400"
-                          : "border-stone-200"
-                      }`}
-                    >
-                      <textarea
-                        rows="14"
-                        placeholder={
-                          contentType === "Poetry"
-                            ? "മലയാളത്തിൽ നിങ്ങളുടെ കവിത ഇവിടെ എഴുതുക..."
-                            : contentType === "Story"
-                              ? "മലയാളത്തിൽ നിങ്ങളുടെ കഥ ഇവിടെ എഴുതുക..."
-                              : "മലയാളത്തിൽ നിങ്ങളുടെ രചന ഇവിടെ എഴുതുക..."
-                        }
-                        value={content}
-                        onChange={handleContentChange}
-                        lang="ml"
-                        spellCheck={false}
-                        className="w-full p-4 bg-transparent text-sm text-gray-800 focus:outline-none resize-none leading-relaxed"
-                      />
+                    <div>
 
                       <div
-                        className={`border-t px-4 py-2 text-[10px] font-medium flex items-center justify-between ${
+                        className={`border rounded-2xl overflow-hidden bg-stone-50/30 transition-colors ${
+                          fieldErrors.content ||
                           isContentOverLimit
-                            ? "bg-red-50 border-red-200 text-red-600"
-                            : "bg-stone-50 border-stone-200 text-stone-500"
+                            ? "border-red-400"
+                            : "border-stone-200"
                         }`}
                       >
-                        <span>Words: {wordCount}</span>
 
-                        <span>
-                          Lines: {contentLineCount}/{MAX_CONTENT_LINES}
-                        </span>
+                        <textarea
+                          rows="14"
+                          placeholder={
+                            contentType === "Poetry"
+                              ? "മലയാളത്തിൽ നിങ്ങളുടെ കവിത ഇവിടെ എഴുതുക..."
+                              : contentType === "Story"
+                                ? "മലയാളത്തിൽ നിങ്ങളുടെ കഥ ഇവിടെ എഴുതുക..."
+                                : "മലയാളത്തിൽ നിങ്ങളുടെ രചന ഇവിടെ എഴുതുക..."
+                          }
+                          value={content}
+                          onChange={(e) => {
+                            const value =
+                              e.target.value;
+
+                            handleContentChange(e);
+
+                            validateMalayalamField(
+                              value,
+                              "content",
+                            );
+                          }}
+                          onPaste={() => {
+                            /*
+                             * IMPORTANT:
+                             *
+                             * We intentionally do not preventDefault().
+                             * The browser is allowed to paste the complete
+                             * story/poem.
+                             */
+                          }}
+                          lang="ml"
+                          spellCheck={false}
+                          className="w-full p-4 bg-transparent text-sm text-gray-800 focus:outline-none resize-none leading-relaxed"
+                        />
+
+                        {/* CONTENT COUNTER */}
+
+                        <div
+                          className={`border-t px-4 py-2 text-[10px] font-medium flex items-center justify-between ${
+                            isContentOverLimit
+                              ? "bg-red-50 border-red-200 text-red-600"
+                              : "bg-stone-50 border-stone-200 text-stone-500"
+                          }`}
+                        >
+
+                          <span>
+                            Words: {wordCount}
+                          </span>
+
+                          <span>
+                            {limitLabel}
+                          </span>
+
+                        </div>
+
                       </div>
+
+                      {/* EMPTY CONTENT ERROR */}
+
+                      {fieldErrors.content && (
+                        <p className="text-[10px] text-red-500 mt-1 font-medium">
+                          {fieldErrors.content}
+                        </p>
+                      )}
+
                     </div>
 
-                    {/* LINE WARNING */}
+                    {/* =================================================
+                        CONTENT LIMIT INFORMATION
+                    ================================================= */}
+
+                    <div className="mt-2 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2">
+
+                      <p className="text-[10px] font-semibold text-stone-700">
+
+                        {contentType === "Story"
+                          ? "കഥ: 4 sides (2 sheets) • ഓരോ side-ലും 30 visual lines • ഓരോ visual line-ലും 35 അക്ഷരങ്ങൾ വരെ"
+                          : contentType === "Poetry"
+                            ? "കവിത: 1 side • 30 visual lines • ഓരോ visual line-ലും 35 അക്ഷരങ്ങൾ വരെ"
+                            : "Special: Pages unlimited • ഓരോ side-ലും 30 visual lines • ഓരോ visual line-ലും 35 അക്ഷരങ്ങൾ വരെ"}
+
+                      </p>
+
+                      {content.trim() && (
+                        <p className="text-[9px] text-stone-500 mt-1">
+
+                          {requiredSides === 1
+                            ? "Estimated: 1 side"
+                            : `Estimated: ${requiredSides} sides`}
+
+                        </p>
+                      )}
+
+                    </div>
+
+                    {/* =================================================
+                        CONTENT ERROR / WARNING
+                    ================================================= */}
 
                     {isContentOverLimit && (
                       <div className="mt-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+
                         <p className="text-[10px] font-semibold text-red-600">
-                          ⚠️ Maximum 30 lines allowed.
+
+                          ⚠️{" "}
+
+                          {contentType === "Story"
+                            ? `Story is over the 4-side limit. Current: ${contentLineCount} visual lines / maximum: ${STORY_MAX_LINES}.`
+                            : `Poetry is over the 1-side limit. Current: ${contentLineCount} visual lines / maximum: ${POETRY_MAX_LINES}.`}
+
                         </p>
 
                         <p className="text-[9px] text-red-500 mt-0.5">
-                          Please remove {contentLineCount - MAX_CONTENT_LINES}{" "}
-                          {contentLineCount - MAX_CONTENT_LINES === 1
-                            ? "line"
-                            : "lines"}{" "}
-                          before submitting.
+
+                          The complete pasted content is kept. Please shorten
+                          the content before submitting.
+
                         </p>
+
                       </div>
                     )}
 
-                    {/* 30 LINE MESSAGE */}
+                    {/* =================================================
+                        LIMIT REACHED
+                    ================================================= */}
 
                     {!isContentOverLimit &&
-                      contentLineCount === MAX_CONTENT_LINES && (
+                      contentLineCount > 0 &&
+                      contentType !== "Special" &&
+                      contentLineCount ===
+                        maxContentLines && (
                         <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+
                           <p className="text-[10px] font-semibold text-amber-700">
-                            ⚠️ You have reached the maximum of 30 lines.
+                            ⚠️ You have reached the maximum allowed content size.
                           </p>
 
                           <p className="text-[9px] text-amber-600 mt-0.5">
-                            You cannot add more lines.
+                            No additional visual lines can be added.
                           </p>
+
                         </div>
                       )}
+
+                    {/* SPECIAL INFORMATION */}
+
+                    {contentType === "Special" &&
+                      contentLineCount > 0 && (
+                        <div className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+
+                          <p className="text-[10px] font-semibold text-emerald-700">
+                            ✓ Special category has no page limit.
+                          </p>
+
+                          <p className="text-[9px] text-emerald-600 mt-0.5">
+                            Current estimated length:{" "}
+                            {requiredSides}{" "}
+                            {requiredSides === 1
+                              ? "side"
+                              : "sides"}
+                            .
+                          </p>
+
+                        </div>
+                      )}
+
                   </div>
 
                   {/* ACTIONS */}
 
                   <div className="flex items-center space-x-3 pt-4">
+
                     {/* SAVE DRAFT */}
 
                     <button
                       type="button"
                       onClick={handleSaveDraft}
-                      disabled={loading || paymentLoading}
+                      disabled={
+                        loading ||
+                        paymentLoading
+                      }
                       className="flex-1 bg-white border border-stone-300 hover:bg-stone-50 text-gray-800 font-bold py-3 px-4 rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-2 text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
+
                       <Save className="h-4 w-4 text-stone-600" />
 
-                      <span>Save Draft</span>
+                      <span>
+                        Save Draft
+                      </span>
+
                     </button>
 
                     {/* SUBMIT + PAYMENT */}
@@ -1237,37 +2140,55 @@ export default function UploadPoetry() {
                       }
                       className="flex-1 bg-[#1b3b2b] hover:bg-emerald-950 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors flex items-center justify-center space-x-2 text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
+
                       {loading ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
 
-                          <span>Submitting...</span>
+                          <span>
+                            Submitting...
+                          </span>
                         </>
                       ) : paymentLoading ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
 
-                          <span>Processing Payment...</span>
+                          <span>
+                            Processing Payment...
+                          </span>
                         </>
                       ) : paymentCompleted ? (
                         <>
                           <CheckCircle className="h-4 w-4" />
 
-                          <span>Payment Completed</span>
+                          <span>
+                            Payment Completed
+                          </span>
                         </>
                       ) : isContentOverLimit ? (
-                        <span>30 Lines Maximum</span>
+                        <span>
+                          {contentType === "Story"
+                            ? "4 Sides Maximum"
+                            : "1 Side Maximum"}
+                        </span>
                       ) : (
                         <>
-                          <span>Submit & Pay</span>
+                          <span>
+                            Submit & Pay
+                          </span>
 
                           <ArrowRight className="h-4 w-4" />
                         </>
                       )}
+
                     </button>
+
                   </div>
+
                 </div>
+
               </div>
+
             </div>
 
             {/* =================================================
@@ -1276,9 +2197,13 @@ export default function UploadPoetry() {
 
             {!isLoggedIn && (
               <div className="absolute inset-0 z-20 flex items-center justify-center">
+
                 <div className="bg-white/95 backdrop-blur-md border border-stone-200 shadow-2xl rounded-3xl px-8 py-9 text-center max-w-sm w-full mx-4">
+
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 flex items-center justify-center mb-5">
+
                     <Lock className="w-7 h-7 text-[#1b3b2b]" />
+
                   </div>
 
                   <h2 className="text-xl font-extrabold text-gray-900">
@@ -1294,25 +2219,39 @@ export default function UploadPoetry() {
                     onClick={handleLogin}
                     className="mt-6 w-full bg-[#1b3b2b] hover:bg-emerald-950 text-white font-bold py-3 px-5 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>Register to Continue</span>
+
+                    <span>
+                      Register to Continue
+                    </span>
 
                     <ArrowRight className="h-4 w-4" />
+
                   </button>
 
                   <p className="text-xs text-stone-400 mt-4">
+
                     Already a user?{" "}
+
                     <button
-                      onClick={() => navigate("/login")}
+                      onClick={() =>
+                        navigate("/login")
+                      }
                       className="text-[#1b3b2b] font-bold hover:underline cursor-pointer"
                     >
                       login here
                     </button>
+
                   </p>
+
                 </div>
+
               </div>
             )}
+
           </div>
+
         </div>
+
       </div>
 
       <Footer />

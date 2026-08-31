@@ -8,7 +8,7 @@ function LibraryManagement() {
   const [activeTab, setActiveTab] = useState("categories");
 
   return (
-    <div className="w-full">
+    <div className="w-full mt-5">
       {/* =========================
             Header
         ========================= */}

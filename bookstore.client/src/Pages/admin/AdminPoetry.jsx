@@ -5,28 +5,31 @@ import {
   Eye,
   Loader2,
   X,
-  UserCircle,
-  Mail,
-  Phone,
-  MapPin,
-  CalendarDays,
-  FileText,
-  CreditCard,
+  Download,
+  ImageDown,
+  FileDown,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 import { getAllStoryPoetry } from "../../services/storyPoetryService";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminStoryPoetry() {
   const navigate = useNavigate();
+
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [generatingSinglePdf, setGeneratingSinglePdf] = useState(null);
 
-  // ================= LOAD ALL SUBMISSIONS =================
+  // =========================================================
+  // LOAD ALL SUBMISSIONS
+  // =========================================================
 
   const loadSubmissions = async () => {
     try {
@@ -35,9 +38,12 @@ export default function AdminStoryPoetry() {
 
       const data = await getAllStoryPoetry();
 
+      console.log("story response:", data);
+
       setSubmissions(data);
     } catch (error) {
       console.error("Failed to load submissions:", error);
+
       setError(error.message || "Failed to load submissions.");
     } finally {
       setLoading(false);
@@ -48,7 +54,9 @@ export default function AdminStoryPoetry() {
     loadSubmissions();
   }, []);
 
-  // ================= FORMAT DATE =================
+  // =========================================================
+  // FORMAT DATE
+  // =========================================================
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -60,7 +68,9 @@ export default function AdminStoryPoetry() {
     });
   };
 
-  // ================= TYPE ICON =================
+  // =========================================================
+  // TYPE ICON
+  // =========================================================
 
   const renderTypeIcon = (type) => {
     if (type === "Poetry") {
@@ -70,7 +80,9 @@ export default function AdminStoryPoetry() {
     return <BookOpen className="h-4 w-4 text-emerald-800" />;
   };
 
-  // ================= TYPE COLOR =================
+  // =========================================================
+  // TYPE COLOR
+  // =========================================================
 
   const getTypeStyle = (type) => {
     if (type === "Poetry") {
@@ -84,7 +96,9 @@ export default function AdminStoryPoetry() {
     return "bg-blue-100 text-blue-800";
   };
 
-  // ================= PAYMENT STATUS COLOR =================
+  // =========================================================
+  // PAYMENT STATUS COLOR
+  // =========================================================
 
   const getPaymentStyle = (status) => {
     if (status === "Paid") {
@@ -94,21 +108,717 @@ export default function AdminStoryPoetry() {
     return "bg-amber-100 text-amber-800";
   };
 
-  // search poetry
+  // =========================================================
+  // FILTER SUBMISSIONS
+  // =========================================================
+
   const filteredSubmissions = submissions.filter((item) => {
     const search = searchTerm.toLowerCase().trim();
 
-    if (!search) return true;
+    // Only show PAID submissions
+    const isPaid = item.paymentStatus === "Paid";
 
-    return (
+    // Search filter
+    const matchesSearch =
+      !search ||
       item.title?.toLowerCase().includes(search) ||
-      item.contributorNameMalayalam?.toLowerCase().includes(search)
-    );
+      item.contributorNameMalayalam?.toLowerCase().includes(search);
+
+    // Month filter
+    const matchesMonth =
+      !selectedMonth || item.createdDate?.startsWith(selectedMonth);
+
+    return isPaid && matchesSearch && matchesMonth;
   });
 
+  // =========================================================
+  // DOWNLOAD PROFILE PICTURE
+  // =========================================================
+
+  const handleDownloadProfilePicture = async (item) => {
+    if (!item.contributorProfileImageUrl) {
+      alert("Profile picture is not available.");
+      return;
+    }
+
+    try {
+      const response = await fetch(item.contributorProfileImageUrl, {
+        mode: "cors",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download profile picture.");
+      }
+
+      const blob = await response.blob();
+
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = blobUrl;
+
+      const safeName =
+        item.contributorNameMalayalam
+          ?.replace(/[^\w\u0D00-\u0D7F-]+/g, "_")
+          .replace(/^_+|_+$/g, "") || "contributor";
+
+      link.download = `${safeName}-profile-picture`;
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Profile picture download failed:", error);
+
+      // Fallback
+      try {
+        const link = document.createElement("a");
+
+        link.href = item.contributorProfileImageUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+      } catch (fallbackError) {
+        console.error("Profile picture fallback failed:", fallbackError);
+
+        alert(
+          "Unable to download the profile picture. Please check the image URL/CORS settings.",
+        );
+      }
+    }
+  };
+
+  // =========================================================
+  // GENERATE PDF
+  // =========================================================
+
+  const generatePDF = async (items, fileName) => {
+    if (!items || items.length === 0) {
+      alert("No submissions found.");
+      return;
+    }
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const PAGE_WIDTH = 210;
+    const PAGE_HEIGHT = 297;
+
+    const MARGIN_TOP = 20;
+    const MARGIN_BOTTOM = 20;
+    const MARGIN_LEFT = 18;
+    const MARGIN_RIGHT = 18;
+
+    // =========================================================
+    // TEMPORARY CONTAINER
+    // =========================================================
+
+    const printContainer = document.createElement("div");
+
+    printContainer.style.position = "absolute";
+    printContainer.style.left = "-10000px";
+    printContainer.style.top = "0";
+    printContainer.style.width = "210mm";
+    printContainer.style.background = "#ffffff";
+    printContainer.style.zIndex = "-9999";
+
+    document.body.appendChild(printContainer);
+
+    // =========================================================
+    // WAIT FOR IMAGES
+    // =========================================================
+
+    const waitForImages = async (container) => {
+      const images = [...container.querySelectorAll("img")];
+
+      await Promise.all(
+        images.map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete) {
+                resolve();
+                return;
+              }
+
+              img.onload = resolve;
+              img.onerror = resolve;
+            }),
+        ),
+      );
+    };
+
+    // =========================================================
+    // CREATE STORY DOCUMENT
+    //
+    // IMPORTANT:
+    // NO fixed height
+    // NO overflow hidden
+    // NO page-height calculation
+    // =========================================================
+
+    const createStoryDocument = () => {
+      const page = document.createElement("div");
+
+      page.style.width = "210mm";
+      page.style.boxSizing = "border-box";
+      page.style.background = "#ffffff";
+
+      page.style.padding = `
+      ${MARGIN_TOP}mm
+      ${MARGIN_RIGHT}mm
+      ${MARGIN_BOTTOM}mm
+      ${MARGIN_LEFT}mm
+    `;
+
+      page.style.fontFamily = "'Manjari', sans-serif";
+      page.style.color = "#111827";
+
+      // IMPORTANT
+      // Let the document naturally grow as tall as necessary.
+      page.style.height = "auto";
+      page.style.minHeight = "0";
+      page.style.overflow = "visible";
+
+      return page;
+    };
+
+    // =========================================================
+    // CONTRIBUTOR HEADER
+    // =========================================================
+
+    const createContributorHeader = (item) => {
+      const wrapper = document.createElement("div");
+
+      wrapper.style.display = "flex";
+      wrapper.style.alignItems = "flex-start";
+      wrapper.style.gap = "10mm";
+      wrapper.style.width = "100%";
+
+      // -------------------------------------------------------
+      // PROFILE IMAGE
+      // -------------------------------------------------------
+
+      if (item.contributorProfileImageUrl) {
+        const img = document.createElement("img");
+
+        img.src = item.contributorProfileImageUrl;
+        img.crossOrigin = "anonymous";
+
+        img.style.width = "40mm";
+        img.style.height = "48mm";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "8mm";
+        img.style.display = "block";
+        img.style.flexShrink = "0";
+
+        wrapper.appendChild(img);
+      } else {
+        const placeholder = document.createElement("div");
+
+        placeholder.style.width = "40mm";
+        placeholder.style.height = "48mm";
+        placeholder.style.background = "#f5f5f4";
+        placeholder.style.borderRadius = "8mm";
+        placeholder.style.display = "flex";
+        placeholder.style.alignItems = "center";
+        placeholder.style.justifyContent = "center";
+        placeholder.style.fontSize = "14mm";
+        placeholder.style.color = "#a8a29e";
+        placeholder.style.flexShrink = "0";
+
+        placeholder.textContent = "👤";
+
+        wrapper.appendChild(placeholder);
+      }
+
+      // -------------------------------------------------------
+      // DETAILS
+      // -------------------------------------------------------
+
+      const details = document.createElement("div");
+
+      details.style.flex = "1";
+      details.style.paddingTop = "3mm";
+      details.style.lineHeight = "1.6";
+      details.style.fontFamily = "'Manjari', sans-serif";
+
+      // NAME
+
+      const name = document.createElement("div");
+
+      name.style.fontSize = "18px";
+      name.style.fontWeight = "700";
+
+      name.textContent = item.contributorNameMalayalam || "";
+
+      details.appendChild(name);
+
+      // LOCATION
+
+      const location = document.createElement("div");
+
+      location.style.fontSize = "15px";
+      location.style.marginTop = "3px";
+
+      location.textContent = `${item.contributorCityMalayalam || ""}${
+        item.contributorCityMalayalam && item.contributorDistrictMalayalam
+          ? ", "
+          : ""
+      }${item.contributorDistrictMalayalam || ""}`;
+
+      details.appendChild(location);
+
+      // EMAIL
+
+      if (item.contributorEmail) {
+        const email = document.createElement("div");
+
+        email.style.fontFamily = "Arial, sans-serif";
+        email.style.fontSize = "14px";
+        email.style.marginTop = "4px";
+
+        email.textContent = `mail/${item.contributorEmail}`;
+
+        details.appendChild(email);
+      }
+
+      wrapper.appendChild(details);
+
+      return wrapper;
+    };
+
+    // =========================================================
+    // TITLE
+    // =========================================================
+
+    const createTitle = (item) => {
+      const container = document.createElement("div");
+
+      container.style.marginTop = "18mm";
+      container.style.width = "100%";
+
+      const title = document.createElement("h1");
+
+      title.style.margin = "0";
+      title.style.fontFamily = "'Manjari', sans-serif";
+      title.style.fontSize = "32px";
+      title.style.lineHeight = "1.3";
+      title.style.fontWeight = "700";
+      title.style.color = "#111827";
+
+      title.textContent = item.title || "";
+
+      container.appendChild(title);
+
+      return container;
+    };
+
+    // =========================================================
+    // CONTENT
+    // =========================================================
+
+    const createContent = (item) => {
+      const content = document.createElement("div");
+
+      content.style.marginTop = "14mm";
+      content.style.width = "100%";
+
+      content.style.fontFamily = "'Manjari', sans-serif";
+      content.style.fontSize = "17px";
+      content.style.lineHeight = "2";
+      content.style.color = "#111827";
+
+      /*
+      Preserve the original line structure.
+
+      Each line gets its own div so poetry line breaks
+      remain exactly like the submitted content.
+    */
+
+      const lines = (item.content || "").split(/\r?\n/);
+
+      lines.forEach((line) => {
+        const element = document.createElement("div");
+
+        element.style.whiteSpace = "pre-wrap";
+
+        // Preserve blank lines.
+        // This gives poems/stories their natural spacing.
+        if (line === "") {
+          element.style.height = "34px";
+        } else {
+          element.style.minHeight = "34px";
+        }
+
+        element.textContent = line || "\u00A0";
+
+        content.appendChild(element);
+      });
+
+      return content;
+    };
+
+    // =========================================================
+    // CAPTURE ONE COMPLETE STORY
+    // =========================================================
+
+    const captureStory = async (item) => {
+      printContainer.innerHTML = "";
+
+      const storyDocument = createStoryDocument();
+
+      // -------------------------------------------------------
+      // HEADER
+      // -------------------------------------------------------
+
+      storyDocument.appendChild(createContributorHeader(item));
+
+      // -------------------------------------------------------
+      // TITLE
+      // -------------------------------------------------------
+
+      storyDocument.appendChild(createTitle(item));
+
+      // -------------------------------------------------------
+      // FULL CONTENT
+      // -------------------------------------------------------
+
+      storyDocument.appendChild(createContent(item));
+
+      printContainer.appendChild(storyDocument);
+
+      // -------------------------------------------------------
+      // WAIT FOR IMAGES
+      // -------------------------------------------------------
+
+      await waitForImages(storyDocument);
+
+      // -------------------------------------------------------
+      // WAIT FOR FONTS
+      // -------------------------------------------------------
+
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+
+      // -------------------------------------------------------
+      // GIVE BROWSER TIME TO PAINT MALAYALAM FONT
+      // -------------------------------------------------------
+
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(resolve);
+        });
+      });
+
+      // -------------------------------------------------------
+      // CAPTURE THE ENTIRE STORY
+      //
+      // NO page height
+      // NO scrollHeight pagination
+      // NO line-by-line page splitting
+      // -------------------------------------------------------
+
+      const canvas = await html2canvas(storyDocument, {
+        scale: 1.5,
+
+        useCORS: true,
+        allowTaint: false,
+
+        backgroundColor: "#ffffff",
+
+        logging: false,
+
+        // We intentionally DO NOT provide:
+        // width
+        // height
+        // windowWidth
+        // windowHeight
+        //
+        // html2canvas will capture the complete element.
+      });
+
+      return canvas;
+    };
+
+    // =========================================================
+    // ADD CANVAS TO PDF IN A4 SLICES
+    // =========================================================
+
+    const addCanvasToPDF = (canvas, isFirstPDFPage) => {
+      /*
+      The canvas width represents 210mm.
+
+      Therefore an A4-height slice is:
+
+          canvas.width × (297 / 210)
+
+      pixels.
+
+      Example:
+
+          canvas width = 1190px
+
+          A4 slice height =
+          1190 × 297 / 210
+          ≈ 1683px
+    */
+
+      const sliceHeight = Math.round(canvas.width * (PAGE_HEIGHT / PAGE_WIDTH));
+
+      let sourceY = 0;
+      let firstSlice = true;
+
+      while (sourceY < canvas.height) {
+        const remainingHeight = canvas.height - sourceY;
+
+        const currentSliceHeight = Math.min(sliceHeight, remainingHeight);
+
+        // -----------------------------------------------------
+        // CREATE A SMALL CANVAS FOR THIS PDF PAGE
+        // -----------------------------------------------------
+
+        const sliceCanvas = document.createElement("canvas");
+
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = currentSliceHeight;
+
+        const ctx = sliceCanvas.getContext("2d");
+
+        ctx.drawImage(
+          canvas,
+
+          // SOURCE
+          0,
+          sourceY,
+          canvas.width,
+          currentSliceHeight,
+
+          // DESTINATION
+          0,
+          0,
+          canvas.width,
+          currentSliceHeight,
+        );
+
+        // -----------------------------------------------------
+        // CONVERT SLICE TO IMAGE
+        // -----------------------------------------------------
+
+        const imgData = sliceCanvas.toDataURL("image/jpeg", 0.92);
+
+        // -----------------------------------------------------
+        // ADD PDF PAGE
+        // -----------------------------------------------------
+
+        if (!isFirstPDFPage || !firstSlice) {
+          pdf.addPage();
+        }
+
+        // -----------------------------------------------------
+        // KEEP ORIGINAL ASPECT RATIO
+        // -----------------------------------------------------
+
+        const imageHeight = (currentSliceHeight / canvas.width) * PAGE_WIDTH;
+
+        pdf.addImage(imgData, "JPEG", 0, 0, PAGE_WIDTH, imageHeight);
+
+        // -----------------------------------------------------
+        // MOVE TO NEXT SLICE
+        // -----------------------------------------------------
+
+        sourceY += currentSliceHeight;
+
+        firstSlice = false;
+
+        // -----------------------------------------------------
+        // FREE MEMORY
+        // -----------------------------------------------------
+
+        sliceCanvas.width = 1;
+        sliceCanvas.height = 1;
+      }
+    };
+
+    // =========================================================
+    // PROCESS ALL SUBMISSIONS
+    // =========================================================
+
+    let isFirstPDFPage = true;
+
+    try {
+      for (
+        let submissionIndex = 0;
+        submissionIndex < items.length;
+        submissionIndex++
+      ) {
+        const item = items[submissionIndex];
+
+        console.log(
+          `Generating PDF: ${submissionIndex + 1}/${items.length}`,
+          item.title,
+        );
+
+        // -----------------------------------------------------
+        // CAPTURE COMPLETE STORY
+        // -----------------------------------------------------
+
+        const canvas = await captureStory(item);
+
+        // -----------------------------------------------------
+        // SLICE COMPLETE STORY INTO A4 PAGES
+        // -----------------------------------------------------
+
+        addCanvasToPDF(canvas, isFirstPDFPage);
+
+        // -----------------------------------------------------
+        // AFTER FIRST STORY, ALL FUTURE CONTENT NEEDS A
+        // NEW PDF PAGE.
+        //
+        // addCanvasToPDF() handles that automatically.
+        // -----------------------------------------------------
+
+        isFirstPDFPage = false;
+
+        // -----------------------------------------------------
+        // FREE LARGE CANVAS
+        // -----------------------------------------------------
+
+        canvas.width = 1;
+        canvas.height = 1;
+
+        printContainer.innerHTML = "";
+
+        // Give browser a tiny breathing period between stories.
+        // This helps prevent the browser from appearing frozen
+        // when the monthly PDF contains many submissions.
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+
+      // =======================================================
+      // SAVE PDF
+      // =======================================================
+
+      pdf.save(fileName);
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+
+      throw error;
+    } finally {
+      // =======================================================
+      // CLEANUP
+      // =======================================================
+
+      if (document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
+      }
+    }
+  };
+  // =========================================================
+  // MONTHLY PDF
+  // =========================================================
+
+  const handleDownloadMonthlyPDF = async () => {
+    if (!selectedMonth) {
+      alert("Please select a month.");
+      return;
+    }
+
+    const monthlySubmissions = submissions.filter(
+      (item) =>
+        item.paymentStatus === "Paid" &&
+        item.createdDate?.startsWith(selectedMonth),
+    );
+
+    if (monthlySubmissions.length === 0) {
+      alert("No submissions found for the selected month.");
+      return;
+    }
+
+    try {
+      setGeneratingPdf(true);
+
+      const [year, month] = selectedMonth.split("-");
+
+      const monthName = new Date(
+        Number(year),
+        Number(month) - 1,
+      ).toLocaleDateString("en-IN", {
+        month: "long",
+        year: "numeric",
+      });
+
+      await generatePDF(
+        monthlySubmissions,
+        `Story-Poetry-${monthName.replace(" ", "-")}.pdf`,
+      );
+    } catch (error) {
+      console.error("Monthly PDF generation failed:", error);
+
+      alert("Failed to generate monthly PDF. Please try again.");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  // =========================================================
+  // SINGLE USER PDF
+  // =========================================================
+
+  const handleDownloadSinglePDF = async (item) => {
+    if (!item) return;
+
+    try {
+      setGeneratingSinglePdf(item.storyPoetryId);
+
+      const safeTitle =
+        item.title
+          ?.replace(/[^\w\u0D00-\u0D7F-]+/g, "_")
+          .replace(/^_+|_+$/g, "") || "story";
+
+      const safeName =
+        item.contributorNameMalayalam
+          ?.replace(/[^\w\u0D00-\u0D7F-]+/g, "_")
+          .replace(/^_+|_+$/g, "") || "contributor";
+
+      const fileName = `${safeName}-${safeTitle}.pdf`;
+
+      await generatePDF([item], fileName);
+    } catch (error) {
+      console.error("Single PDF generation failed:", error);
+
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setGeneratingSinglePdf(null);
+    }
+  };
+
+  // =========================================================
+  // OPEN STORY
+  // =========================================================
+
+  const handleOpenStory = (item) => {
+    navigate(`/admin/story/${item.storyPoetryId}`);
+  };
+
+  // =========================================================
+  // RETURN
+  // =========================================================
+
   return (
-    <div className="p-6">
-      {/* ================= HEADER ================= */}
+    <div className="p-6 mt-5">
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <div className="mb-6">
         <h1 className="text-2xl font-extrabold text-gray-900">
@@ -120,7 +830,9 @@ export default function AdminStoryPoetry() {
         </p>
       </div>
 
-      {/* ================= ERROR ================= */}
+      {/* =====================================================
+          ERROR
+      ===================================================== */}
 
       {error && (
         <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-semibold">
@@ -128,7 +840,9 @@ export default function AdminStoryPoetry() {
         </div>
       )}
 
-      {/* ================= LOADING ================= */}
+      {/* =====================================================
+          LOADING
+      ===================================================== */}
 
       {loading ? (
         <div className="bg-white border border-stone-200 rounded-2xl py-20 flex items-center justify-center">
@@ -139,7 +853,9 @@ export default function AdminStoryPoetry() {
           </span>
         </div>
       ) : submissions.length === 0 ? (
-        /* ================= EMPTY ================= */
+        /* =====================================================
+           EMPTY
+        ===================================================== */
 
         <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
           <BookOpen className="h-10 w-10 mx-auto text-stone-300 mb-3" />
@@ -151,13 +867,17 @@ export default function AdminStoryPoetry() {
           </p>
         </div>
       ) : (
-        /* ================= TABLE ================= */
+        /* =====================================================
+           TABLE
+        ===================================================== */
 
         <div className="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
-          {/* ================= SEARCH HEADER ================= */}
+          {/* =================================================
+              SEARCH & MONTH FILTER HEADER
+          ================================================= */}
 
           <div className="px-5 py-4 border-b border-stone-200">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               {/* LEFT SIDE */}
 
               <div>
@@ -171,59 +891,129 @@ export default function AdminStoryPoetry() {
                 </p>
               </div>
 
-              {/* SEARCH BAR */}
+              {/* RIGHT SIDE */}
 
-              <div className="relative w-full sm:w-80">
+              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                {/* MONTH SELECTOR */}
+
                 <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search title or contributor..."
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
                   className="
-            w-full
-            pl-4
-            pr-10
-            py-2.5
-            rounded-xl
-            border
-            border-stone-200
-            bg-stone-50
-            text-sm
-            text-gray-900
-            placeholder:text-stone-400
-            outline-none
-            transition
-            focus:bg-white
-            focus:border-emerald-900
-            focus:ring-2
-            focus:ring-emerald-900/10
-          "
+                    w-full
+                    sm:w-auto
+                    px-4
+                    py-2.5
+                    rounded-xl
+                    border
+                    border-stone-200
+                    bg-stone-50
+                    text-sm
+                    text-gray-700
+                    outline-none
+                    focus:bg-white
+                    focus:border-emerald-900
+                    focus:ring-2
+                    focus:ring-emerald-900/10
+                  "
                 />
 
-                {/* CLEAR SEARCH */}
+                {/* SEARCH BAR */}
 
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm("")}
+                <div className="relative w-full sm:w-80">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search title or contributor..."
                     className="
-              absolute
-              right-3
-              top-1/2
-              -translate-y-1/2
-              text-stone-400
-              hover:text-stone-700
-              cursor-pointer
-            "
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
+                      w-full
+                      pl-4
+                      pr-10
+                      py-2.5
+                      rounded-xl
+                      border
+                      border-stone-200
+                      bg-stone-50
+                      text-sm
+                      text-gray-900
+                      placeholder:text-stone-400
+                      outline-none
+                      transition
+                      focus:bg-white
+                      focus:border-emerald-900
+                      focus:ring-2
+                      focus:ring-emerald-900/10
+                    "
+                  />
+
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm("")}
+                      className="
+                        absolute
+                        right-3
+                        top-1/2
+                        -translate-y-1/2
+                        text-stone-400
+                        hover:text-stone-700
+                        cursor-pointer
+                      "
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* =================================================
+                    MONTHLY PDF
+                ================================================= */}
+
+                <button
+                  type="button"
+                  disabled={!selectedMonth || generatingPdf}
+                  onClick={handleDownloadMonthlyPDF}
+                  className="
+                    flex
+                    items-center
+                    justify-center
+                    gap-2
+                    px-4
+                    py-2.5
+                    rounded-xl
+                    bg-[#1b3b2b]
+                    hover:bg-emerald-950
+                    disabled:bg-stone-300
+                    disabled:cursor-not-allowed
+                    text-white
+                    text-sm
+                    font-bold
+                    whitespace-nowrap
+                    cursor-pointer
+                    transition-colors
+                  "
+                >
+                  {generatingPdf ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      Monthly PDF
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
 
-          {/* ================= NO SEARCH RESULTS ================= */}
+          {/* =================================================
+              NO SEARCH RESULTS
+          ================================================= */}
 
           {filteredSubmissions.length === 0 ? (
             <div className="py-16 px-6 text-center">
@@ -237,30 +1027,37 @@ export default function AdminStoryPoetry() {
 
               <button
                 type="button"
-                onClick={() => setSearchTerm("")}
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedMonth("");
+                }}
                 className="
-          mt-4
-          px-4
-          py-2
-          rounded-lg
-          bg-[#1b3b2b]
-          hover:bg-emerald-950
-          text-white
-          text-xs
-          font-bold
-          cursor-pointer
-          transition-colors
-        "
+                  mt-4
+                  px-4
+                  py-2
+                  rounded-lg
+                  bg-[#1b3b2b]
+                  hover:bg-emerald-950
+                  text-white
+                  text-xs
+                  font-bold
+                  cursor-pointer
+                  transition-colors
+                "
               >
-                Clear Search
+                Clear Filters
               </button>
             </div>
           ) : (
-            /* ================= TABLE ================= */
+            /* =================================================
+               TABLE
+            ================================================= */
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                {/* ================= TABLE HEADER ================= */}
+                {/* =================================================
+                    TABLE HEADER
+                ================================================= */}
 
                 <thead className="bg-stone-50 border-b border-stone-200">
                   <tr>
@@ -284,25 +1081,36 @@ export default function AdminStoryPoetry() {
                       Submitted
                     </th>
 
+                    {/* ACTIONS */}
                     <th className="text-right px-5 py-4 font-bold text-gray-700">
-                      Details
+                      Downloads
                     </th>
                   </tr>
                 </thead>
 
-                {/* ================= TABLE BODY ================= */}
+                {/* =================================================
+                    TABLE BODY
+                ================================================= */}
 
                 <tbody className="divide-y divide-stone-100">
                   {filteredSubmissions.map((item) => (
                     <tr
                       key={item.storyPoetryId}
-                      className="hover:bg-stone-50 transition-colors"
+                      onClick={() => handleOpenStory(item)}
+                      className="
+                        group
+                        hover:bg-emerald-50/60
+                        transition-colors
+                        cursor-pointer
+                      "
                     >
-                      {/* ================= SUBMISSION ================= */}
+                      {/* =================================================
+                          SUBMISSION
+                      ================================================= */}
 
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
                             {renderTypeIcon(item.type)}
                           </div>
 
@@ -314,11 +1122,17 @@ export default function AdminStoryPoetry() {
                             <p className="text-[11px] text-stone-500 mt-0.5">
                               ID #{item.storyPoetryId}
                             </p>
+
+                            <p className="text-[10px] text-emerald-700 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              Click row to open
+                            </p>
                           </div>
                         </div>
                       </td>
 
-                      {/* ================= CONTRIBUTOR ================= */}
+                      {/* =================================================
+                          CONTRIBUTOR
+                      ================================================= */}
 
                       <td className="px-5 py-4">
                         <p className="font-semibold text-gray-800">
@@ -326,7 +1140,9 @@ export default function AdminStoryPoetry() {
                         </p>
                       </td>
 
-                      {/* ================= TYPE ================= */}
+                      {/* =================================================
+                          TYPE
+                      ================================================= */}
 
                       <td className="px-5 py-4">
                         <span
@@ -338,7 +1154,9 @@ export default function AdminStoryPoetry() {
                         </span>
                       </td>
 
-                      {/* ================= PAYMENT ================= */}
+                      {/* =================================================
+                          PAYMENT
+                      ================================================= */}
 
                       <td className="px-5 py-4">
                         <span
@@ -350,38 +1168,114 @@ export default function AdminStoryPoetry() {
                         </span>
                       </td>
 
-                      {/* ================= DATE ================= */}
+                      {/* =================================================
+                          DATE
+                      ================================================= */}
 
                       <td className="px-5 py-4 text-stone-600 text-xs font-medium">
                         {formatDate(item.createdDate)}
                       </td>
 
-                      {/* ================= VIEW ================= */}
+                      {/* =================================================
+                          DOWNLOAD ACTIONS
+                      ================================================= */}
 
                       <td className="px-5 py-4">
-                        <div className="flex justify-end">
+                        <div
+                          className="flex justify-end items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* =================================================
+                              PROFILE PICTURE DOWNLOAD
+                          ================================================= */}
+
                           <button
-                            onClick={() =>
-                              navigate(`/admin/story/${item.storyPoetryId}`)
+                            type="button"
+                            disabled={!item.contributorProfileImageUrl}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadProfilePicture(item);
+                            }}
+                            title={
+                              item.contributorProfileImageUrl
+                                ? "Download profile picture"
+                                : "No profile picture"
                             }
                             className="
-                      flex
-                      items-center
-                      gap-2
-                      px-3
-                      py-2
-                      rounded-lg
-                      bg-[#1b3b2b]
-                      hover:bg-emerald-950
-                      text-white
-                      text-xs
-                      font-bold
-                      cursor-pointer
-                      transition-colors
-                    "
+                              flex
+                              items-center
+                              justify-center
+                              gap-2
+                              px-3
+                              py-2
+                              rounded-lg
+                              border
+                              border-stone-200
+                              bg-white
+                              hover:bg-stone-100
+                              disabled:bg-stone-100
+                              disabled:text-stone-300
+                              disabled:cursor-not-allowed
+                              text-stone-700
+                              text-xs
+                              font-bold
+                              cursor-pointer
+                              transition-colors
+                            "
                           >
-                            <Eye className="h-4 w-4" />
-                            View
+                            <ImageDown className="h-4 w-4" />
+
+                            <span className="hidden xl:inline">Photo</span>
+                          </button>
+
+                          {/* =================================================
+                              SINGLE PDF DOWNLOAD
+                          ================================================= */}
+
+                          <button
+                            type="button"
+                            disabled={
+                              generatingSinglePdf === item.storyPoetryId
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadSinglePDF(item);
+                            }}
+                            title="Download this submission as PDF"
+                            className="
+                              flex
+                              items-center
+                              justify-center
+                              gap-2
+                              px-3
+                              py-2
+                              rounded-lg
+                              bg-[#1b3b2b]
+                              hover:bg-emerald-950
+                              disabled:bg-stone-300
+                              disabled:cursor-not-allowed
+                              text-white
+                              text-xs
+                              font-bold
+                              cursor-pointer
+                              transition-colors
+                            "
+                          >
+                            {generatingSinglePdf === item.storyPoetryId ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+
+                                <span className="hidden xl:inline">
+                                  Generating
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <FileDown className="h-4 w-4" />
+
+                                <span className="hidden xl:inline">PDF</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </td>
@@ -391,246 +1285,6 @@ export default function AdminStoryPoetry() {
               </table>
             </div>
           )}
-        </div>
-      )}
-
-      {/* ================= DETAILS MODAL ================= */}
-
-      {selectedItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            {/* ================= MODAL HEADER ================= */}
-
-            <div className="flex items-start justify-between px-6 py-5 border-b border-stone-200">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                    {renderTypeIcon(selectedItem.type)}
-                  </div>
-
-                  <span
-                    className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${getTypeStyle(
-                      selectedItem.type,
-                    )}`}
-                  >
-                    {selectedItem.type}
-                  </span>
-                </div>
-
-                <h2 className="text-xl font-bold text-gray-900 mt-3">
-                  {selectedItem.title}
-                </h2>
-              </div>
-
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="p-2 hover:bg-stone-100 rounded-lg cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* ================= MODAL BODY ================= */}
-
-            <div className="p-6">
-              {/* ================= CONTRIBUTOR SECTION ================= */}
-
-              <div className="flex flex-col md:flex-row justify-between gap-8">
-                {/* LEFT SIDE - CONTRIBUTOR DETAILS */}
-
-                <div className="flex-1">
-                  <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-5">
-                    Contributor Details
-                  </h3>
-
-                  <div className="space-y-4">
-                    {/* NAME */}
-
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
-                        <UserCircle className="h-5 w-5 text-stone-600" />
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-stone-400">
-                          Name
-                        </p>
-
-                        <p className="text-sm font-bold text-gray-800">
-                          {selectedItem.contributorNameMalayalam || "-"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* EMAIL */}
-
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
-                        <Mail className="h-4 w-4 text-stone-600" />
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-stone-400">
-                          Email
-                        </p>
-
-                        <p className="text-sm font-semibold text-gray-800">
-                          {selectedItem.contributorEmail || "-"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* PHONE */}
-
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
-                        <Phone className="h-4 w-4 text-stone-600" />
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-stone-400">
-                          Phone
-                        </p>
-
-                        <p className="text-sm font-semibold text-gray-800">
-                          {selectedItem.contributorPhone || "-"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* ADDRESS */}
-
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
-                        <MapPin className="h-4 w-4 text-stone-600" />
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-stone-400">
-                          Address
-                        </p>
-
-                        <p className="text-sm font-semibold text-gray-800">
-                          {selectedItem.contributorAddressMalayalam || "-"}
-                        </p>
-
-                        <p className="text-xs text-stone-500 mt-1">
-                          {selectedItem.contributorCityMalayalam || "-"}
-                          {selectedItem.contributorDistrictMalayalam &&
-                            `, ${selectedItem.contributorDistrictMalayalam}`}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* RIGHT SIDE - PROFILE IMAGE */}
-
-                <div className="flex flex-col items-center md:w-52">
-                  <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-4">
-                    Contributor
-                  </h3>
-
-                  {selectedItem.contributorProfileImageUrl ? (
-                    <img
-                      src={selectedItem.contributorProfileImageUrl}
-                      alt={selectedItem.contributorNameMalayalam}
-                      className="w-36 h-36 rounded-2xl object-cover border-4 border-stone-100 shadow-sm"
-                    />
-                  ) : (
-                    <div className="w-36 h-36 rounded-2xl bg-emerald-50 border-4 border-stone-100 flex items-center justify-center">
-                      <UserCircle className="h-16 w-16 text-emerald-800" />
-                    </div>
-                  )}
-
-                  <p className="text-sm font-bold text-gray-800 mt-3 text-center">
-                    {selectedItem.contributorNameMalayalam}
-                  </p>
-                </div>
-              </div>
-
-              {/* ================= SUBMISSION INFO ================= */}
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-6 border-t border-stone-200">
-                {/* TYPE */}
-
-                <div className="bg-stone-50 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-stone-400 mb-2">
-                    <FileText className="h-4 w-4" />
-
-                    <span className="text-[10px] uppercase font-bold">
-                      Submission Type
-                    </span>
-                  </div>
-
-                  <p className="text-sm font-bold text-gray-800">
-                    {selectedItem.type || "-"}
-                  </p>
-                </div>
-
-                {/* PAYMENT */}
-
-                <div className="bg-stone-50 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-stone-400 mb-2">
-                    <CreditCard className="h-4 w-4" />
-
-                    <span className="text-[10px] uppercase font-bold">
-                      Payment Status
-                    </span>
-                  </div>
-
-                  <span
-                    className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${getPaymentStyle(
-                      selectedItem.paymentStatus,
-                    )}`}
-                  >
-                    {selectedItem.paymentStatus || "Pending"}
-                  </span>
-                </div>
-
-                {/* DATE */}
-
-                <div className="bg-stone-50 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-stone-400 mb-2">
-                    <CalendarDays className="h-4 w-4" />
-
-                    <span className="text-[10px] uppercase font-bold">
-                      Submitted
-                    </span>
-                  </div>
-
-                  <p className="text-sm font-bold text-gray-800">
-                    {formatDate(selectedItem.createdDate)}
-                  </p>
-                </div>
-              </div>
-
-              {/* ================= FULL CONTENT ================= */}
-
-              <div className="mt-8">
-                <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">
-                  Full {selectedItem.type} Content
-                </h3>
-
-                <div className="bg-stone-50 border border-stone-200 rounded-xl p-5 max-h-[400px] overflow-y-auto">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-7">
-                    {selectedItem.content}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* ================= MODAL FOOTER ================= */}
-
-            <div className="flex justify-end px-6 py-4 border-t border-stone-200">
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="px-5 py-2.5 bg-[#1b3b2b] hover:bg-emerald-950 text-white rounded-xl text-sm font-bold cursor-pointer transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

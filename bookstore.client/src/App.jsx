@@ -33,6 +33,11 @@ import MyRegistrations from "./Pages/MyRegistrations";
 import AdminStoryPoetryDetails from "./Pages/admin/AdminStoryPoetryDetails";
 import Cart from "./Pages/cart";
 import MyOrders from "./Pages/Orders";
+import OrderSuccess from "./Pages/OrderSuccess";
+import SessionExpiryHandler from "./Components/SessionExpiryHandler";
+import AdminCertificate from "./Pages/admin/AdminCertificates";
+import BookOrders from "./Pages/admin/BookOrders";
+
 
 function App() {
   const [count, setCount] = useState(0);
@@ -40,6 +45,7 @@ function App() {
   return (
     <>
       <ScrollToTop />
+      <SessionExpiryHandler/>
       <Routes>
         {/* =========================
                     PUBLIC ROUTES
@@ -73,6 +79,8 @@ function App() {
 
         <Route path="/checkout" element={<Checkout />} />
 
+        <Route path="/order-success/:orderId" element={<OrderSuccess />} />
+
         {/* =========================
                     AUTHENTICATED USER ROUTES
                 ========================= */}
@@ -99,6 +107,8 @@ function App() {
           {/* Books */}
           <Route path="books" element={<Books />} />
 
+          <Route path="/admin/orders" element={<BookOrders />} />
+
           {/* Library Management */}
           <Route path="library" element={<LibraryManagement />} />
 
@@ -111,7 +121,12 @@ function App() {
           {/* Admin event view */}
           <Route
             path="/admin/story/:id"
-            element={<AdminStoryPoetryDetails/>}
+            element={<AdminStoryPoetryDetails />}
+          />
+
+          <Route
+            path="/admin/certificates"
+            element={<AdminCertificate/>}
           />
         </Route>
       </Routes>

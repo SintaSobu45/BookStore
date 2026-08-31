@@ -1,58 +1,75 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { loginUser } from '../services/authService'
-import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { loginUser } from "../services/authService";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
+
+const getTokenExpiry = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+
+    if (!payload.exp) return null;
+
+    return payload.exp * 1000;
+  } catch (error) {
+    console.error("Failed to read token expiry:", error);
+    return null;
+  }
+};
 
 function Login() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    setError('')
-    setLoading(true)
+    setError("");
+    setLoading(true);
 
     try {
       const loginData = {
         email: email,
-        password: password
-      }
+        password: password,
+      };
 
-      const result = await loginUser(loginData)
+      const result = await loginUser(loginData);
 
-      console.log('Login successful:', result)
+      console.log("Login successful:", result);
 
       // Store authentication data
-      localStorage.setItem('token', result.token)
-      localStorage.setItem('userId', result.userId)
-      localStorage.setItem('fullName', result.fullName)
-      localStorage.setItem('email', result.email)
-      localStorage.setItem('role', result.role)
-      
+      localStorage.setItem("token", result.token);
+      localStorage.setItem("userId", result.userId);
+      localStorage.setItem("fullName", result.fullName);
+      localStorage.setItem("email", result.email);
+      localStorage.setItem("role", result.role);
 
-      // Navigate based on user role
-      if (result.role === 'Admin') {
-        navigate('/admin')
-      } else {
-        navigate('/')
+      // Store token expiry time
+      const expiryTime = getTokenExpiry(result.token);
+
+      if (expiryTime) {
+        localStorage.setItem("tokenExpiry", expiryTime.toString());
       }
 
+      // Navigate based on user role
+      if (result.role === "Admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
-      setError(error.message)
+      setError(error.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-stone-100/60 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center">
-
       {/* Back Home Link */}
       <div className="max-w-md w-full mb-4">
         <Link
@@ -65,7 +82,6 @@ function Login() {
       </div>
 
       <div className="max-w-md w-full space-y-6">
-
         {/* Brand / Header */}
         <div className="text-center">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-950 mb-1">
@@ -78,21 +94,26 @@ function Login() {
 
         {/* Login Card */}
         <div className="bg-white border border-stone-200/80 rounded-3xl shadow-xl p-8 sm:p-10">
-
           <div className="mb-6 text-center">
-            <h3 className="text-xl font-extrabold text-gray-900 mb-1">Welcome Back</h3>
-            <p className="text-xs text-stone-500 font-medium">Login to continue your reading journey</p>
+            <h3 className="text-xl font-extrabold text-gray-900 mb-1">
+              Welcome Back
+            </h3>
+            <p className="text-xs text-stone-500 font-medium">
+              Login to continue your reading journey
+            </p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold" role="alert">
+            <div
+              className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold"
+              role="alert"
+            >
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-
             {/* Email */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1.5">
@@ -135,7 +156,11 @@ function Login() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-400 hover:text-gray-600 cursor-pointer"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -156,12 +181,12 @@ function Login() {
                 </label>
               </div>
 
-              <Link
+              {/* <Link
                 to="/forgot-password"
                 className="text-emerald-900 font-bold hover:underline"
               >
                 Forgot Password?
-              </Link>
+              </Link> */}
             </div>
 
             {/* Login Button */}
@@ -170,14 +195,13 @@ function Login() {
               disabled={loading}
               className="w-full bg-[#1b3b2b] hover:bg-emerald-950 text-white font-bold py-3.5 px-6 rounded-xl shadow-md transition-colors cursor-pointer text-sm disabled:opacity-50 mt-2"
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? "Logging in..." : "Login"}
             </button>
-
           </form>
 
           {/* Register Link */}
           <div className="text-center text-xs text-stone-500 pt-6 font-medium border-t border-stone-100 mt-6">
-            Don't have an account?{' '}
+            Don't have an account?{" "}
             <Link
               to="/register"
               className="text-emerald-900 font-bold hover:underline"
@@ -185,13 +209,10 @@ function Login() {
               Create Account
             </Link>
           </div>
-
         </div>
-
       </div>
-
     </div>
-  )
+  );
 }
 
-export default Login
+export default Login;

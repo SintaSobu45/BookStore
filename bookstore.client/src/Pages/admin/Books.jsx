@@ -11,6 +11,7 @@ import {
   createPublisher,
   getPublishers,
 } from "../../services/publisherService";
+import { Link } from "react-router-dom";
 
 function Books() {
   // =========================
@@ -439,7 +440,7 @@ function Books() {
   // UI
   // =========================
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -451,21 +452,29 @@ function Books() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            if (showForm) {
-              resetForm();
-            } else {
-              setEditMode(false);
-              setEditingBookId(null);
-              setImagePreview(null);
-              setShowForm(true);
-            }
-          }}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
-        >
-          {showForm ? "Close" : "+ Add Book"}
-        </button>
+        <div className="d-flex gap-3">
+          <Link to={'/admin/orders'}
+            className="w-full sm:w-auto px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
+          >
+            My Orders
+          </Link>
+  
+          <button
+            onClick={() => {
+              if (showForm) {
+                resetForm();
+              } else {
+                setEditMode(false);
+                setEditingBookId(null);
+                setImagePreview(null);
+                setShowForm(true);
+              }
+            }}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
+          >
+            {showForm ? "Close" : "+ Add Book"}
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
