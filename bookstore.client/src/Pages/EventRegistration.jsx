@@ -716,8 +716,8 @@ export default function EventRegistration() {
       ================================================== */}
 
         {!profile && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10">
-            <div className="bg-white border border-stone-200 shadow-2xl rounded-3xl px-8 py-8 sm:px-10 sm:py-10 text-center w-[90%] max-w-md">
+          <div className="absolute inset-0 z-1 flex items-center justify-center bg-black/10" >
+            <div className="bg-white border border-stone-200 shadow-2xl rounded-3xl px-8 py-8 sm:px-10 sm:py-10 text-center w-[90%] max-w-md" style={{marginBottom:"400px"}}>
               {/* Lock Icon */}
 
               <div className="w-16 h-16 bg-emerald-100 text-emerald-900 rounded-full flex items-center justify-center mx-auto mb-5">

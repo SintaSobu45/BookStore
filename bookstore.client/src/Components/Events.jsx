@@ -49,134 +49,222 @@ export default function EventsAndNewsletter() {
         </div>
 
         {/* Events Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {events.map((event) => {
-            const eventDateObj = new Date(event.eventDate);
-            const day = eventDateObj.getDate();
-            const month = eventDateObj
-              .toLocaleString("default", { month: "short" })
-              .toUpperCase();
-            const formattedDate = eventDateObj.toLocaleDateString();
-            const formattedTime = eventDateObj.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
+        {/* Events Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {loading ? (
+            <p className="text-sm text-stone-500">Loading events...</p>
+          ) : events.length === 0 ? (
+            <p className="text-sm text-stone-500">
+              No upcoming events available.
+            </p>
+          ) : (
+            events.slice(0, 4).map((event) => {
+              const eventDateObj = new Date(event.eventDate);
 
-            return (
-              <div
-                key={event.eventId}
-                onClick={() => navigate(`/events/${event.eventId}`)}
-                className="
-    group
-    bg-white
-    border
-    border-stone-200
-    rounded-3xl
-    overflow-hidden
-    cursor-pointer
-    shadow-sm
-    hover:shadow-xl
-    hover:-translate-y-1
-    transition-all
-    duration-300
-  "
-              >
-                {/* =========================
-      EVENT BANNER
-  ========================= */}
+              const day = eventDateObj.getDate();
 
-                <div className="w-full bg-stone-100 overflow-hidden">
-                  {event?.imageUrl ? (
-                    <img
-                      src={event.imageUrl}
-                      alt={event.eventName}
-                      className="
-          w-full
-          h-auto
-          block
-          object-contain
-          group-hover:scale-[1.02]
-          transition-transform
-          duration-500
-        "
-                    />
-                  ) : (
-                    <div className="h-32 flex items-center justify-center text-stone-300">
-                      <span className="text-3xl">📅</span>
+              const month = eventDateObj
+                .toLocaleString("en-IN", {
+                  month: "short",
+                })
+                .toUpperCase();
+
+              const formattedDate = eventDateObj.toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              });
+
+              const formatTime = (time) => {
+                if (!time) return "";
+
+                const [hours, minutes] = time.split(":");
+
+                const date = new Date();
+                date.setHours(Number(hours), Number(minutes), 0);
+
+                return date.toLocaleTimeString("en-IN", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+              };
+
+              const formattedTime = formatTime(event.eventTime);
+
+              return (
+                <div
+                  key={event.eventId}
+                  onClick={() => navigate(`/events/${event.eventId}`)}
+                  className="
+            group
+            relative
+            min-h-[190px]
+            bg-white
+            border
+            border-stone-200
+            rounded-2xl
+            overflow-hidden
+            cursor-pointer
+            shadow-sm
+            hover:shadow-lg
+            hover:-translate-y-1
+            transition-all
+            duration-300
+            flex
+          "
+                >
+                  {/* LEFT CONTENT */}
+                  <div className="flex-1 p-5 pr-3 flex flex-col relative z-10">
+                    {/* DATE + TITLE */}
+                    <div className="flex items-start gap-3">
+                      {/* DATE BOX */}
+                      <div
+                        className="
+                shrink-0
+                w-11
+                rounded-lg
+                bg-emerald-900
+                text-white
+                text-center
+                py-2
+                shadow-sm
+              "
+                      >
+                        <p className="text-sm font-extrabold leading-none">
+                          {day}
+                        </p>
+
+                        <p className="text-[9px] font-bold uppercase tracking-wide mt-1">
+                          {month}
+                        </p>
+                      </div>
+
+                      {/* TITLE */}
+                      <div>
+                        <h3
+                          className="
+                  text-base
+                  font-bold
+                  text-stone-900
+                  leading-snug
+                  line-clamp-2
+                  group-hover:text-emerald-800
+                  transition-colors
+                "
+                        >
+                          {event.eventName}
+                        </h3>
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                {/* =========================
-      EVENT INFORMATION
-  ========================= */}
-
-                <div className="p-5">
-                  {/* Date + Venue */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-stone-500 mb-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-emerald-800">
+                    {/* DATE & TIME */}
+                    <div className="mt-4">
+                      <p className="text-xs font-medium text-stone-500">
                         {formattedDate}
-                      </span>
-
-                      <span className="text-stone-300">•</span>
-
-                      <span>{formattedTime}</span>
+                        <span className="mx-1">|</span>
+                        {formattedTime || "Time not available"}
+                      </p>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-emerald-700" />
+                    {/* VENUE */}
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <MapPin className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
 
-                      <span>{event.venue}</span>
+                      <p className="text-xs text-stone-500 line-clamp-1">
+                        {event.venue}
+                      </p>
+                    </div>
+
+                    {/* BOTTOM */}
+                    <div className="mt-auto pt-4 flex items-center gap-3">
+                      {/* BUTTON */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/events/${event.eventId}`);
+                        }}
+                        className="
+                  inline-flex
+                  items-center
+                  gap-1
+                  bg-emerald-900
+                  hover:bg-emerald-800
+                  text-white
+                  text-xs
+                  font-semibold
+                  px-4
+                  py-2
+                  rounded-lg
+                  transition-colors
+                "
+                      >
+                        View Event
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+
+                      
                     </div>
                   </div>
 
-                  {/* Event Title */}
-                  <h3
+                  {/* RIGHT EVENT IMAGE */}
+                  <div
                     className="
-        text-base
-        sm:text-lg
-        font-bold
-        text-stone-900
-        line-clamp-2
-        group-hover:text-emerald-800
-        transition-colors
-      "
+            w-[38%]
+            sm:w-[40%]
+            min-h-full
+            bg-stone-100
+            relative
+            overflow-hidden
+          "
                   >
-                    {event.eventName}
-                  </h3>
+                    {event.imageUrl ? (
+                      <img
+                        src={event.imageUrl}
+                        alt={event.eventName}
+                        className="
+                  absolute
+                  inset-0
+                  w-full
+                  h-full
+                  object-cover
+                  transition-transform
+                  duration-500
+                  group-hover:scale-105
+                "
+                      />
+                    ) : (
+                      <div
+                        className="
+                absolute
+                inset-0
+                flex
+                items-center
+                justify-center
+                text-4xl
+              "
+                      >
+                        📅
+                      </div>
+                    )}
 
-                  {/* Bottom */}
-                  <div className="flex items-center justify-between mt-5">
-                    <span className="text-[11px] text-stone-400 font-medium">
-                      Upcoming Event
-                    </span>
-
-                    <button
-                      type="button"
+                    {/* Slight gradient for better blending */}
+                    <div
                       className="
-          inline-flex
-          items-center
-          gap-1
-          bg-emerald-900
-          hover:bg-emerald-800
-          text-white
-          text-xs
-          font-semibold
-          px-4
-          py-2.5
-          rounded-xl
-          transition-colors
-        "
-                    >
-                      Book Now
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
+              absolute
+              inset-0
+              bg-gradient-to-r
+              from-white/20
+              to-transparent
+              pointer-events-none
+            "
+                    />
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </section>
 
@@ -213,5 +301,3 @@ export default function EventsAndNewsletter() {
     </div>
   );
 }
-
-

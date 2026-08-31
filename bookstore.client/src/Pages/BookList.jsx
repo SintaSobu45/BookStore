@@ -132,6 +132,11 @@ export default function BookList() {
   // Filter & Sort Logic
   const filteredBooks = allBooks
     .filter((book) => {
+      // Don't show out-of-stock books
+      if (Number(book.stockQuantity || 0) <= 0) {
+        return false;
+      }
+
       const title = book.title?.toLowerCase() || "";
       const author = book.authorName?.toLowerCase() || "";
 

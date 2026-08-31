@@ -13,9 +13,10 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 
+
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { getCart } from "../services/cartService";
 import { createOrder } from "../services/orderService";
@@ -25,6 +26,8 @@ import {
 } from "../services/bookPaymentService";
 
 export default function Checkout() {
+  
+  const navigate = useNavigate();
   const [saveAddress, setSaveAddress] = useState(true);
 
   const [cart, setCart] = useState(null);
@@ -47,6 +50,7 @@ export default function Checkout() {
     pincode: "",
   });
 
+
   // =====================================================
   // LOAD CART
   // =====================================================
@@ -54,6 +58,7 @@ export default function Checkout() {
   useEffect(() => {
     loadCart();
   }, []);
+
 
   const loadCart = async () => {
     try {
@@ -320,13 +325,7 @@ export default function Checkout() {
               "Payment verification successful:",
               verificationResult,
             );
-
-            toast.success(
-              "Payment successful! Your order is confirmed.",
-            );
-
-            // Redirect can be added later
-            // navigate(`/order-success/${orderId}`);
+            navigate(`/order-success/${orderId}`);
           } catch (error) {
             console.error(
               "Payment verification failed:",

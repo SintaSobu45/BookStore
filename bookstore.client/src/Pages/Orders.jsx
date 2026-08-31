@@ -193,7 +193,7 @@ const MyOrders = () => {
                 Your confirmed book purchases will appear here once placed.
               </p>
               <button
-                onClick={() => navigate("/books")}
+                onClick={() => navigate("/all/books")}
                 className="mt-5 sm:mt-6 bg-[#174733] hover:bg-[#123a29] text-white px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition shadow-sm"
               >
                 Browse Books

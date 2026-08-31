@@ -20,9 +20,14 @@ export default function BookSections() {
         loadBooks();
     }, []);
 
-    const featuredBooks = books.slice(0, 5);
+    // Only show books that have stock available
+    const availableBooks = books.filter(
+        (book) => Number(book.stockQuantity || 0) > 0
+    );
 
-    const newArrivals = [...books]
+    const featuredBooks = availableBooks.slice(0, 5);
+
+    const newArrivals = [...availableBooks]
         .reverse()
         .slice(0, 10);
 
@@ -35,19 +40,21 @@ export default function BookSections() {
                     {title}
                 </h2>
 
-                <Link to={'/all/books'} className="flex items-center text-sm font-medium text-emerald-700 hover:text-emerald-800">
+                <Link
+                    to="/all/books"
+                    className="flex items-center text-sm font-medium text-emerald-700 hover:text-emerald-800"
+                >
                     View All
                     <ChevronRight className="h-4 w-4 ml-1" />
                 </Link>
 
             </div>
 
-            {/* Flex horizontal scroll on mobile & tablets, structured grid on desktop */}
             <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 overflow-x-auto md:overflow-visible pb-4 md:pb-0 -mx-6 px-6 md:mx-0 md:px-0 snap-x snap-mandatory scrollbar-none">
 
                 {books.map((book) => (
-                    <div 
-                        key={book.bookId} 
+                    <div
+                        key={book.bookId}
                         className="shrink-0 w-40 sm:w-48 md:w-auto snap-start"
                     >
                         <BookCard book={book} />
@@ -72,4 +79,4 @@ export default function BookSections() {
             )}
         </>
     );
-}   
+}

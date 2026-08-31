@@ -491,7 +491,7 @@ export default function BookDetail() {
 
                 <span className="text-stone-300">|</span>
 
-                <span className="text-gray-500 font-medium">Available</span>
+                <span className="text-green-900 font-medium">Available</span>
               </div>
 
               {/* Description */}
@@ -583,17 +583,21 @@ export default function BookDetail() {
 
                 <div
                   className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                    book.stockQuantity > 0
-                      ? "bg-emerald-50 text-emerald-800"
-                      : "bg-red-50 text-red-700"
+                    Number(book.stockQuantity || 0) === 0
+                      ? "bg-red-50 text-red-700"
+                      : Number(book.stockQuantity) <= 5
+                        ? "bg-amber-50 text-amber-700"
+                        : "bg-emerald-50 text-emerald-800"
                   }`}
                 >
                   <Check className="h-3.5 w-3.5" />
 
                   <span>
-                    {book.stockQuantity > 0
-                      ? `In Stock (${book.stockQuantity})`
-                      : "Out of Stock"}
+                    {Number(book.stockQuantity || 0) === 0
+                      ? "Out of Stock"
+                      : Number(book.stockQuantity) <= 5
+                        ? `Low Stock (${book.stockQuantity})`
+                        : `In Stock (${book.stockQuantity})`}
                   </span>
                 </div>
 
@@ -668,7 +672,6 @@ export default function BookDetail() {
 
               <div className="bg-white border border-stone-200/80 rounded-2xl p-5 space-y-4 shadow-sm text-sm">
                 {/* Free Shipping */}
-
 
                 {/* Payment */}
 

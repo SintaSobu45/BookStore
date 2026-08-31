@@ -1,7 +1,7 @@
 import React from 'react';
-import { BookOpen, MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
+import logo from '../assets/logo.png';
 
 export default function Footer() {
   return (
@@ -14,14 +14,14 @@ export default function Footer() {
           {/* Column 1: Brand & Socials */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3 cursor-pointer">
-              <div className="text-emerald-800">
-                <BookOpen className="h-8 w-8" />
-              </div>
+              {/* 500x500 dimension square logo styling */}
+              <img 
+                src={logo} 
+                alt="Logo" 
+                className="object-contain shrink-0" style={{width:"100px"}} 
+              />
               <div>
-                <span className="text-xl font-extrabold tracking-tight text-gray-900 block leading-none">
-                  THE OLD LIBRARY
-                </span>
-                <span className="text-[9px] tracking-widest text-gray-400 font-bold uppercase mt-1 block">
+                <span className="text-[10px] tracking-widest text-gray-500 font-bold uppercase block leading-tight">
                   Online Book Sale & Community Platform
                 </span>
               </div>
@@ -52,17 +52,11 @@ export default function Footer() {
           <div>
             <h4 className="font-bold text-gray-900 text-base mb-4">Quick Links</h4>
             <ul className="space-y-2.5 text-sm">
-              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/'}>Home</Link>
-              </li>
-              {/* books,writers,events,about,contact */}
-              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/all/books'}>books</Link>
-              </li>
-              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/'}>writers</Link>
-              </li>
-              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/events'}>events</Link>
-              </li>
-              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/about'}>about us</Link>
-              </li>
+              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/'}>Home</Link></li>
+              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/all/books'}>Books</Link></li>
+              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/'}>Writers</Link></li>
+              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/events'}>Events</Link></li>
+              <li><Link className="text-gray-600 hover:text-emerald-700 transition-colors" to={'/about'}>About Us</Link></li>
             </ul>
           </div>
 
