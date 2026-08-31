@@ -23,7 +23,14 @@ export default function AdminStoryPoetry() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
+  // =========================================================
+  // PDF / DATE FILTERS
+  // =========================================================
+
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [generatingSinglePdf, setGeneratingSinglePdf] = useState(null);
 
@@ -53,6 +60,23 @@ export default function AdminStoryPoetry() {
   useEffect(() => {
     loadSubmissions();
   }, []);
+
+  // =========================================================
+  // GET DATE ONLY
+  // =========================================================
+  // Converts:
+  // 2026-08-20T10:30:00
+  // into:
+  // 2026-08-20
+  //
+  // This avoids timezone problems when filtering dates.
+  // =========================================================
+
+  const getDateOnly = (date) => {
+    if (!date) return "";
+
+    return String(date).slice(0, 10);
+  };
 
   // =========================================================
   // FORMAT DATE
@@ -109,6 +133,41 @@ export default function AdminStoryPoetry() {
   };
 
   // =========================================================
+  // DATE FILTER LOGIC
+  // =========================================================
+
+  const matchesDateFilter = (item) => {
+    const itemDate = getDateOnly(item.createdDate);
+
+    if (!itemDate) {
+      return false;
+    }
+
+    // ---------------------------------------------------------
+    // MONTH FILTER
+    // ---------------------------------------------------------
+
+    const matchesMonth =
+      !selectedMonth || itemDate.startsWith(selectedMonth);
+
+    // ---------------------------------------------------------
+    // FROM DATE
+    // ---------------------------------------------------------
+
+    const matchesFromDate =
+      !fromDate || itemDate >= fromDate;
+
+    // ---------------------------------------------------------
+    // TO DATE
+    // ---------------------------------------------------------
+
+    const matchesToDate =
+      !toDate || itemDate <= toDate;
+
+    return matchesMonth && matchesFromDate && matchesToDate;
+  };
+
+  // =========================================================
   // FILTER SUBMISSIONS
   // =========================================================
 
@@ -118,17 +177,22 @@ export default function AdminStoryPoetry() {
     // Only show PAID submissions
     const isPaid = item.paymentStatus === "Paid";
 
-    // Search filter
+    // ---------------------------------------------------------
+    // SEARCH
+    // ---------------------------------------------------------
+
     const matchesSearch =
       !search ||
       item.title?.toLowerCase().includes(search) ||
       item.contributorNameMalayalam?.toLowerCase().includes(search);
 
-    // Month filter
-    const matchesMonth =
-      !selectedMonth || item.createdDate?.startsWith(selectedMonth);
+    // ---------------------------------------------------------
+    // DATE FILTER
+    // ---------------------------------------------------------
 
-    return isPaid && matchesSearch && matchesMonth;
+    const matchesDate = matchesDateFilter(item);
+
+    return isPaid && matchesSearch && matchesDate;
   });
 
   // =========================================================
@@ -189,7 +253,10 @@ export default function AdminStoryPoetry() {
 
         document.body.removeChild(link);
       } catch (fallbackError) {
-        console.error("Profile picture fallback failed:", fallbackError);
+        console.error(
+          "Profile picture fallback failed:",
+          fallbackError,
+        );
 
         alert(
           "Unable to download the profile picture. Please check the image URL/CORS settings.",
@@ -258,11 +325,6 @@ export default function AdminStoryPoetry() {
 
     // =========================================================
     // CREATE STORY DOCUMENT
-    //
-    // IMPORTANT:
-    // NO fixed height
-    // NO overflow hidden
-    // NO page-height calculation
     // =========================================================
 
     const createStoryDocument = () => {
@@ -273,17 +335,15 @@ export default function AdminStoryPoetry() {
       page.style.background = "#ffffff";
 
       page.style.padding = `
-      ${MARGIN_TOP}mm
-      ${MARGIN_RIGHT}mm
-      ${MARGIN_BOTTOM}mm
-      ${MARGIN_LEFT}mm
-    `;
+        ${MARGIN_TOP}mm
+        ${MARGIN_RIGHT}mm
+        ${MARGIN_BOTTOM}mm
+        ${MARGIN_LEFT}mm
+      `;
 
       page.style.fontFamily = "'Manjari', sans-serif";
       page.style.color = "#111827";
 
-      // IMPORTANT
-      // Let the document naturally grow as tall as necessary.
       page.style.height = "auto";
       page.style.minHeight = "0";
       page.style.overflow = "visible";
@@ -370,7 +430,8 @@ export default function AdminStoryPoetry() {
       location.style.marginTop = "3px";
 
       location.textContent = `${item.contributorCityMalayalam || ""}${
-        item.contributorCityMalayalam && item.contributorDistrictMalayalam
+        item.contributorCityMalayalam &&
+        item.contributorDistrictMalayalam
           ? ", "
           : ""
       }${item.contributorDistrictMalayalam || ""}`;
@@ -437,13 +498,6 @@ export default function AdminStoryPoetry() {
       content.style.lineHeight = "2";
       content.style.color = "#111827";
 
-      /*
-      Preserve the original line structure.
-
-      Each line gets its own div so poetry line breaks
-      remain exactly like the submitted content.
-    */
-
       const lines = (item.content || "").split(/\r?\n/);
 
       lines.forEach((line) => {
@@ -451,8 +505,6 @@ export default function AdminStoryPoetry() {
 
         element.style.whiteSpace = "pre-wrap";
 
-        // Preserve blank lines.
-        // This gives poems/stories their natural spacing.
         if (line === "") {
           element.style.height = "34px";
         } else {
@@ -476,21 +528,9 @@ export default function AdminStoryPoetry() {
 
       const storyDocument = createStoryDocument();
 
-      // -------------------------------------------------------
-      // HEADER
-      // -------------------------------------------------------
-
       storyDocument.appendChild(createContributorHeader(item));
 
-      // -------------------------------------------------------
-      // TITLE
-      // -------------------------------------------------------
-
       storyDocument.appendChild(createTitle(item));
-
-      // -------------------------------------------------------
-      // FULL CONTENT
-      // -------------------------------------------------------
 
       storyDocument.appendChild(createContent(item));
 
@@ -521,11 +561,7 @@ export default function AdminStoryPoetry() {
       });
 
       // -------------------------------------------------------
-      // CAPTURE THE ENTIRE STORY
-      //
-      // NO page height
-      // NO scrollHeight pagination
-      // NO line-by-line page splitting
+      // CAPTURE COMPLETE STORY
       // -------------------------------------------------------
 
       const canvas = await html2canvas(storyDocument, {
@@ -537,14 +573,6 @@ export default function AdminStoryPoetry() {
         backgroundColor: "#ffffff",
 
         logging: false,
-
-        // We intentionally DO NOT provide:
-        // width
-        // height
-        // windowWidth
-        // windowHeight
-        //
-        // html2canvas will capture the complete element.
       });
 
       return canvas;
@@ -555,25 +583,14 @@ export default function AdminStoryPoetry() {
     // =========================================================
 
     const addCanvasToPDF = (canvas, isFirstPDFPage) => {
-      /*
-      The canvas width represents 210mm.
+      // Keep a small safety margin so Malayalam glyphs are
+      // never cut exactly at the page boundary.
+      const SAFETY_MARGIN_MM = 5;
 
-      Therefore an A4-height slice is:
-
-          canvas.width × (297 / 210)
-
-      pixels.
-
-      Example:
-
-          canvas width = 1190px
-
-          A4 slice height =
-          1190 × 297 / 210
-          ≈ 1683px
-    */
-
-      const sliceHeight = Math.round(canvas.width * (PAGE_HEIGHT / PAGE_WIDTH));
+      const sliceHeight = Math.round(
+        canvas.width *
+          ((PAGE_HEIGHT - SAFETY_MARGIN_MM) / PAGE_WIDTH),
+      );
 
       let sourceY = 0;
       let firstSlice = true;
@@ -581,11 +598,10 @@ export default function AdminStoryPoetry() {
       while (sourceY < canvas.height) {
         const remainingHeight = canvas.height - sourceY;
 
-        const currentSliceHeight = Math.min(sliceHeight, remainingHeight);
-
-        // -----------------------------------------------------
-        // CREATE A SMALL CANVAS FOR THIS PDF PAGE
-        // -----------------------------------------------------
+        const currentSliceHeight = Math.min(
+          sliceHeight,
+          remainingHeight,
+        );
 
         const sliceCanvas = document.createElement("canvas");
 
@@ -610,40 +626,32 @@ export default function AdminStoryPoetry() {
           currentSliceHeight,
         );
 
-        // -----------------------------------------------------
-        // CONVERT SLICE TO IMAGE
-        // -----------------------------------------------------
-
-        const imgData = sliceCanvas.toDataURL("image/jpeg", 0.92);
-
-        // -----------------------------------------------------
-        // ADD PDF PAGE
-        // -----------------------------------------------------
+        const imgData = sliceCanvas.toDataURL(
+          "image/jpeg",
+          0.95,
+        );
 
         if (!isFirstPDFPage || !firstSlice) {
           pdf.addPage();
         }
 
-        // -----------------------------------------------------
-        // KEEP ORIGINAL ASPECT RATIO
-        // -----------------------------------------------------
+        const imageHeight =
+          (currentSliceHeight / canvas.width) * PAGE_WIDTH;
 
-        const imageHeight = (currentSliceHeight / canvas.width) * PAGE_WIDTH;
-
-        pdf.addImage(imgData, "JPEG", 0, 0, PAGE_WIDTH, imageHeight);
-
-        // -----------------------------------------------------
-        // MOVE TO NEXT SLICE
-        // -----------------------------------------------------
+        pdf.addImage(
+          imgData,
+          "JPEG",
+          0,
+          0,
+          PAGE_WIDTH,
+          imageHeight,
+        );
 
         sourceY += currentSliceHeight;
 
         firstSlice = false;
 
-        // -----------------------------------------------------
-        // FREE MEMORY
-        // -----------------------------------------------------
-
+        // Free memory
         sliceCanvas.width = 1;
         sliceCanvas.height = 1;
       }
@@ -680,13 +688,6 @@ export default function AdminStoryPoetry() {
 
         addCanvasToPDF(canvas, isFirstPDFPage);
 
-        // -----------------------------------------------------
-        // AFTER FIRST STORY, ALL FUTURE CONTENT NEEDS A
-        // NEW PDF PAGE.
-        //
-        // addCanvasToPDF() handles that automatically.
-        // -----------------------------------------------------
-
         isFirstPDFPage = false;
 
         // -----------------------------------------------------
@@ -698,10 +699,9 @@ export default function AdminStoryPoetry() {
 
         printContainer.innerHTML = "";
 
-        // Give browser a tiny breathing period between stories.
-        // This helps prevent the browser from appearing frozen
-        // when the monthly PDF contains many submissions.
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        await new Promise((resolve) =>
+          setTimeout(resolve, 20),
+        );
       }
 
       // =======================================================
@@ -723,30 +723,31 @@ export default function AdminStoryPoetry() {
       }
     }
   };
+
   // =========================================================
-  // MONTHLY PDF
+  // GET PDF FILTERED SUBMISSIONS
   // =========================================================
 
-  const handleDownloadMonthlyPDF = async () => {
-    if (!selectedMonth) {
-      alert("Please select a month.");
-      return;
-    }
+  const getPDFSubmissions = () => {
+    return submissions.filter((item) => {
+      if (item.paymentStatus !== "Paid") {
+        return false;
+      }
 
-    const monthlySubmissions = submissions.filter(
-      (item) =>
-        item.paymentStatus === "Paid" &&
-        item.createdDate?.startsWith(selectedMonth),
-    );
+      return matchesDateFilter(item);
+    });
+  };
 
-    if (monthlySubmissions.length === 0) {
-      alert("No submissions found for the selected month.");
-      return;
-    }
+  // =========================================================
+  // GET PDF FILE NAME
+  // =========================================================
 
-    try {
-      setGeneratingPdf(true);
+  const getPDFFilename = () => {
+    // ---------------------------------------------------------
+    // MONTH
+    // ---------------------------------------------------------
 
+    if (selectedMonth && !fromDate && !toDate) {
       const [year, month] = selectedMonth.split("-");
 
       const monthName = new Date(
@@ -757,14 +758,92 @@ export default function AdminStoryPoetry() {
         year: "numeric",
       });
 
-      await generatePDF(
-        monthlySubmissions,
-        `Story-Poetry-${monthName.replace(" ", "-")}.pdf`,
-      );
-    } catch (error) {
-      console.error("Monthly PDF generation failed:", error);
+      return `Story-Poetry-${monthName.replace(" ", "-")}.pdf`;
+    }
 
-      alert("Failed to generate monthly PDF. Please try again.");
+    // ---------------------------------------------------------
+    // FROM + TO
+    // ---------------------------------------------------------
+
+    if (fromDate && toDate) {
+      return `Story-Poetry-${fromDate}-to-${toDate}.pdf`;
+    }
+
+    // ---------------------------------------------------------
+    // ONLY FROM
+    // ---------------------------------------------------------
+
+    if (fromDate) {
+      return `Story-Poetry-from-${fromDate}.pdf`;
+    }
+
+    // ---------------------------------------------------------
+    // ONLY TO
+    // ---------------------------------------------------------
+
+    if (toDate) {
+      return `Story-Poetry-until-${toDate}.pdf`;
+    }
+
+    // ---------------------------------------------------------
+    // FALLBACK
+    // ---------------------------------------------------------
+
+    return "Story-Poetry-Submissions.pdf";
+  };
+
+  // =========================================================
+  // MONTHLY / DATE RANGE PDF
+  // =========================================================
+
+  const handleDownloadMonthlyPDF = async () => {
+    // ---------------------------------------------------------
+    // VALIDATE DATE RANGE
+    // ---------------------------------------------------------
+
+    if (fromDate && toDate && fromDate > toDate) {
+      alert("From date cannot be after To date.");
+      return;
+    }
+
+    // ---------------------------------------------------------
+    // CHECK WHETHER ANY FILTER IS SELECTED
+    // ---------------------------------------------------------
+
+    if (!selectedMonth && !fromDate && !toDate) {
+      alert(
+        "Please select a month or choose a From / To date range.",
+      );
+
+      return;
+    }
+
+    // ---------------------------------------------------------
+    // GET FILTERED SUBMISSIONS
+    // ---------------------------------------------------------
+
+    const pdfSubmissions = getPDFSubmissions();
+
+    if (pdfSubmissions.length === 0) {
+      alert("No paid submissions found for the selected period.");
+      return;
+    }
+
+    try {
+      setGeneratingPdf(true);
+
+      const fileName = getPDFFilename();
+
+      await generatePDF(pdfSubmissions, fileName);
+    } catch (error) {
+      console.error(
+        "Monthly/date range PDF generation failed:",
+        error,
+      );
+
+      alert(
+        "Failed to generate PDF. Please try again.",
+      );
     } finally {
       setGeneratingPdf(false);
     }
@@ -803,6 +882,17 @@ export default function AdminStoryPoetry() {
   };
 
   // =========================================================
+  // CLEAR FILTERS
+  // =========================================================
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedMonth("");
+    setFromDate("");
+    setToDate("");
+  };
+
+  // =========================================================
   // OPEN STORY
   // =========================================================
 
@@ -826,7 +916,8 @@ export default function AdminStoryPoetry() {
         </h1>
 
         <p className="text-sm text-stone-500 mt-1">
-          View all Story, Poetry and Special submissions from contributors.
+          View all Story, Poetry and Special submissions from
+          contributors.
         </p>
       </div>
 
@@ -860,10 +951,13 @@ export default function AdminStoryPoetry() {
         <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
           <BookOpen className="h-10 w-10 mx-auto text-stone-300 mb-3" />
 
-          <h3 className="font-bold text-gray-900">No submissions found</h3>
+          <h3 className="font-bold text-gray-900">
+            No submissions found
+          </h3>
 
           <p className="text-sm text-stone-500 mt-1">
-            There are currently no Story, Poetry or Special submissions.
+            There are currently no Story, Poetry or Special
+            submissions.
           </p>
         </div>
       ) : (
@@ -873,59 +967,41 @@ export default function AdminStoryPoetry() {
 
         <div className="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
           {/* =================================================
-              SEARCH & MONTH FILTER HEADER
+              SEARCH & FILTER HEADER
           ================================================= */}
 
           <div className="px-5 py-4 border-b border-stone-200">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              {/* LEFT SIDE */}
+            <div className="flex flex-col gap-4">
+              {/* =================================================
+                  TOP ROW
+              ================================================= */}
 
-              <div>
-                <h2 className="text-base font-bold text-gray-900">
-                  All Submissions
-                </h2>
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                {/* LEFT SIDE */}
 
-                <p className="text-xs text-stone-500 mt-0.5">
-                  {filteredSubmissions.length} submission
-                  {filteredSubmissions.length !== 1 ? "s" : ""} found
-                </p>
-              </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">
+                    All Submissions
+                  </h2>
 
-              {/* RIGHT SIDE */}
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    {filteredSubmissions.length} submission
+                    {filteredSubmissions.length !== 1
+                      ? "s"
+                      : ""}{" "}
+                    found
+                  </p>
+                </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                {/* MONTH SELECTOR */}
+                {/* SEARCH */}
 
-                <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="
-                    w-full
-                    sm:w-auto
-                    px-4
-                    py-2.5
-                    rounded-xl
-                    border
-                    border-stone-200
-                    bg-stone-50
-                    text-sm
-                    text-gray-700
-                    outline-none
-                    focus:bg-white
-                    focus:border-emerald-900
-                    focus:ring-2
-                    focus:ring-emerald-900/10
-                  "
-                />
-
-                {/* SEARCH BAR */}
-
-                <div className="relative w-full sm:w-80">
+                <div className="relative w-full lg:w-80">
                   <input
                     type="text"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) =>
+                      setSearchTerm(e.target.value)
+                    }
                     placeholder="Search title or contributor..."
                     className="
                       w-full
@@ -966,48 +1042,234 @@ export default function AdminStoryPoetry() {
                     </button>
                   )}
                 </div>
+              </div>
 
+              {/* =================================================
+                  DATE FILTERS
+              ================================================= */}
+
+              <div className="flex flex-col xl:flex-row gap-3">
                 {/* =================================================
-                    MONTHLY PDF
+                    MONTH
                 ================================================= */}
 
-                <button
-                  type="button"
-                  disabled={!selectedMonth || generatingPdf}
-                  onClick={handleDownloadMonthlyPDF}
-                  className="
-                    flex
-                    items-center
-                    justify-center
-                    gap-2
-                    px-4
-                    py-2.5
-                    rounded-xl
-                    bg-[#1b3b2b]
-                    hover:bg-emerald-950
-                    disabled:bg-stone-300
-                    disabled:cursor-not-allowed
-                    text-white
-                    text-sm
-                    font-bold
-                    whitespace-nowrap
-                    cursor-pointer
-                    transition-colors
-                  "
-                >
-                  {generatingPdf ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4" />
-                      Monthly PDF
-                    </>
-                  )}
-                </button>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">
+                    Month
+                  </label>
+
+                  <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={(e) =>
+                      setSelectedMonth(e.target.value)
+                    }
+                    className="
+                      w-full
+                      xl:w-44
+                      px-4
+                      py-2.5
+                      rounded-xl
+                      border
+                      border-stone-200
+                      bg-stone-50
+                      text-sm
+                      text-gray-700
+                      outline-none
+                      focus:bg-white
+                      focus:border-emerald-900
+                      focus:ring-2
+                      focus:ring-emerald-900/10
+                    "
+                  />
+                </div>
+
+                {/* =================================================
+                    FROM DATE
+                ================================================= */}
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">
+                    From Date
+                  </label>
+
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) =>
+                      setFromDate(e.target.value)
+                    }
+                    className="
+                      w-full
+                      xl:w-44
+                      px-4
+                      py-2.5
+                      rounded-xl
+                      border
+                      border-stone-200
+                      bg-stone-50
+                      text-sm
+                      text-gray-700
+                      outline-none
+                      focus:bg-white
+                      focus:border-emerald-900
+                      focus:ring-2
+                      focus:ring-emerald-900/10
+                    "
+                  />
+                </div>
+
+                {/* =================================================
+                    TO DATE
+                ================================================= */}
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">
+                    To Date
+                  </label>
+
+                  <input
+                    type="date"
+                    value={toDate}
+                    min={fromDate || undefined}
+                    onChange={(e) =>
+                      setToDate(e.target.value)
+                    }
+                    className="
+                      w-full
+                      xl:w-44
+                      px-4
+                      py-2.5
+                      rounded-xl
+                      border
+                      border-stone-200
+                      bg-stone-50
+                      text-sm
+                      text-gray-700
+                      outline-none
+                      focus:bg-white
+                      focus:border-emerald-900
+                      focus:ring-2
+                      focus:ring-emerald-900/10
+                    "
+                  />
+                </div>
+
+                {/* =================================================
+                    CLEAR FILTERS
+                ================================================= */}
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="
+                      w-full
+                      xl:w-auto
+                      px-4
+                      py-2.5
+                      rounded-xl
+                      border
+                      border-stone-200
+                      bg-white
+                      hover:bg-stone-100
+                      text-stone-700
+                      text-sm
+                      font-bold
+                      cursor-pointer
+                      transition-colors
+                    "
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                {/* =================================================
+                    PDF BUTTON
+                ================================================= */}
+
+                <div className="flex items-end xl:ml-auto">
+                  <button
+                    type="button"
+                    disabled={
+                      (!selectedMonth &&
+                        !fromDate &&
+                        !toDate) ||
+                      generatingPdf
+                    }
+                    onClick={handleDownloadMonthlyPDF}
+                    className="
+                      w-full
+                      xl:w-auto
+                      flex
+                      items-center
+                      justify-center
+                      gap-2
+                      px-5
+                      py-2.5
+                      rounded-xl
+                      bg-[#1b3b2b]
+                      hover:bg-emerald-950
+                      disabled:bg-stone-300
+                      disabled:cursor-not-allowed
+                      text-white
+                      text-sm
+                      font-bold
+                      whitespace-nowrap
+                      cursor-pointer
+                      transition-colors
+                    "
+                  >
+                    {generatingPdf ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+
+                        Download PDF
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {/* =================================================
+                  FILTER INFO
+              ================================================= */}
+
+              {(selectedMonth || fromDate || toDate) && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-semibold text-stone-500">
+                    Active filter:
+                  </span>
+
+                  {selectedMonth && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+                      Month: {selectedMonth}
+                    </span>
+                  )}
+
+                  {fromDate && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
+                      From: {formatDate(fromDate)}
+                    </span>
+                  )}
+
+                  {toDate && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-100 text-purple-800 font-bold">
+                      To: {formatDate(toDate)}
+                    </span>
+                  )}
+
+                  <span className="text-stone-400">
+                    Only paid submissions are included in PDF.
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1019,18 +1281,17 @@ export default function AdminStoryPoetry() {
             <div className="py-16 px-6 text-center">
               <BookOpen className="h-10 w-10 mx-auto text-stone-300 mb-3" />
 
-              <h3 className="font-bold text-gray-900">No submissions found</h3>
+              <h3 className="font-bold text-gray-900">
+                No submissions found
+              </h3>
 
               <p className="text-sm text-stone-500 mt-1">
-                No submissions match "{searchTerm}".
+                No submissions match the selected filters.
               </p>
 
               <button
                 type="button"
-                onClick={() => {
-                  setSearchTerm("");
-                  setSelectedMonth("");
-                }}
+                onClick={clearFilters}
                 className="
                   mt-4
                   px-4
@@ -1081,7 +1342,6 @@ export default function AdminStoryPoetry() {
                       Submitted
                     </th>
 
-                    {/* ACTIONS */}
                     <th className="text-right px-5 py-4 font-bold text-gray-700">
                       Downloads
                     </th>
@@ -1096,7 +1356,9 @@ export default function AdminStoryPoetry() {
                   {filteredSubmissions.map((item) => (
                     <tr
                       key={item.storyPoetryId}
-                      onClick={() => handleOpenStory(item)}
+                      onClick={() =>
+                        handleOpenStory(item)
+                      }
                       className="
                         group
                         hover:bg-emerald-50/60
@@ -1183,7 +1445,9 @@ export default function AdminStoryPoetry() {
                       <td className="px-5 py-4">
                         <div
                           className="flex justify-end items-center gap-2"
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) =>
+                            e.stopPropagation()
+                          }
                         >
                           {/* =================================================
                               PROFILE PICTURE DOWNLOAD
@@ -1191,10 +1455,15 @@ export default function AdminStoryPoetry() {
 
                           <button
                             type="button"
-                            disabled={!item.contributorProfileImageUrl}
+                            disabled={
+                              !item.contributorProfileImageUrl
+                            }
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDownloadProfilePicture(item);
+
+                              handleDownloadProfilePicture(
+                                item,
+                              );
                             }}
                             title={
                               item.contributorProfileImageUrl
@@ -1225,7 +1494,9 @@ export default function AdminStoryPoetry() {
                           >
                             <ImageDown className="h-4 w-4" />
 
-                            <span className="hidden xl:inline">Photo</span>
+                            <span className="hidden xl:inline">
+                              Photo
+                            </span>
                           </button>
 
                           {/* =================================================
@@ -1235,11 +1506,15 @@ export default function AdminStoryPoetry() {
                           <button
                             type="button"
                             disabled={
-                              generatingSinglePdf === item.storyPoetryId
+                              generatingSinglePdf ===
+                              item.storyPoetryId
                             }
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDownloadSinglePDF(item);
+
+                              handleDownloadSinglePDF(
+                                item,
+                              );
                             }}
                             title="Download this submission as PDF"
                             className="
@@ -1261,7 +1536,8 @@ export default function AdminStoryPoetry() {
                               transition-colors
                             "
                           >
-                            {generatingSinglePdf === item.storyPoetryId ? (
+                            {generatingSinglePdf ===
+                            item.storyPoetryId ? (
                               <>
                                 <Loader2 className="h-4 w-4 animate-spin" />
 
@@ -1273,7 +1549,9 @@ export default function AdminStoryPoetry() {
                               <>
                                 <FileDown className="h-4 w-4" />
 
-                                <span className="hidden xl:inline">PDF</span>
+                                <span className="hidden xl:inline">
+                                  PDF
+                                </span>
                               </>
                             )}
                           </button>
