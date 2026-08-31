@@ -261,7 +261,7 @@ export default function EventRegistration() {
 
         currency: "INR",
 
-        name: "BookStore",
+        name: "The Old Library",
 
         description: event.eventName,
 

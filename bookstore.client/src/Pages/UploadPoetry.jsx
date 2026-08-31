@@ -448,7 +448,7 @@ export default function UploadPoetry() {
 
         currency: "INR",
 
-        name: "BookStore",
+        name: "The Old Library",
 
         description: `${contentType} Submission Payment`,
 

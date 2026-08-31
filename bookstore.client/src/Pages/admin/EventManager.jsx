@@ -87,7 +87,16 @@ function EventManager() {
 
       console.log("All event registrations:", data);
 
-      setRegistrations(data);
+      // Only show successful/paid registrations
+      const paidRegistrations = data.filter((registration) => {
+        const status = registration.paymentStatus?.toLowerCase();
+
+        return status === "paid" || status === "completed";
+      });
+
+      console.log("Paid registrations:", paidRegistrations);
+
+      setRegistrations(paidRegistrations);
     } catch (error) {
       console.error("Failed to load registrations:", error);
 
@@ -190,7 +199,11 @@ function EventManager() {
 
     const event = registration.eventName?.toLowerCase() || "";
 
-    return userName.includes(searchTerm) || email.includes(searchTerm) || event.includes(searchTerm);
+    return (
+      userName.includes(searchTerm) ||
+      email.includes(searchTerm) ||
+      event.includes(searchTerm)
+    );
   });
 
   // =====================================================
@@ -381,8 +394,6 @@ function EventManager() {
             />
           </div>
 
-
-
           {/* =====================================================
         LOADING
     ===================================================== */}
@@ -549,30 +560,29 @@ function EventManager() {
                     </tbody>
                   </table>
                 </div>
-
-              
               </div>
             )}
 
-              {/* =====================================================
+          {/* =====================================================
               TOTAL AMOUNT
           ===================================================== */}
 
-                <div className="border-t border-gray-200 bg-gray-50 px-6 py-5 flex flex-col sm:flex-row justify-between sm:items-center gap-3" style={{marginTop:"50px"}}>
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Total Amount Received
-                    </p>
+          <div
+            className="border-t border-gray-200 bg-gray-50 px-6 py-5 flex flex-col sm:flex-row justify-between sm:items-center gap-3"
+            style={{ marginTop: "50px" }}
+          >
+            <div>
+              <p className="text-sm text-gray-500">Total Amount Received</p>
 
-                    <p className="text-xs text-gray-400 mt-1">
-                      From all event registrations
-                    </p>
-                  </div>
+              <p className="text-xs text-gray-400 mt-1">
+                From all event registrations
+              </p>
+            </div>
 
-                  <p className="text-2xl font-bold text-green-700">
-                    ₹{totalEventAmount.toLocaleString("en-IN")}
-                  </p>
-                </div>
+            <p className="text-2xl font-bold text-green-700">
+              ₹{totalEventAmount.toLocaleString("en-IN")}
+            </p>
+          </div>
         </>
       )}
 
