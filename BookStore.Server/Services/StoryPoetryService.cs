@@ -89,12 +89,7 @@ namespace BookStore.Server.Services
                     "Contributor Malayalam name is required.");
             }
 
-            if (string.IsNullOrWhiteSpace(
-                contributorAddressMalayalam))
-            {
-                throw new ArgumentException(
-                    "Contributor Malayalam address is required.");
-            }
+            
 
             if (string.IsNullOrWhiteSpace(
                 contributorDistrictMalayalam))
