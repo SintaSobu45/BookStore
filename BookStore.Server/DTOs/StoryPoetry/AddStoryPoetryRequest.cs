@@ -34,10 +34,8 @@ namespace BookStore.Server.DTOs.StoryPoetry
         public string ContributorNameMalayalam { get; set; } = string.Empty;
 
 
-        [Required]
         [StringLength(500)]
-        public string ContributorAddressMalayalam { get; set; } = string.Empty;
-
+        public string? ContributorAddressMalayalam { get; set; }
 
         [Required]
         [StringLength(100)]

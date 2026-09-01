@@ -98,6 +98,13 @@ namespace BookStore.Server.Models
 
         public bool IsActive { get; set; } = true;
 
+        // EMAIL VERIFICATION
+        public bool EmailVerified { get; set; } = false;
+
+        public string? EmailVerificationOtp { get; set; }
+
+        public DateTime? EmailVerificationOtpExpiry { get; set; }
+
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedDate { get; set; }
