@@ -55,10 +55,8 @@ namespace BookStore.Server.Models
         [StringLength(200)]
         public string ContributorNameMalayalam { get; set; } = string.Empty;
 
-
-        [Required]
         [StringLength(500)]
-        public string ContributorAddressMalayalam { get; set; } = string.Empty;
+        public string? ContributorAddressMalayalam { get; set; }
 
 
         [Required]
@@ -69,6 +67,7 @@ namespace BookStore.Server.Models
         [Required]
         [StringLength(100)]
         public string ContributorCityMalayalam { get; set; } = string.Empty;
+
 
 
         [Required]

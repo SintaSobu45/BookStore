@@ -15,11 +15,17 @@ namespace BookStore.Server.Controllers
             _accountService = accountService;
         }
 
-        // Register
+
+        // =========================================================
+        // REGISTER
+        // =========================================================
+
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterRequest request)
+        public async Task<IActionResult> Register(
+            RegisterRequest request)
         {
-            var result = await _accountService.RegisterAsync(request);
+            var result =
+                await _accountService.RegisterAsync(request);
 
             if (!result)
             {
@@ -31,25 +37,126 @@ namespace BookStore.Server.Controllers
 
             return Ok(new
             {
-                message = "Registration successful."
+                message =
+                    "Registration successful. Please check your email for the OTP."
             });
         }
 
-        // Login
-        [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginRequest request)
-        {
-            var result = await _accountService.LoginAsync(request);
 
-            if (result == null)
+        // =========================================================
+        // VERIFY EMAIL OTP
+        // =========================================================
+
+        [HttpPost("verify-email")]
+        public async Task<IActionResult> VerifyEmail(
+            VerifyEmailRequest request)
+        {
+            var result =
+                await _accountService.VerifyEmailAsync(request);
+
+            if (result == "User not found.")
             {
-                return Unauthorized(new
+                return NotFound(new
                 {
-                    message = "Invalid email or password."
+                    message = result
                 });
             }
 
-            return Ok(result);
+            if (result == "Email is already verified.")
+            {
+                return BadRequest(new
+                {
+                    message = result
+                });
+            }
+
+            if (result == "Invalid OTP.")
+            {
+                return BadRequest(new
+                {
+                    message = result
+                });
+            }
+
+            if (result == "OTP has expired.")
+            {
+                return BadRequest(new
+                {
+                    message = result
+                });
+            }
+
+            return Ok(new
+            {
+                message = result
+            });
+        }
+
+
+        // =========================================================
+        // RESEND OTP
+        // =========================================================
+
+        [HttpPost("resend-otp")]
+        public async Task<IActionResult> ResendOtp(
+            ResendOtpRequest request)
+        {
+            var result =
+                await _accountService.ResendOtpAsync(request);
+
+            if (result == "User not found.")
+            {
+                return NotFound(new
+                {
+                    message = result
+                });
+            }
+
+            if (result == "Email is already verified.")
+            {
+                return BadRequest(new
+                {
+                    message = result
+                });
+            }
+
+            return Ok(new
+            {
+                message = result
+            });
+        }
+
+
+        // =========================================================
+        // LOGIN
+        // =========================================================
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(
+            LoginRequest request)
+        {
+            try
+            {
+                var result =
+                    await _accountService.LoginAsync(request);
+
+                if (result == null)
+                {
+                    return Unauthorized(new
+                    {
+                        message = "Invalid email or password."
+                    });
+                }
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
     }
 }

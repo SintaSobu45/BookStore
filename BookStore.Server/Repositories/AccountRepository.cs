@@ -13,6 +13,7 @@ namespace BookStore.Server.Repositories
             _context = context;
         }
 
+
         // =========================================================
         // CHECK IF EMAIL ALREADY EXISTS
         // =========================================================
@@ -61,6 +62,7 @@ namespace BookStore.Server.Repositories
 
         // =========================================================
         // SAVE CHANGES
+        // Used for email verification and OTP updates
         // =========================================================
 
         public async Task SaveChangesAsync()
