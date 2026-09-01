@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Lock,
   User,
-  MapPin,
   Mail,
   Phone,
   Loader2,
@@ -54,9 +53,6 @@ export default function UploadPoetry() {
   // =========================================================
 
   const [contributorNameMalayalam, setContributorNameMalayalam] = useState("");
-
-  const [contributorAddressMalayalam, setContributorAddressMalayalam] =
-    useState("");
 
   const [contributorDistrictMalayalam, setContributorDistrictMalayalam] =
     useState("");
@@ -589,13 +585,6 @@ export default function UploadPoetry() {
     }
 
     if (
-      contributorAddressMalayalam.trim() &&
-      !isMalayalamText(contributorAddressMalayalam)
-    ) {
-      errors.contributorAddressMalayalam = "മലയാളത്തിൽ മാത്രം നൽകുക.";
-    }
-
-    if (
       contributorDistrictMalayalam.trim() &&
       !isMalayalamText(contributorDistrictMalayalam)
     ) {
@@ -637,15 +626,6 @@ export default function UploadPoetry() {
 
     if (!contributorNameMalayalam.trim()) {
       errors.contributorNameMalayalam = "* Please enter contributor name.";
-    }
-
-    // =======================================================
-    // ADDRESS
-    // =======================================================
-
-    if (!contributorAddressMalayalam.trim()) {
-      errors.contributorAddressMalayalam =
-        "* Please enter contributor address.";
     }
 
     // =======================================================
@@ -757,8 +737,6 @@ export default function UploadPoetry() {
         content: content.trim(),
 
         contributorNameMalayalam: contributorNameMalayalam.trim(),
-
-        contributorAddressMalayalam: contributorAddressMalayalam.trim(),
 
         contributorDistrictMalayalam: contributorDistrictMalayalam.trim(),
 
@@ -874,8 +852,6 @@ export default function UploadPoetry() {
       content,
 
       contributorNameMalayalam,
-
-      contributorAddressMalayalam,
 
       contributorDistrictMalayalam,
 
@@ -1217,7 +1193,7 @@ export default function UploadPoetry() {
                 <div className="lg:col-span-4 bg-white border border-stone-200/80 rounded-3xl p-5 shadow-sm">
                   <div className="mb-4">
                     <h3 className="font-bold text-gray-900 text-sm">
-                      2. Contributor Details
+                      2. Author Details
                     </h3>
 
                     <p className="text-[11px] text-stone-500">
@@ -1269,7 +1245,7 @@ export default function UploadPoetry() {
 
                     {/* ADDRESS */}
 
-                    <div>
+                    {/* <div>
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                         വിലാസം
                         <span className="text-red-500"> *</span>
@@ -1306,7 +1282,7 @@ export default function UploadPoetry() {
                           {fieldErrors.contributorAddressMalayalam}
                         </p>
                       )}
-                    </div>
+                    </div> */}
 
                     {/* DISTRICT + CITY */}
 
@@ -1473,7 +1449,6 @@ export default function UploadPoetry() {
                     </div>
 
                     {/* PROFILE IMAGE */}
-
                     <div>
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                         പ്രൊഫൈൽ ചിത്രം
@@ -1516,6 +1491,11 @@ export default function UploadPoetry() {
                           />
                         </label>
                       </div>
+
+                      {/* Image requirement */}
+                      <p className="text-[9px] text-red-600 mt-1.5 font-medium">
+                          ⚠ Please upload a clear, high-quality profile image with a plain/no background.
+                      </p>
 
                       {fieldErrors.contributorProfileImage && (
                         <p className="text-[10px] text-red-500 mt-1 font-medium">
@@ -1856,16 +1836,18 @@ export default function UploadPoetry() {
             <div className="whitespace-nowrap">
               <marquee
                 className="
-            inline-block
-            animate-[marquee_18s_linear_infinite]
+            inline-flex
+            animate
             text-sm
             font-semibold
             text-red-700
           "
+                scrollamount="8"
               >
-                After successful payment, your receipt and certificate will be
-                sent to your registered email address soon. Please check your
-                email eventually, including your spam or junk folder.
+                നിങ്ങൾ തിരഞ്ഞെടുക്കപ്പെട്ടാൽ, കുറച്ച് സമയത്തിനുശേഷം ഒരു ഇമെയിൽ
+                ലഭിക്കുന്നതാണ്. ആ ഇമെയിലിൽ നൽകിയിരിക്കുന്ന നിർദ്ദേശങ്ങൾ
+                അനുസരിച്ച് നിങ്ങൾക്ക് പേയ്‌മെന്റ് നടത്താവുന്നതാണ്. ദയവായി
+                നിങ്ങളുടെ ഇമെയിലും സ്പാം/ജങ്ക് ഫോൾഡറും പരിശോധിക്കുക.
               </marquee>
             </div>
           </div>
