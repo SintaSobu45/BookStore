@@ -15,7 +15,6 @@ namespace BookStore.Server.Controllers
             _accountService = accountService;
         }
 
-
         // =========================================================
         // REGISTER
         // =========================================================
@@ -24,10 +23,10 @@ namespace BookStore.Server.Controllers
         public async Task<IActionResult> Register(
             RegisterRequest request)
         {
-            var result =
+            var registrationToken =
                 await _accountService.RegisterAsync(request);
 
-            if (!result)
+            if (registrationToken == null)
             {
                 return BadRequest(new
                 {
@@ -38,7 +37,9 @@ namespace BookStore.Server.Controllers
             return Ok(new
             {
                 message =
-                    "Registration successful. Please check your email for the OTP."
+                    "Registration started. Please check your email for the OTP.",
+
+                registrationToken = registrationToken
             });
         }
 
@@ -54,15 +55,8 @@ namespace BookStore.Server.Controllers
             var result =
                 await _accountService.VerifyEmailAsync(request);
 
-            if (result == "User not found.")
-            {
-                return NotFound(new
-                {
-                    message = result
-                });
-            }
-
-            if (result == "Email is already verified.")
+            if (result ==
+                "Invalid or expired registration token.")
             {
                 return BadRequest(new
                 {
@@ -79,6 +73,22 @@ namespace BookStore.Server.Controllers
             }
 
             if (result == "OTP has expired.")
+            {
+                return BadRequest(new
+                {
+                    message = result
+                });
+            }
+
+            if (result == "Email already exists.")
+            {
+                return BadRequest(new
+                {
+                    message = result
+                });
+            }
+
+            if (result == "User role not found.")
             {
                 return BadRequest(new
                 {
@@ -104,15 +114,16 @@ namespace BookStore.Server.Controllers
             var result =
                 await _accountService.ResendOtpAsync(request);
 
-            if (result == "User not found.")
+            if (result == null)
             {
-                return NotFound(new
+                return BadRequest(new
                 {
-                    message = result
+                    message =
+                        "Invalid or expired registration token."
                 });
             }
 
-            if (result == "Email is already verified.")
+            if (result == "Email already exists.")
             {
                 return BadRequest(new
                 {
@@ -122,7 +133,10 @@ namespace BookStore.Server.Controllers
 
             return Ok(new
             {
-                message = result
+                message =
+                    "New OTP sent successfully.",
+
+                registrationToken = result
             });
         }
 
@@ -144,7 +158,8 @@ namespace BookStore.Server.Controllers
                 {
                     return Unauthorized(new
                     {
-                        message = "Invalid email or password."
+                        message =
+                            "Invalid email or password."
                     });
                 }
 

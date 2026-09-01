@@ -20,6 +20,9 @@ namespace BookStore.Server
             // Add Controllers
             builder.Services.AddControllers();
 
+            // Data Protection
+            builder.Services.AddDataProtection();
+
             // CORS
             builder.Services.AddCors(options =>
             {
@@ -158,7 +161,9 @@ namespace BookStore.Server
             builder.Services.AddScoped<BookInvoiceService>();
 
             builder.Services.AddScoped<CertificateService>();
-            
+
+            builder.Services.AddScoped<RegistrationTokenService>();
+
 
 
             // JWT Authentication

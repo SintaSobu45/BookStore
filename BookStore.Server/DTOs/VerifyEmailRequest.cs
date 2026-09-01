@@ -5,8 +5,7 @@ namespace BookStore.Server.DTOs
     public class VerifyEmailRequest
     {
         [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        public string RegistrationToken { get; set; } = string.Empty;
 
         [Required]
         [StringLength(6, MinimumLength = 6)]

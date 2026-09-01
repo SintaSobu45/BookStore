@@ -11,17 +11,20 @@ namespace BookStore.Server.Services
         private readonly PasswordHasher _passwordHasher;
         private readonly JwtHelper _jwtHelper;
         private readonly EmailService _emailService;
+        private readonly RegistrationTokenService _registrationTokenService;
 
         public AccountService(
             AccountRepository repository,
             PasswordHasher passwordHasher,
             JwtHelper jwtHelper,
-            EmailService emailService)
+            EmailService emailService,
+            RegistrationTokenService registrationTokenService)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
             _jwtHelper = jwtHelper;
             _emailService = emailService;
+            _registrationTokenService = registrationTokenService;
         }
 
 
@@ -29,73 +32,96 @@ namespace BookStore.Server.Services
         // REGISTER USER
         // =========================================================
 
-        public async Task<bool> RegisterAsync(
+        public async Task<string?> RegisterAsync(
             RegisterRequest request)
         {
-            // Check if email already exists
+            // =====================================================
+            // CHECK EMAIL
+            // =====================================================
+
             if (await _repository.EmailExistsAsync(request.Email))
             {
-                return false;
+                return null;
             }
 
 
-            // Get User Role
-            var userRole =
-                await _repository.GetRoleByNameAsync("User");
+            // =====================================================
+            // GENERATE OTP
+            // =====================================================
 
-            if (userRole == null)
-            {
-                return false;
-            }
-
-
-            // Generate 6-digit OTP
             var otp =
-                Random.Shared.Next(100000, 1000000).ToString();
+                Random.Shared
+                    .Next(100000, 1000000)
+                    .ToString();
 
 
-            // Create User
-            var user = new User
+            // =====================================================
+            // CREATE TEMPORARY USER OBJECT
+            // =====================================================
+
+            var temporaryUser = new User
             {
                 Name = request.Name,
-
                 Email = request.Email,
-
-                Phone = request.Phone,
-
-                RoleId = userRole.RoleId,
-
-                IsActive = true,
-
-                EmailVerified = false,
-
-                EmailVerificationOtp = otp,
-
-                EmailVerificationOtpExpiry =
-                    DateTime.UtcNow.AddMinutes(5),
-
-                CreatedDate = DateTime.UtcNow
+                Phone = request.Phone
             };
 
 
-            // Hash Password
-            user.PasswordHash =
+            // =====================================================
+            // HASH PASSWORD
+            // =====================================================
+
+            var passwordHash =
                 _passwordHasher.HashPassword(
-                    user,
+                    temporaryUser,
                     request.Password
                 );
 
 
-            // Save User
-            await _repository.AddUserAsync(user);
+            // =====================================================
+            // CREATE PENDING REGISTRATION
+            //
+            // This is NOT saved to database.
+            // =====================================================
+
+            var pendingRegistration =
+                new PendingRegistration
+                {
+                    Name = request.Name,
+
+                    Email = request.Email,
+
+                    Phone = request.Phone,
+
+                    PasswordHash = passwordHash,
+
+                    Otp = otp,
+
+                    OtpExpiry =
+                        DateTime.UtcNow.AddMinutes(5)
+                };
 
 
-            // Send OTP Email
+            // =====================================================
+            // CREATE ENCRYPTED TOKEN
+            // =====================================================
+
+            var registrationToken =
+                _registrationTokenService.CreateToken(
+                    pendingRegistration
+                );
+
+
+            // =====================================================
+            // SEND OTP EMAIL
+            // =====================================================
+
             var emailBody = $@"
                 <div style='font-family: Arial, sans-serif;'>
+                    
                     <h2>Email Verification</h2>
 
-                    <p>Hello {user.Name},</p>
+                    <p>Hello {request.Name},</p>
 
                     <p>
                         Thank you for registering with
@@ -119,16 +145,23 @@ namespace BookStore.Server.Services
                         If you did not create this account,
                         please ignore this email.
                     </p>
+
                 </div>
             ";
 
+
             await _emailService.SendEmailAsync(
-                user.Email,
+                request.Email,
                 "Email Verification OTP - The Old Library",
                 emailBody
             );
 
-            return true;
+
+            // =====================================================
+            // RETURN TOKEN
+            // =====================================================
+
+            return registrationToken;
         }
 
 
@@ -139,52 +172,153 @@ namespace BookStore.Server.Services
         public async Task<string> VerifyEmailAsync(
             VerifyEmailRequest request)
         {
-            var user =
-                await _repository.GetUserByEmailAsync(
-                    request.Email);
+            // =====================================================
+            // READ / DECRYPT TOKEN
+            // =====================================================
 
-            if (user == null)
+            var pendingRegistration =
+                _registrationTokenService.ReadToken(
+                    request.RegistrationToken
+                );
+
+
+            if (pendingRegistration == null)
             {
-                return "User not found.";
+                return "Invalid or expired registration token.";
             }
 
 
-            // Already verified
-            if (user.EmailVerified)
-            {
-                return "Email is already verified.";
-            }
+            // =====================================================
+            // CHECK TOKEN EXPIRY
+            // =====================================================
 
-
-            // Check OTP
-            if (user.EmailVerificationOtp != request.Otp)
-            {
-                return "Invalid OTP.";
-            }
-
-
-            // Check expiry
-            if (user.EmailVerificationOtpExpiry == null ||
-                user.EmailVerificationOtpExpiry < DateTime.UtcNow)
+            if (pendingRegistration.OtpExpiry <
+                DateTime.UtcNow)
             {
                 return "OTP has expired.";
             }
 
 
-            // Verify email
-            user.EmailVerified = true;
+            // =====================================================
+            // CHECK OTP
+            // =====================================================
 
-            user.EmailVerificationOtp = null;
-
-            user.EmailVerificationOtpExpiry = null;
-
-            user.UpdatedDate = DateTime.UtcNow;
-
-
-            await _repository.SaveChangesAsync();
+            if (pendingRegistration.Otp != request.Otp)
+            {
+                return "Invalid OTP.";
+            }
 
 
-            return "Email verified successfully.";
+            // =====================================================
+            // CHECK EMAIL AGAIN
+            //
+            // Prevent duplicate account creation.
+            // =====================================================
+
+            if (await _repository.EmailExistsAsync(
+                    pendingRegistration.Email))
+            {
+                return "Email already exists.";
+            }
+
+
+            // =====================================================
+            // GET USER ROLE
+            // =====================================================
+
+            var userRole =
+                await _repository.GetRoleByNameAsync("User");
+
+
+            if (userRole == null)
+            {
+                return "User role not found.";
+            }
+
+
+            // =====================================================
+            // CREATE REAL USER
+            //
+            // THIS IS THE FIRST DATABASE INSERT.
+            // =====================================================
+
+            var user = new User
+            {
+                Name =
+                    pendingRegistration.Name,
+
+                Email =
+                    pendingRegistration.Email,
+
+                Phone =
+                    pendingRegistration.Phone,
+
+                PasswordHash =
+                    pendingRegistration.PasswordHash,
+
+                RoleId =
+                    userRole.RoleId,
+
+                IsActive = true,
+
+                EmailVerified = true,
+
+                CreatedDate =
+                    DateTime.UtcNow
+            };
+
+
+            // =====================================================
+            // SAVE USER TO DATABASE
+            // =====================================================
+
+            await _repository.AddUserAsync(user);
+
+
+            // =====================================================
+            // SEND THANK YOU EMAIL
+            // =====================================================
+
+            var thankYouEmailBody = $@"
+                <div style='font-family: Arial, sans-serif;'>
+
+                    <h2>Welcome to The Old Library!</h2>
+
+                    <p>Hello {user.Name},</p>
+
+                    <p>
+                        Your email has been successfully verified
+                        and your account has been created.
+                    </p>
+
+                    <p>
+                        Thank you for registering with
+                        <strong>The Old Library</strong>.
+                    </p>
+
+                    <p>
+                        You can now log in and enjoy our services.
+                    </p>
+
+                    <br />
+
+                    <p>
+                        Regards,<br />
+                        <strong>The Old Library Team</strong>
+                    </p>
+
+                </div>
+            ";
+
+
+            await _emailService.SendEmailAsync(
+                user.Email,
+                "Welcome to The Old Library",
+                thankYouEmailBody
+            );
+
+
+            return "Email verified and registration completed successfully.";
         }
 
 
@@ -192,73 +326,108 @@ namespace BookStore.Server.Services
         // RESEND OTP
         // =========================================================
 
-        public async Task<string> ResendOtpAsync(
+        public async Task<string?> ResendOtpAsync(
             ResendOtpRequest request)
         {
-            var user =
-                await _repository.GetUserByEmailAsync(
-                    request.Email);
+            // =====================================================
+            // READ / DECRYPT OLD TOKEN
+            // =====================================================
 
-            if (user == null)
+            var pendingRegistration =
+                _registrationTokenService.ReadToken(
+                    request.RegistrationToken
+                );
+
+
+            if (pendingRegistration == null)
             {
-                return "User not found.";
+                return null;
             }
 
 
-            // Already verified
-            if (user.EmailVerified)
+            // =====================================================
+            // CHECK IF EMAIL ALREADY EXISTS
+            // =====================================================
+
+            if (await _repository.EmailExistsAsync(
+                    pendingRegistration.Email))
             {
-                return "Email is already verified.";
+                return "Email already exists.";
             }
 
 
-            // Generate new OTP
-            var otp =
-                Random.Shared.Next(100000, 1000000).ToString();
+            // =====================================================
+            // GENERATE NEW OTP
+            // =====================================================
+
+            var newOtp =
+                Random.Shared
+                    .Next(100000, 1000000)
+                    .ToString();
 
 
-            user.EmailVerificationOtp = otp;
+            // =====================================================
+            // UPDATE PENDING REGISTRATION
+            // =====================================================
 
-            user.EmailVerificationOtpExpiry =
+            pendingRegistration.Otp = newOtp;
+
+            pendingRegistration.OtpExpiry =
                 DateTime.UtcNow.AddMinutes(5);
 
-            user.UpdatedDate = DateTime.UtcNow;
+
+            // =====================================================
+            // CREATE NEW TOKEN
+            // =====================================================
+
+            var newRegistrationToken =
+                _registrationTokenService.CreateToken(
+                    pendingRegistration
+                );
 
 
-            await _repository.SaveChangesAsync();
+            // =====================================================
+            // SEND NEW OTP EMAIL
+            // =====================================================
 
-
-            // Send new OTP
             var emailBody = $@"
                 <div style='font-family: Arial, sans-serif;'>
-                    <h2>Email Verification</h2>
 
-                    <p>Hello {user.Name},</p>
+                    <h2>New Email Verification OTP</h2>
+
+                    <p>
+                        Hello {pendingRegistration.Name},
+                    </p>
 
                     <p>
                         Your new email verification OTP is:
                     </p>
 
                     <h1 style='letter-spacing: 5px;'>
-                        {otp}
+                        {newOtp}
                     </h1>
 
                     <p>
                         This OTP will expire in
                         <strong>5 minutes</strong>.
                     </p>
+
                 </div>
             ";
 
 
             await _emailService.SendEmailAsync(
-                user.Email,
+                pendingRegistration.Email,
                 "New Email Verification OTP - The Old Library",
                 emailBody
             );
 
 
-            return "OTP sent successfully.";
+            // =====================================================
+            // RETURN NEW TOKEN
+            // =====================================================
+
+            return newRegistrationToken;
         }
 
 
@@ -273,14 +442,24 @@ namespace BookStore.Server.Services
                 await _repository.GetUserByEmailAsync(
                     request.Email);
 
+
             if (user == null)
             {
                 return null;
             }
 
 
-            // Check email verification
-            if (!user.EmailVerified)
+            // =====================================================
+            // EMAIL VERIFICATION
+            //
+            // Only normal Users need verification.
+            //
+            // Admin and Editor accounts are created by Admin,
+            // so OTP verification is not required.
+            // =====================================================
+
+            if (user.Role?.RoleName == "User" &&
+                !user.EmailVerified)
             {
                 throw new InvalidOperationException(
                     "Please verify your email before logging in."
@@ -288,12 +467,16 @@ namespace BookStore.Server.Services
             }
 
 
-            // Verify Password
+            // =====================================================
+            // VERIFY PASSWORD
+            // =====================================================
+
             var isValid =
                 _passwordHasher.VerifyPassword(
                     user,
                     request.Password
                 );
+
 
             if (!isValid)
             {
@@ -301,24 +484,35 @@ namespace BookStore.Server.Services
             }
 
 
-            // Generate JWT
+            // =====================================================
+            // GENERATE JWT
+            // =====================================================
+
             var token =
                 _jwtHelper.GenerateToken(user);
 
 
+            // =====================================================
+            // RETURN LOGIN RESPONSE
+            // =====================================================
+
             return new LoginResponse
             {
-                UserId = user.UserId,
+                UserId =
+                    user.UserId,
 
-                FullName = user.Name,
+                FullName =
+                    user.Name,
 
-                Email = user.Email,
+                Email =
+                    user.Email,
 
                 Role =
                     user.Role?.RoleName
                     ?? string.Empty,
 
-                Token = token
+                Token =
+                    token
             };
         }
     }
