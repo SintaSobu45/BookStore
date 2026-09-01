@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+
 import {
   BookOpen,
   Leaf,
@@ -9,8 +10,16 @@ import {
   ImageDown,
   FileDown,
 } from "lucide-react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  ImageRun,
+  PageBreak,
+  AlignmentType,
+} from "docx";
 
 import { getAllStoryPoetry } from "../../services/storyPoetryService";
 import { useNavigate } from "react-router-dom";
@@ -18,24 +27,32 @@ import { useNavigate } from "react-router-dom";
 export default function AdminStoryPoetry() {
   const navigate = useNavigate();
 
+  // =========================================================
+  // STATE
+  // =========================================================
+
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Search
   const [searchTerm, setSearchTerm] = useState("");
 
-  // =========================================================
-  // PDF / DATE FILTERS
-  // =========================================================
+  // Type filter
+  const [selectedType, setSelectedType] = useState("All");
 
+  // Date filters
   const [selectedMonth, setSelectedMonth] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [generatingSinglePdf, setGeneratingSinglePdf] = useState(null);
+  // DOCX states
+  const [generatingDocx, setGeneratingDocx] = useState(false);
+  const [generatingSingleDocx, setGeneratingSingleDocx] =
+    useState(null);
 
   // =========================================================
-  // LOAD ALL SUBMISSIONS
+  // LOAD SUBMISSIONS
   // =========================================================
 
   const loadSubmissions = async () => {
@@ -47,11 +64,14 @@ export default function AdminStoryPoetry() {
 
       console.log("story response:", data);
 
-      setSubmissions(data);
-    } catch (error) {
-      console.error("Failed to load submissions:", error);
+      setSubmissions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load submissions:", err);
 
-      setError(error.message || "Failed to load submissions.");
+      setError(
+        err?.message ||
+          "Failed to load Story, Poetry and Special submissions.",
+      );
     } finally {
       setLoading(false);
     }
@@ -63,13 +83,6 @@ export default function AdminStoryPoetry() {
 
   // =========================================================
   // GET DATE ONLY
-  // =========================================================
-  // Converts:
-  // 2026-08-20T10:30:00
-  // into:
-  // 2026-08-20
-  //
-  // This avoids timezone problems when filtering dates.
   // =========================================================
 
   const getDateOnly = (date) => {
@@ -85,7 +98,23 @@ export default function AdminStoryPoetry() {
   const formatDate = (date) => {
     if (!date) return "-";
 
-    return new Date(date).toLocaleDateString("en-IN", {
+    const dateOnly = getDateOnly(date);
+
+    if (!dateOnly) return "-";
+
+    const [year, month, day] = dateOnly.split("-");
+
+    const parsedDate = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+    );
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "-";
+    }
+
+    return parsedDate.toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -98,14 +127,18 @@ export default function AdminStoryPoetry() {
 
   const renderTypeIcon = (type) => {
     if (type === "Poetry") {
-      return <Leaf className="h-4 w-4 text-emerald-800" />;
+      return (
+        <Leaf className="h-4 w-4 text-emerald-800" />
+      );
     }
 
-    return <BookOpen className="h-4 w-4 text-emerald-800" />;
+    return (
+      <BookOpen className="h-4 w-4 text-emerald-800" />
+    );
   };
 
   // =========================================================
-  // TYPE COLOR
+  // TYPE STYLE
   // =========================================================
 
   const getTypeStyle = (type) => {
@@ -121,7 +154,7 @@ export default function AdminStoryPoetry() {
   };
 
   // =========================================================
-  // PAYMENT STATUS COLOR
+  // PAYMENT STYLE
   // =========================================================
 
   const getPaymentStyle = (status) => {
@@ -133,622 +166,165 @@ export default function AdminStoryPoetry() {
   };
 
   // =========================================================
-  // DATE FILTER LOGIC
+  // DATE FILTER
   // =========================================================
 
   const matchesDateFilter = (item) => {
-    const itemDate = getDateOnly(item.createdDate);
+    const itemDate = getDateOnly(item?.createdDate);
 
     if (!itemDate) {
       return false;
     }
 
-    // ---------------------------------------------------------
-    // MONTH FILTER
-    // ---------------------------------------------------------
-
+    // Month
     const matchesMonth =
-      !selectedMonth || itemDate.startsWith(selectedMonth);
+      !selectedMonth ||
+      itemDate.startsWith(selectedMonth);
 
-    // ---------------------------------------------------------
-    // FROM DATE
-    // ---------------------------------------------------------
-
+    // From
     const matchesFromDate =
-      !fromDate || itemDate >= fromDate;
+      !fromDate ||
+      itemDate >= fromDate;
 
-    // ---------------------------------------------------------
-    // TO DATE
-    // ---------------------------------------------------------
-
+    // To
     const matchesToDate =
-      !toDate || itemDate <= toDate;
+      !toDate ||
+      itemDate <= toDate;
 
-    return matchesMonth && matchesFromDate && matchesToDate;
+    return (
+      matchesMonth &&
+      matchesFromDate &&
+      matchesToDate
+    );
   };
 
   // =========================================================
-  // FILTER SUBMISSIONS
+  // TYPE FILTER
   // =========================================================
 
-  const filteredSubmissions = submissions.filter((item) => {
-    const search = searchTerm.toLowerCase().trim();
-
-    // Only show PAID submissions
-    const isPaid = item.paymentStatus === "Paid";
-
-    // ---------------------------------------------------------
-    // SEARCH
-    // ---------------------------------------------------------
-
-    const matchesSearch =
-      !search ||
-      item.title?.toLowerCase().includes(search) ||
-      item.contributorNameMalayalam?.toLowerCase().includes(search);
-
-    // ---------------------------------------------------------
-    // DATE FILTER
-    // ---------------------------------------------------------
-
-    const matchesDate = matchesDateFilter(item);
-
-    return isPaid && matchesSearch && matchesDate;
-  });
-
-  // =========================================================
-  // DOWNLOAD PROFILE PICTURE
-  // =========================================================
-
-  const handleDownloadProfilePicture = async (item) => {
-    if (!item.contributorProfileImageUrl) {
-      alert("Profile picture is not available.");
-      return;
+  const matchesTypeFilter = (item) => {
+    if (selectedType === "All") {
+      return true;
     }
 
-    try {
-      const response = await fetch(item.contributorProfileImageUrl, {
-        mode: "cors",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to download profile picture.");
-      }
-
-      const blob = await response.blob();
-
-      const blobUrl = window.URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-
-      link.href = blobUrl;
-
-      const safeName =
-        item.contributorNameMalayalam
-          ?.replace(/[^\w\u0D00-\u0D7F-]+/g, "_")
-          .replace(/^_+|_+$/g, "") || "contributor";
-
-      link.download = `${safeName}-profile-picture`;
-
-      document.body.appendChild(link);
-
-      link.click();
-
-      document.body.removeChild(link);
-
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error("Profile picture download failed:", error);
-
-      // Fallback
-      try {
-        const link = document.createElement("a");
-
-        link.href = item.contributorProfileImageUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-
-        document.body.appendChild(link);
-
-        link.click();
-
-        document.body.removeChild(link);
-      } catch (fallbackError) {
-        console.error(
-          "Profile picture fallback failed:",
-          fallbackError,
-        );
-
-        alert(
-          "Unable to download the profile picture. Please check the image URL/CORS settings.",
-        );
-      }
-    }
+    return item?.type === selectedType;
   };
 
   // =========================================================
-  // GENERATE PDF
+  // FILTERED SUBMISSIONS
   // =========================================================
 
-  const generatePDF = async (items, fileName) => {
-    if (!items || items.length === 0) {
-      alert("No submissions found.");
-      return;
-    }
+  const filteredSubmissions = useMemo(() => {
+    const search = searchTerm
+      .toLowerCase()
+      .trim();
 
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const PAGE_WIDTH = 210;
-    const PAGE_HEIGHT = 297;
-
-    const MARGIN_TOP = 20;
-    const MARGIN_BOTTOM = 20;
-    const MARGIN_LEFT = 18;
-    const MARGIN_RIGHT = 18;
-
-    // =========================================================
-    // TEMPORARY CONTAINER
-    // =========================================================
-
-    const printContainer = document.createElement("div");
-
-    printContainer.style.position = "absolute";
-    printContainer.style.left = "-10000px";
-    printContainer.style.top = "0";
-    printContainer.style.width = "210mm";
-    printContainer.style.background = "#ffffff";
-    printContainer.style.zIndex = "-9999";
-
-    document.body.appendChild(printContainer);
-
-    // =========================================================
-    // WAIT FOR IMAGES
-    // =========================================================
-
-    const waitForImages = async (container) => {
-      const images = [...container.querySelectorAll("img")];
-
-      await Promise.all(
-        images.map(
-          (img) =>
-            new Promise((resolve) => {
-              if (img.complete) {
-                resolve();
-                return;
-              }
-
-              img.onload = resolve;
-              img.onerror = resolve;
-            }),
-        ),
-      );
-    };
-
-    // =========================================================
-    // CREATE STORY DOCUMENT
-    // =========================================================
-
-    const createStoryDocument = () => {
-      const page = document.createElement("div");
-
-      page.style.width = "210mm";
-      page.style.boxSizing = "border-box";
-      page.style.background = "#ffffff";
-
-      page.style.padding = `
-        ${MARGIN_TOP}mm
-        ${MARGIN_RIGHT}mm
-        ${MARGIN_BOTTOM}mm
-        ${MARGIN_LEFT}mm
-      `;
-
-      page.style.fontFamily = "'Manjari', sans-serif";
-      page.style.color = "#111827";
-
-      page.style.height = "auto";
-      page.style.minHeight = "0";
-      page.style.overflow = "visible";
-
-      return page;
-    };
-
-    // =========================================================
-    // CONTRIBUTOR HEADER
-    // =========================================================
-
-    const createContributorHeader = (item) => {
-      const wrapper = document.createElement("div");
-
-      wrapper.style.display = "flex";
-      wrapper.style.alignItems = "flex-start";
-      wrapper.style.gap = "10mm";
-      wrapper.style.width = "100%";
-
-      // -------------------------------------------------------
-      // PROFILE IMAGE
-      // -------------------------------------------------------
-
-      if (item.contributorProfileImageUrl) {
-        const img = document.createElement("img");
-
-        img.src = item.contributorProfileImageUrl;
-        img.crossOrigin = "anonymous";
-
-        img.style.width = "40mm";
-        img.style.height = "48mm";
-        img.style.objectFit = "cover";
-        img.style.borderRadius = "8mm";
-        img.style.display = "block";
-        img.style.flexShrink = "0";
-
-        wrapper.appendChild(img);
-      } else {
-        const placeholder = document.createElement("div");
-
-        placeholder.style.width = "40mm";
-        placeholder.style.height = "48mm";
-        placeholder.style.background = "#f5f5f4";
-        placeholder.style.borderRadius = "8mm";
-        placeholder.style.display = "flex";
-        placeholder.style.alignItems = "center";
-        placeholder.style.justifyContent = "center";
-        placeholder.style.fontSize = "14mm";
-        placeholder.style.color = "#a8a29e";
-        placeholder.style.flexShrink = "0";
-
-        placeholder.textContent = "👤";
-
-        wrapper.appendChild(placeholder);
-      }
-
-      // -------------------------------------------------------
-      // DETAILS
-      // -------------------------------------------------------
-
-      const details = document.createElement("div");
-
-      details.style.flex = "1";
-      details.style.paddingTop = "3mm";
-      details.style.lineHeight = "1.6";
-      details.style.fontFamily = "'Manjari', sans-serif";
-
-      // NAME
-
-      const name = document.createElement("div");
-
-      name.style.fontSize = "18px";
-      name.style.fontWeight = "700";
-
-      name.textContent = item.contributorNameMalayalam || "";
-
-      details.appendChild(name);
-
-      // LOCATION
-
-      const location = document.createElement("div");
-
-      location.style.fontSize = "15px";
-      location.style.marginTop = "3px";
-
-      location.textContent = `${item.contributorCityMalayalam || ""}${
-        item.contributorCityMalayalam &&
-        item.contributorDistrictMalayalam
-          ? ", "
-          : ""
-      }${item.contributorDistrictMalayalam || ""}`;
-
-      details.appendChild(location);
-
-      // EMAIL
-
-      if (item.contributorEmail) {
-        const email = document.createElement("div");
-
-        email.style.fontFamily = "Arial, sans-serif";
-        email.style.fontSize = "14px";
-        email.style.marginTop = "4px";
-
-        email.textContent = `mail/${item.contributorEmail}`;
-
-        details.appendChild(email);
-      }
-
-      wrapper.appendChild(details);
-
-      return wrapper;
-    };
-
-    // =========================================================
-    // TITLE
-    // =========================================================
-
-    const createTitle = (item) => {
-      const container = document.createElement("div");
-
-      container.style.marginTop = "18mm";
-      container.style.width = "100%";
-
-      const title = document.createElement("h1");
-
-      title.style.margin = "0";
-      title.style.fontFamily = "'Manjari', sans-serif";
-      title.style.fontSize = "32px";
-      title.style.lineHeight = "1.3";
-      title.style.fontWeight = "700";
-      title.style.color = "#111827";
-
-      title.textContent = item.title || "";
-
-      container.appendChild(title);
-
-      return container;
-    };
-
-    // =========================================================
-    // CONTENT
-    // =========================================================
-
-    const createContent = (item) => {
-      const content = document.createElement("div");
-
-      content.style.marginTop = "14mm";
-      content.style.width = "100%";
-
-      content.style.fontFamily = "'Manjari', sans-serif";
-      content.style.fontSize = "17px";
-      content.style.lineHeight = "2";
-      content.style.color = "#111827";
-
-      const lines = (item.content || "").split(/\r?\n/);
-
-      lines.forEach((line) => {
-        const element = document.createElement("div");
-
-        element.style.whiteSpace = "pre-wrap";
-
-        if (line === "") {
-          element.style.height = "34px";
-        } else {
-          element.style.minHeight = "34px";
-        }
-
-        element.textContent = line || "\u00A0";
-
-        content.appendChild(element);
-      });
-
-      return content;
-    };
-
-    // =========================================================
-    // CAPTURE ONE COMPLETE STORY
-    // =========================================================
-
-    const captureStory = async (item) => {
-      printContainer.innerHTML = "";
-
-      const storyDocument = createStoryDocument();
-
-      storyDocument.appendChild(createContributorHeader(item));
-
-      storyDocument.appendChild(createTitle(item));
-
-      storyDocument.appendChild(createContent(item));
-
-      printContainer.appendChild(storyDocument);
-
-      // -------------------------------------------------------
-      // WAIT FOR IMAGES
-      // -------------------------------------------------------
-
-      await waitForImages(storyDocument);
-
-      // -------------------------------------------------------
-      // WAIT FOR FONTS
-      // -------------------------------------------------------
-
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
-
-      // -------------------------------------------------------
-      // GIVE BROWSER TIME TO PAINT MALAYALAM FONT
-      // -------------------------------------------------------
-
-      await new Promise((resolve) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(resolve);
-        });
-      });
-
-      // -------------------------------------------------------
-      // CAPTURE COMPLETE STORY
-      // -------------------------------------------------------
-
-      const canvas = await html2canvas(storyDocument, {
-        scale: 1.5,
-
-        useCORS: true,
-        allowTaint: false,
-
-        backgroundColor: "#ffffff",
-
-        logging: false,
-      });
-
-      return canvas;
-    };
-
-    // =========================================================
-    // ADD CANVAS TO PDF IN A4 SLICES
-    // =========================================================
-
-    const addCanvasToPDF = (canvas, isFirstPDFPage) => {
-      // Keep a small safety margin so Malayalam glyphs are
-      // never cut exactly at the page boundary.
-      const SAFETY_MARGIN_MM = 5;
-
-      const sliceHeight = Math.round(
-        canvas.width *
-          ((PAGE_HEIGHT - SAFETY_MARGIN_MM) / PAGE_WIDTH),
-      );
-
-      let sourceY = 0;
-      let firstSlice = true;
-
-      while (sourceY < canvas.height) {
-        const remainingHeight = canvas.height - sourceY;
-
-        const currentSliceHeight = Math.min(
-          sliceHeight,
-          remainingHeight,
-        );
-
-        const sliceCanvas = document.createElement("canvas");
-
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = currentSliceHeight;
-
-        const ctx = sliceCanvas.getContext("2d");
-
-        ctx.drawImage(
-          canvas,
-
-          // SOURCE
-          0,
-          sourceY,
-          canvas.width,
-          currentSliceHeight,
-
-          // DESTINATION
-          0,
-          0,
-          canvas.width,
-          currentSliceHeight,
-        );
-
-        const imgData = sliceCanvas.toDataURL(
-          "image/jpeg",
-          0.95,
-        );
-
-        if (!isFirstPDFPage || !firstSlice) {
-          pdf.addPage();
-        }
-
-        const imageHeight =
-          (currentSliceHeight / canvas.width) * PAGE_WIDTH;
-
-        pdf.addImage(
-          imgData,
-          "JPEG",
-          0,
-          0,
-          PAGE_WIDTH,
-          imageHeight,
-        );
-
-        sourceY += currentSliceHeight;
-
-        firstSlice = false;
-
-        // Free memory
-        sliceCanvas.width = 1;
-        sliceCanvas.height = 1;
-      }
-    };
-
-    // =========================================================
-    // PROCESS ALL SUBMISSIONS
-    // =========================================================
-
-    let isFirstPDFPage = true;
-
-    try {
-      for (
-        let submissionIndex = 0;
-        submissionIndex < items.length;
-        submissionIndex++
-      ) {
-        const item = items[submissionIndex];
-
-        console.log(
-          `Generating PDF: ${submissionIndex + 1}/${items.length}`,
-          item.title,
-        );
-
-        // -----------------------------------------------------
-        // CAPTURE COMPLETE STORY
-        // -----------------------------------------------------
-
-        const canvas = await captureStory(item);
-
-        // -----------------------------------------------------
-        // SLICE COMPLETE STORY INTO A4 PAGES
-        // -----------------------------------------------------
-
-        addCanvasToPDF(canvas, isFirstPDFPage);
-
-        isFirstPDFPage = false;
-
-        // -----------------------------------------------------
-        // FREE LARGE CANVAS
-        // -----------------------------------------------------
-
-        canvas.width = 1;
-        canvas.height = 1;
-
-        printContainer.innerHTML = "";
-
-        await new Promise((resolve) =>
-          setTimeout(resolve, 20),
-        );
-      }
-
-      // =======================================================
-      // SAVE PDF
-      // =======================================================
-
-      pdf.save(fileName);
-    } catch (error) {
-      console.error("PDF generation failed:", error);
-
-      throw error;
-    } finally {
-      // =======================================================
-      // CLEANUP
-      // =======================================================
-
-      if (document.body.contains(printContainer)) {
-        document.body.removeChild(printContainer);
-      }
-    }
-  };
-
-  // =========================================================
-  // GET PDF FILTERED SUBMISSIONS
-  // =========================================================
-
-  const getPDFSubmissions = () => {
     return submissions.filter((item) => {
-      if (item.paymentStatus !== "Paid") {
+      // Only paid submissions
+      const isPaid =
+        item?.paymentStatus === "Paid";
+
+      if (!isPaid) {
         return false;
       }
 
-      return matchesDateFilter(item);
+      // Search
+      const matchesSearch =
+        !search ||
+        item?.title
+          ?.toLowerCase()
+          .includes(search) ||
+        item?.contributorNameMalayalam
+          ?.toLowerCase()
+          .includes(search);
+
+      // Type
+      const matchesType =
+        matchesTypeFilter(item);
+
+      // Date
+      const matchesDate =
+        matchesDateFilter(item);
+
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesDate
+      );
+    });
+  }, [
+    submissions,
+    searchTerm,
+    selectedType,
+    selectedMonth,
+    fromDate,
+    toDate,
+  ]);
+
+  // =========================================================
+  // PDF/DOCX SUBMISSIONS
+  // =========================================================
+
+  const getDOCXSubmissions = () => {
+    return submissions.filter((item) => {
+      // Only paid
+      if (item?.paymentStatus !== "Paid") {
+        return false;
+      }
+
+      // Type
+      if (!matchesTypeFilter(item)) {
+        return false;
+      }
+
+      // Date
+      if (!matchesDateFilter(item)) {
+        return false;
+      }
+
+      return true;
     });
   };
 
   // =========================================================
-  // GET PDF FILE NAME
+  // SAFE FILE NAME
   // =========================================================
 
-  const getPDFFilename = () => {
-    // ---------------------------------------------------------
-    // MONTH
-    // ---------------------------------------------------------
+  const makeSafeFileName = (value, fallback) => {
+    const safe =
+      String(value || "")
+        .replace(/[^\w\u0D00-\u0D7F-]+/g, "_")
+        .replace(/^_+|_+$/g, "");
 
-    if (selectedMonth && !fromDate && !toDate) {
-      const [year, month] = selectedMonth.split("-");
+    return safe || fallback;
+  };
+
+  // =========================================================
+  // GET DOCX FILENAME
+  // =========================================================
+
+  const getDOCXFilename = () => {
+    // -------------------------------------------------------
+    // TYPE PREFIX
+    // -------------------------------------------------------
+
+    let typePrefix = "Story-Poetry";
+
+    if (selectedType !== "All") {
+      typePrefix = selectedType;
+    }
+
+    // -------------------------------------------------------
+    // MONTH
+    // -------------------------------------------------------
+
+    if (
+      selectedMonth &&
+      !fromDate &&
+      !toDate
+    ) {
+      const [year, month] =
+        selectedMonth.split("-");
 
       const monthName = new Date(
         Number(year),
@@ -758,128 +334,811 @@ export default function AdminStoryPoetry() {
         year: "numeric",
       });
 
-      return `Story-Poetry-${monthName.replace(" ", "-")}.pdf`;
+      return `${typePrefix}-${monthName.replace(
+        " ",
+        "-",
+      )}.docx`;
     }
 
-    // ---------------------------------------------------------
+    // -------------------------------------------------------
     // FROM + TO
-    // ---------------------------------------------------------
+    // -------------------------------------------------------
 
     if (fromDate && toDate) {
-      return `Story-Poetry-${fromDate}-to-${toDate}.pdf`;
+      return `${typePrefix}-${fromDate}-to-${toDate}.docx`;
     }
 
-    // ---------------------------------------------------------
-    // ONLY FROM
-    // ---------------------------------------------------------
+    // -------------------------------------------------------
+    // FROM
+    // -------------------------------------------------------
 
     if (fromDate) {
-      return `Story-Poetry-from-${fromDate}.pdf`;
+      return `${typePrefix}-from-${fromDate}.docx`;
     }
 
-    // ---------------------------------------------------------
-    // ONLY TO
-    // ---------------------------------------------------------
+    // -------------------------------------------------------
+    // TO
+    // -------------------------------------------------------
 
     if (toDate) {
-      return `Story-Poetry-until-${toDate}.pdf`;
+      return `${typePrefix}-until-${toDate}.docx`;
     }
 
-    // ---------------------------------------------------------
+    // -------------------------------------------------------
+    // TYPE ONLY
+    // -------------------------------------------------------
+
+    if (selectedType !== "All") {
+      return `${selectedType}-Submissions.docx`;
+    }
+
+    // -------------------------------------------------------
     // FALLBACK
-    // ---------------------------------------------------------
+    // -------------------------------------------------------
 
-    return "Story-Poetry-Submissions.pdf";
+    return "Story-Poetry-Submissions.docx";
   };
 
   // =========================================================
-  // MONTHLY / DATE RANGE PDF
+  // FETCH IMAGE AS ARRAY BUFFER
   // =========================================================
 
-  const handleDownloadMonthlyPDF = async () => {
-    // ---------------------------------------------------------
-    // VALIDATE DATE RANGE
-    // ---------------------------------------------------------
-
-    if (fromDate && toDate && fromDate > toDate) {
-      alert("From date cannot be after To date.");
-      return;
-    }
-
-    // ---------------------------------------------------------
-    // CHECK WHETHER ANY FILTER IS SELECTED
-    // ---------------------------------------------------------
-
-    if (!selectedMonth && !fromDate && !toDate) {
-      alert(
-        "Please select a month or choose a From / To date range.",
-      );
-
-      return;
-    }
-
-    // ---------------------------------------------------------
-    // GET FILTERED SUBMISSIONS
-    // ---------------------------------------------------------
-
-    const pdfSubmissions = getPDFSubmissions();
-
-    if (pdfSubmissions.length === 0) {
-      alert("No paid submissions found for the selected period.");
-      return;
+  const fetchImageAsArrayBuffer = async (url) => {
+    if (!url) {
+      return null;
     }
 
     try {
-      setGeneratingPdf(true);
+      const response = await fetch(url, {
+        mode: "cors",
+        credentials: "omit",
+      });
 
-      const fileName = getPDFFilename();
+      if (!response.ok) {
+        throw new Error(
+          `Image request failed: ${response.status}`,
+        );
+      }
 
-      await generatePDF(pdfSubmissions, fileName);
-    } catch (error) {
+      const blob = await response.blob();
+
+      if (!blob || blob.size === 0) {
+        throw new Error(
+          "Image response is empty.",
+        );
+      }
+
+      const arrayBuffer =
+        await blob.arrayBuffer();
+
+      return {
+        data: arrayBuffer,
+        type: blob.type,
+      };
+    } catch (err) {
+      console.warn(
+        "Profile image could not be added to DOCX:",
+        err,
+      );
+
+      return null;
+    }
+  };
+
+  // =========================================================
+  // DETERMINE IMAGE TYPE
+  // =========================================================
+
+  const getDocxImageType = (mimeType, url) => {
+    const type =
+      String(mimeType || "").toLowerCase();
+
+    if (type.includes("png")) {
+      return "png";
+    }
+
+    if (type.includes("gif")) {
+      return "gif";
+    }
+
+    if (
+      type.includes("jpg") ||
+      type.includes("jpeg")
+    ) {
+      return "jpg";
+    }
+
+    const lowerUrl =
+      String(url || "").toLowerCase();
+
+    if (lowerUrl.includes(".png")) {
+      return "png";
+    }
+
+    if (lowerUrl.includes(".gif")) {
+      return "gif";
+    }
+
+    return "jpg";
+  };
+
+  // =========================================================
+  // CREATE CONTRIBUTOR LOCATION
+  // =========================================================
+
+  const getContributorLocation = (item) => {
+    const city =
+      item?.contributorCityMalayalam || "";
+
+    const district =
+      item?.contributorDistrictMalayalam ||
+      "";
+
+    if (city && district) {
+      return `${city}, ${district}`;
+    }
+
+    return city || district;
+  };
+
+  // =========================================================
+  // CREATE DOCX
+  // =========================================================
+
+  const generateDOCX = async (
+    items,
+    fileName,
+  ) => {
+    if (!items || items.length === 0) {
+      alert("No submissions found.");
+      return;
+    }
+
+    console.log(
+      `Starting DOCX generation for ${items.length} submissions...`,
+    );
+
+    try {
+      const children = [];
+
+      // =====================================================
+      // LOOP SUBMISSIONS
+      // =====================================================
+
+      for (
+        let index = 0;
+        index < items.length;
+        index++
+      ) {
+        const item = items[index];
+
+        console.log(
+          `Preparing ${index + 1}/${items.length}:`,
+          item?.title,
+        );
+
+        // ===================================================
+        // PROFILE IMAGE
+        // ===================================================
+
+        let profileImage = null;
+
+        if (
+          item?.contributorProfileImageUrl
+        ) {
+          profileImage =
+            await fetchImageAsArrayBuffer(
+              item.contributorProfileImageUrl,
+            );
+        }
+
+        // ===================================================
+        // PROFILE IMAGE
+        // ===================================================
+
+        if (profileImage) {
+          const imageType =
+            getDocxImageType(
+              profileImage.type,
+              item.contributorProfileImageUrl,
+            );
+
+          children.push(
+            new Paragraph({
+              alignment:
+                AlignmentType.LEFT,
+              spacing: {
+                after: 150,
+              },
+              children: [
+                new ImageRun({
+                  data: profileImage.data,
+
+                  transformation: {
+                    width: 150,
+                    height: 180,
+                  },
+
+                  type: imageType,
+                }),
+              ],
+            }),
+          );
+        }
+
+        // ===================================================
+        // CONTRIBUTOR NAME
+        // ===================================================
+
+        children.push(
+          new Paragraph({
+            spacing: {
+              before: 100,
+              after: 100,
+            },
+
+            children: [
+              new TextRun({
+                text:
+                  item?.contributorNameMalayalam ||
+                  "-",
+
+                bold: true,
+
+                size: 34,
+
+                font: {
+                  name: "Manjari",
+                  eastAsia: "Manjari",
+                  complexScript: "Manjari",
+                },
+              }),
+            ],
+          }),
+        );
+
+        // ===================================================
+        // LOCATION
+        // ===================================================
+
+        const location =
+          getContributorLocation(item);
+
+        if (location) {
+          children.push(
+            new Paragraph({
+              spacing: {
+                after: 80,
+              },
+
+              children: [
+                new TextRun({
+                  text: location,
+
+                  size: 26,
+
+                  font: {
+                    name: "Manjari",
+                    eastAsia: "Manjari",
+                    complexScript: "Manjari",
+                  },
+                }),
+              ],
+            }),
+          );
+        }
+
+        // ===================================================
+        // EMAIL
+        // ===================================================
+
+        if (item?.contributorEmail) {
+          children.push(
+            new Paragraph({
+              spacing: {
+                after: 100,
+              },
+
+              children: [
+                new TextRun({
+                  text: `mail/${item.contributorEmail}`,
+
+                  size: 22,
+
+                  font: {
+                    name: "Arial",
+                    eastAsia: "Arial",
+                  },
+                }),
+              ],
+            }),
+          );
+        }
+
+        // ===================================================
+        // TYPE
+        // ===================================================
+
+        if (item?.type) {
+          children.push(
+            new Paragraph({
+              spacing: {
+                before: 100,
+                after: 100,
+              },
+
+              children: [
+                new TextRun({
+                  text: item.type,
+
+                  bold: true,
+
+                  size: 22,
+
+                  font: {
+                    name: "Arial",
+                    eastAsia: "Arial",
+                  },
+                }),
+              ],
+            }),
+          );
+        }
+
+        // ===================================================
+        // TITLE
+        // ===================================================
+
+        children.push(
+          new Paragraph({
+            alignment:
+              AlignmentType.LEFT,
+
+            spacing: {
+              before: 500,
+              after: 300,
+            },
+
+            children: [
+              new TextRun({
+                text:
+                  item?.title || "-",
+
+                bold: true,
+
+                size: 42,
+
+                font: {
+                  name: "Manjari",
+                  eastAsia: "Manjari",
+                  complexScript: "Manjari",
+                },
+              }),
+            ],
+          }),
+        );
+
+        // ===================================================
+        // CONTENT
+        // ===================================================
+
+        const content = String(
+          item?.content || "",
+        );
+
+        const lines =
+          content.split(/\r?\n/);
+
+        if (lines.length === 0) {
+          lines.push("");
+        }
+
+        lines.forEach((line) => {
+          children.push(
+            new Paragraph({
+              spacing: {
+                after: 120,
+                line: 360,
+              },
+
+              children: [
+                new TextRun({
+                  text:
+                    line === ""
+                      ? " "
+                      : line,
+
+                  size: 28,
+
+                  font: {
+                    name: "Manjari",
+                    eastAsia: "Manjari",
+                    complexScript: "Manjari",
+                  },
+                }),
+              ],
+            }),
+          );
+        });
+
+        // ===================================================
+        // PAGE BREAK
+        // ===================================================
+
+        if (index < items.length - 1) {
+          children.push(
+            new Paragraph({
+              children: [
+                new PageBreak(),
+              ],
+            }),
+          );
+        }
+      }
+
+      // =====================================================
+      // DOCUMENT
+      // =====================================================
+
+      const doc = new Document({
+        creator: "Story Poetry Admin",
+
+        title:
+          "Story, Poetry & Special Submissions",
+
+        description:
+          "Story, Poetry and Special submissions",
+
+        styles: {
+          default: {
+            document: {
+              run: {
+                font: "Manjari",
+                size: 28,
+              },
+
+              paragraph: {
+                spacing: {
+                  line: 360,
+                },
+              },
+            },
+          },
+        },
+
+        sections: [
+          {
+            properties: {
+              page: {
+                margin: {
+                  top: 720,
+                  bottom: 720,
+                  left: 900,
+                  right: 900,
+                },
+              },
+            },
+
+            children,
+          },
+        ],
+      });
+
+      // =====================================================
+      // CREATE BLOB
+      // =====================================================
+
+      console.log(
+        "Converting document to Blob...",
+      );
+
+      const blob =
+        await Packer.toBlob(doc);
+
+      if (!blob || blob.size === 0) {
+        throw new Error(
+          "DOCX blob is empty.",
+        );
+      }
+
+      console.log(
+        "DOCX blob created:",
+        blob.size,
+        "bytes",
+      );
+
+      // =====================================================
+      // DOWNLOAD
+      // =====================================================
+
+      const blobUrl =
+        window.URL.createObjectURL(blob);
+
+      const link =
+        document.createElement("a");
+
+      link.href = blobUrl;
+
+      link.download =
+        fileName.endsWith(".docx")
+          ? fileName
+          : `${fileName}.docx`;
+
+      link.style.display = "none";
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+      // =====================================================
+      // CLEANUP
+      // =====================================================
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(
+          blobUrl,
+        );
+      }, 1500);
+
+      console.log(
+        "DOCX downloaded successfully:",
+        fileName,
+      );
+    } catch (err) {
       console.error(
-        "Monthly/date range PDF generation failed:",
-        error,
+        "DOCX generation failed:",
+        err,
       );
 
-      alert(
-        "Failed to generate PDF. Please try again.",
-      );
-    } finally {
-      setGeneratingPdf(false);
+      throw err;
     }
   };
 
   // =========================================================
-  // SINGLE USER PDF
+  // DOWNLOAD MONTHLY / FILTERED DOCX
   // =========================================================
 
-  const handleDownloadSinglePDF = async (item) => {
-    if (!item) return;
+  const handleDownloadMonthlyDOCX =
+    async () => {
+      // -----------------------------------------------------
+      // DATE VALIDATION
+      // -----------------------------------------------------
 
-    try {
-      setGeneratingSinglePdf(item.storyPoetryId);
+      if (
+        fromDate &&
+        toDate &&
+        fromDate > toDate
+      ) {
+        alert(
+          "From date cannot be after To date.",
+        );
 
-      const safeTitle =
-        item.title
-          ?.replace(/[^\w\u0D00-\u0D7F-]+/g, "_")
-          .replace(/^_+|_+$/g, "") || "story";
+        return;
+      }
 
-      const safeName =
-        item.contributorNameMalayalam
-          ?.replace(/[^\w\u0D00-\u0D7F-]+/g, "_")
-          .replace(/^_+|_+$/g, "") || "contributor";
+      // -----------------------------------------------------
+      // FILTER VALIDATION
+      // -----------------------------------------------------
 
-      const fileName = `${safeName}-${safeTitle}.pdf`;
+      if (
+        !selectedMonth &&
+        !fromDate &&
+        !toDate &&
+        selectedType === "All"
+      ) {
+        alert(
+          "Please select a type, month, or choose a From / To date range.",
+        );
 
-      await generatePDF([item], fileName);
-    } catch (error) {
-      console.error("Single PDF generation failed:", error);
+        return;
+      }
 
-      alert("Failed to generate PDF. Please try again.");
-    } finally {
-      setGeneratingSinglePdf(null);
-    }
-  };
+      // -----------------------------------------------------
+      // GET SUBMISSIONS
+      // -----------------------------------------------------
+
+      const docxSubmissions =
+        getDOCXSubmissions();
+
+      if (docxSubmissions.length === 0) {
+        alert(
+          "No paid submissions found for the selected filters.",
+        );
+
+        return;
+      }
+
+      try {
+        setGeneratingDocx(true);
+
+        const fileName =
+          getDOCXFilename();
+
+        await generateDOCX(
+          docxSubmissions,
+          fileName,
+        );
+      } catch (err) {
+        console.error(
+          "Filtered DOCX generation failed:",
+          err,
+        );
+
+        alert(
+          `Failed to generate DOCX.\n\n${
+            err?.message ||
+            "Unknown error"
+          }`,
+        );
+      } finally {
+        setGeneratingDocx(false);
+      }
+    };
+
+  // =========================================================
+  // DOWNLOAD SINGLE DOCX
+  // =========================================================
+
+  const handleDownloadSingleDOCX =
+    async (item) => {
+      if (!item) return;
+
+      try {
+        setGeneratingSingleDocx(
+          item.storyPoetryId,
+        );
+
+        const safeTitle =
+          makeSafeFileName(
+            item.title,
+            "story",
+          );
+
+        const safeName =
+          makeSafeFileName(
+            item.contributorNameMalayalam,
+            "contributor",
+          );
+
+        const fileName =
+          `${safeName}-${safeTitle}.docx`;
+
+        await generateDOCX(
+          [item],
+          fileName,
+        );
+      } catch (err) {
+        console.error(
+          "Single DOCX generation failed:",
+          err,
+        );
+
+        alert(
+          `Failed to generate DOCX.\n\n${
+            err?.message ||
+            "Unknown error"
+          }`,
+        );
+      } finally {
+        setGeneratingSingleDocx(null);
+      }
+    };
+
+  // =========================================================
+  // DOWNLOAD PROFILE PHOTO
+  // =========================================================
+
+  const handleDownloadProfilePicture =
+    async (item) => {
+      if (
+        !item?.contributorProfileImageUrl
+      ) {
+        alert(
+          "Profile picture is not available.",
+        );
+
+        return;
+      }
+
+      try {
+        const response =
+          await fetch(
+            item.contributorProfileImageUrl,
+            {
+              mode: "cors",
+              credentials: "omit",
+            },
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            "Failed to download profile picture.",
+          );
+        }
+
+        const blob =
+          await response.blob();
+
+        if (!blob || blob.size === 0) {
+          throw new Error(
+            "Downloaded image is empty.",
+          );
+        }
+
+        const blobUrl =
+          window.URL.createObjectURL(blob);
+
+        const link =
+          document.createElement("a");
+
+        link.href = blobUrl;
+
+        const safeName =
+          makeSafeFileName(
+            item.contributorNameMalayalam,
+            "contributor",
+          );
+
+        const extension =
+          blob.type.includes("png")
+            ? "png"
+            : "jpg";
+
+        link.download =
+          `${safeName}-profile-picture.${extension}`;
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+
+        setTimeout(() => {
+          window.URL.revokeObjectURL(
+            blobUrl,
+          );
+        }, 1000);
+      } catch (err) {
+        console.error(
+          "Profile picture download failed:",
+          err,
+        );
+
+        // ---------------------------------------------------
+        // FALLBACK
+        // ---------------------------------------------------
+
+        try {
+          const link =
+            document.createElement("a");
+
+          link.href =
+            item.contributorProfileImageUrl;
+
+          link.target = "_blank";
+
+          link.rel =
+            "noopener noreferrer";
+
+          document.body.appendChild(link);
+
+          link.click();
+
+          document.body.removeChild(link);
+        } catch (fallbackError) {
+          console.error(
+            "Profile picture fallback failed:",
+            fallbackError,
+          );
+
+          alert(
+            "Unable to download the profile picture.",
+          );
+        }
+      }
+    };
 
   // =========================================================
   // CLEAR FILTERS
@@ -887,6 +1146,7 @@ export default function AdminStoryPoetry() {
 
   const clearFilters = () => {
     setSearchTerm("");
+    setSelectedType("All");
     setSelectedMonth("");
     setFromDate("");
     setToDate("");
@@ -897,8 +1157,21 @@ export default function AdminStoryPoetry() {
   // =========================================================
 
   const handleOpenStory = (item) => {
-    navigate(`/admin/story/${item.storyPoetryId}`);
+    navigate(
+      `/admin/story/${item.storyPoetryId}`,
+    );
   };
+
+  // =========================================================
+  // FILTER SUMMARY
+  // =========================================================
+
+  const hasFilters =
+    searchTerm ||
+    selectedType !== "All" ||
+    selectedMonth ||
+    fromDate ||
+    toDate;
 
   // =========================================================
   // RETURN
@@ -916,8 +1189,8 @@ export default function AdminStoryPoetry() {
         </h1>
 
         <p className="text-sm text-stone-500 mt-1">
-          View all Story, Poetry and Special submissions from
-          contributors.
+          View all Story, Poetry and Special
+          submissions from contributors.
         </p>
       </div>
 
@@ -944,9 +1217,9 @@ export default function AdminStoryPoetry() {
           </span>
         </div>
       ) : submissions.length === 0 ? (
-        /* =====================================================
+        /* ===================================================
            EMPTY
-        ===================================================== */
+        =================================================== */
 
         <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
           <BookOpen className="h-10 w-10 mx-auto text-stone-300 mb-3" />
@@ -956,28 +1229,28 @@ export default function AdminStoryPoetry() {
           </h3>
 
           <p className="text-sm text-stone-500 mt-1">
-            There are currently no Story, Poetry or Special
-            submissions.
+            There are currently no Story,
+            Poetry or Special submissions.
           </p>
         </div>
       ) : (
-        /* =====================================================
-           TABLE
-        ===================================================== */
+        /* ===================================================
+           MAIN
+        =================================================== */
 
         <div className="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
           {/* =================================================
-              SEARCH & FILTER HEADER
+              FILTER HEADER
           ================================================= */}
 
           <div className="px-5 py-4 border-b border-stone-200">
             <div className="flex flex-col gap-4">
-              {/* =================================================
+              {/* =============================================
                   TOP ROW
-              ================================================= */}
+              ============================================= */}
 
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                {/* LEFT SIDE */}
+                {/* LEFT */}
 
                 <div>
                   <h2 className="text-base font-bold text-gray-900">
@@ -985,8 +1258,12 @@ export default function AdminStoryPoetry() {
                   </h2>
 
                   <p className="text-xs text-stone-500 mt-0.5">
-                    {filteredSubmissions.length} submission
-                    {filteredSubmissions.length !== 1
+                    {
+                      filteredSubmissions.length
+                    }{" "}
+                    submission
+                    {filteredSubmissions.length !==
+                    1
                       ? "s"
                       : ""}{" "}
                     found
@@ -1000,7 +1277,9 @@ export default function AdminStoryPoetry() {
                     type="text"
                     value={searchTerm}
                     onChange={(e) =>
-                      setSearchTerm(e.target.value)
+                      setSearchTerm(
+                        e.target.value,
+                      )
                     }
                     placeholder="Search title or contributor..."
                     className="
@@ -1027,7 +1306,9 @@ export default function AdminStoryPoetry() {
                   {searchTerm && (
                     <button
                       type="button"
-                      onClick={() => setSearchTerm("")}
+                      onClick={() =>
+                        setSearchTerm("")
+                      }
                       className="
                         absolute
                         right-3
@@ -1045,13 +1326,60 @@ export default function AdminStoryPoetry() {
               </div>
 
               {/* =================================================
+                  TYPE FILTER
+              ================================================= */}
+
+              <div>
+                <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide block mb-2">
+                  Submission Type
+                </label>
+
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "All",
+                    "Story",
+                    "Poetry",
+                    "Special",
+                  ].map((type) => {
+                    const active =
+                      selectedType === type;
+
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() =>
+                          setSelectedType(type)
+                        }
+                        className={`
+                          px-4
+                          py-2
+                          rounded-xl
+                          text-sm
+                          font-bold
+                          border
+                          cursor-pointer
+                          transition-colors
+                          ${
+                            active
+                              ? "bg-[#1b3b2b] text-white border-[#1b3b2b]"
+                              : "bg-white text-stone-700 border-stone-200 hover:bg-stone-100"
+                          }
+                        `}
+                      >
+                        {type}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* =================================================
                   DATE FILTERS
               ================================================= */}
 
               <div className="flex flex-col xl:flex-row gap-3">
-                {/* =================================================
-                    MONTH
-                ================================================= */}
+                {/* MONTH */}
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">
@@ -1062,7 +1390,9 @@ export default function AdminStoryPoetry() {
                     type="month"
                     value={selectedMonth}
                     onChange={(e) =>
-                      setSelectedMonth(e.target.value)
+                      setSelectedMonth(
+                        e.target.value,
+                      )
                     }
                     className="
                       w-full
@@ -1084,9 +1414,7 @@ export default function AdminStoryPoetry() {
                   />
                 </div>
 
-                {/* =================================================
-                    FROM DATE
-                ================================================= */}
+                {/* FROM */}
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">
@@ -1097,7 +1425,9 @@ export default function AdminStoryPoetry() {
                     type="date"
                     value={fromDate}
                     onChange={(e) =>
-                      setFromDate(e.target.value)
+                      setFromDate(
+                        e.target.value,
+                      )
                     }
                     className="
                       w-full
@@ -1119,9 +1449,7 @@ export default function AdminStoryPoetry() {
                   />
                 </div>
 
-                {/* =================================================
-                    TO DATE
-                ================================================= */}
+                {/* TO */}
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">
@@ -1131,9 +1459,13 @@ export default function AdminStoryPoetry() {
                   <input
                     type="date"
                     value={toDate}
-                    min={fromDate || undefined}
+                    min={
+                      fromDate || undefined
+                    }
                     onChange={(e) =>
-                      setToDate(e.target.value)
+                      setToDate(
+                        e.target.value,
+                      )
                     }
                     className="
                       w-full
@@ -1155,9 +1487,7 @@ export default function AdminStoryPoetry() {
                   />
                 </div>
 
-                {/* =================================================
-                    CLEAR FILTERS
-                ================================================= */}
+                {/* CLEAR */}
 
                 <div className="flex items-end">
                   <button
@@ -1184,20 +1514,24 @@ export default function AdminStoryPoetry() {
                   </button>
                 </div>
 
-                {/* =================================================
-                    PDF BUTTON
-                ================================================= */}
+                {/* DOCX */}
 
                 <div className="flex items-end xl:ml-auto">
                   <button
                     type="button"
                     disabled={
-                      (!selectedMonth &&
-                        !fromDate &&
-                        !toDate) ||
-                      generatingPdf
+                      (!selectedType ||
+                        selectedType ===
+                          "All") &&
+                      !selectedMonth &&
+                      !fromDate &&
+                      !toDate
+                        ? true
+                        : generatingDocx
                     }
-                    onClick={handleDownloadMonthlyPDF}
+                    onClick={
+                      handleDownloadMonthlyDOCX
+                    }
                     className="
                       w-full
                       xl:w-auto
@@ -1220,7 +1554,7 @@ export default function AdminStoryPoetry() {
                       transition-colors
                     "
                   >
-                    {generatingPdf ? (
+                    {generatingDocx ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
 
@@ -1230,7 +1564,7 @@ export default function AdminStoryPoetry() {
                       <>
                         <Download className="h-4 w-4" />
 
-                        Download PDF
+                        Download DOCX
                       </>
                     )}
                   </button>
@@ -1238,35 +1572,49 @@ export default function AdminStoryPoetry() {
               </div>
 
               {/* =================================================
-                  FILTER INFO
+                  ACTIVE FILTERS
               ================================================= */}
 
-              {(selectedMonth || fromDate || toDate) && (
+              {hasFilters && (
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="font-semibold text-stone-500">
-                    Active filter:
+                    Active filters:
                   </span>
+
+                  {selectedType !==
+                    "All" && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
+                      Type:{" "}
+                      {selectedType}
+                    </span>
+                  )}
 
                   {selectedMonth && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold">
-                      Month: {selectedMonth}
+                      Month:{" "}
+                      {selectedMonth}
                     </span>
                   )}
 
                   {fromDate && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
-                      From: {formatDate(fromDate)}
+                      From:{" "}
+                      {formatDate(
+                        fromDate,
+                      )}
                     </span>
                   )}
 
                   {toDate && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-100 text-purple-800 font-bold">
-                      To: {formatDate(toDate)}
+                      To:{" "}
+                      {formatDate(toDate)}
                     </span>
                   )}
 
                   <span className="text-stone-400">
-                    Only paid submissions are included in PDF.
+                    Only paid submissions are
+                    included.
                   </span>
                 </div>
               )}
@@ -1274,10 +1622,11 @@ export default function AdminStoryPoetry() {
           </div>
 
           {/* =================================================
-              NO SEARCH RESULTS
+              NO RESULTS
           ================================================= */}
 
-          {filteredSubmissions.length === 0 ? (
+          {filteredSubmissions.length ===
+          0 ? (
             <div className="py-16 px-6 text-center">
               <BookOpen className="h-10 w-10 mx-auto text-stone-300 mb-3" />
 
@@ -1286,7 +1635,8 @@ export default function AdminStoryPoetry() {
               </h3>
 
               <p className="text-sm text-stone-500 mt-1">
-                No submissions match the selected filters.
+                No paid submissions match
+                the selected filters.
               </p>
 
               <button
@@ -1316,9 +1666,9 @@ export default function AdminStoryPoetry() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                {/* =================================================
-                    TABLE HEADER
-                ================================================= */}
+                {/* =============================================
+                    HEADER
+                ============================================= */}
 
                 <thead className="bg-stone-50 border-b border-stone-200">
                   <tr>
@@ -1348,217 +1698,231 @@ export default function AdminStoryPoetry() {
                   </tr>
                 </thead>
 
-                {/* =================================================
-                    TABLE BODY
-                ================================================= */}
+                {/* =============================================
+                    BODY
+                ============================================= */}
 
                 <tbody className="divide-y divide-stone-100">
-                  {filteredSubmissions.map((item) => (
-                    <tr
-                      key={item.storyPoetryId}
-                      onClick={() =>
-                        handleOpenStory(item)
-                      }
-                      className="
-                        group
-                        hover:bg-emerald-50/60
-                        transition-colors
-                        cursor-pointer
-                      "
-                    >
-                      {/* =================================================
-                          SUBMISSION
-                      ================================================= */}
+                  {filteredSubmissions.map(
+                    (item) => (
+                      <tr
+                        key={
+                          item.storyPoetryId
+                        }
+                        onClick={() =>
+                          handleOpenStory(
+                            item,
+                          )
+                        }
+                        className="
+                          group
+                          hover:bg-emerald-50/60
+                          transition-colors
+                          cursor-pointer
+                        "
+                      >
+                        {/* ===================================
+                            SUBMISSION
+                        =================================== */}
 
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
-                            {renderTypeIcon(item.type)}
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
+                              {renderTypeIcon(
+                                item.type,
+                              )}
+                            </div>
+
+                            <div>
+                              <p className="font-bold text-gray-900">
+                                {item.title ||
+                                  "-"}
+                              </p>
+
+                              <p className="text-[11px] text-stone-500 mt-0.5">
+                                ID #
+                                {
+                                  item.storyPoetryId
+                                }
+                              </p>
+
+                              <p className="text-[10px] text-emerald-700 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Click row to
+                                open
+                              </p>
+                            </div>
                           </div>
+                        </td>
 
-                          <div>
-                            <p className="font-bold text-gray-900">
-                              {item.title}
-                            </p>
+                        {/* ===================================
+                            CONTRIBUTOR
+                        =================================== */}
 
-                            <p className="text-[11px] text-stone-500 mt-0.5">
-                              ID #{item.storyPoetryId}
-                            </p>
+                        <td className="px-5 py-4">
+                          <p className="font-semibold text-gray-800">
+                            {item.contributorNameMalayalam ||
+                              "-"}
+                          </p>
+                        </td>
 
-                            <p className="text-[10px] text-emerald-700 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              Click row to open
-                            </p>
+                        {/* ===================================
+                            TYPE
+                        =================================== */}
+
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getTypeStyle(
+                              item.type,
+                            )}`}
+                          >
+                            {item.type ||
+                              "-"}
+                          </span>
+                        </td>
+
+                        {/* ===================================
+                            PAYMENT
+                        =================================== */}
+
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getPaymentStyle(
+                              item.paymentStatus,
+                            )}`}
+                          >
+                            {item.paymentStatus ||
+                              "Pending"}
+                          </span>
+                        </td>
+
+                        {/* ===================================
+                            DATE
+                        =================================== */}
+
+                        <td className="px-5 py-4 text-stone-600 text-xs font-medium">
+                          {formatDate(
+                            item.createdDate,
+                          )}
+                        </td>
+
+                        {/* ===================================
+                            DOWNLOADS
+                        =================================== */}
+
+                        <td className="px-5 py-4">
+                          <div
+                            className="flex justify-end items-center gap-2"
+                            onClick={(e) =>
+                              e.stopPropagation()
+                            }
+                          >
+                            {/* PROFILE PHOTO */}
+
+                            <button
+                              type="button"
+                              disabled={
+                                !item.contributorProfileImageUrl
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+
+                                handleDownloadProfilePicture(
+                                  item,
+                                );
+                              }}
+                              title={
+                                item.contributorProfileImageUrl
+                                  ? "Download profile picture"
+                                  : "No profile picture"
+                              }
+                              className="
+                                flex
+                                items-center
+                                justify-center
+                                gap-2
+                                px-3
+                                py-2
+                                rounded-lg
+                                border
+                                border-stone-200
+                                bg-white
+                                hover:bg-stone-100
+                                disabled:bg-stone-100
+                                disabled:text-stone-300
+                                disabled:cursor-not-allowed
+                                text-stone-700
+                                text-xs
+                                font-bold
+                                cursor-pointer
+                                transition-colors
+                              "
+                            >
+                              <ImageDown className="h-4 w-4" />
+
+                              <span className="hidden xl:inline">
+                                Photo
+                              </span>
+                            </button>
+
+                            {/* DOCX */}
+
+                            <button
+                              type="button"
+                              disabled={
+                                generatingSingleDocx ===
+                                item.storyPoetryId
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+
+                                handleDownloadSingleDOCX(
+                                  item,
+                                );
+                              }}
+                              title="Download this submission as DOCX"
+                              className="
+                                flex
+                                items-center
+                                justify-center
+                                gap-2
+                                px-3
+                                py-2
+                                rounded-lg
+                                bg-[#1b3b2b]
+                                hover:bg-emerald-950
+                                disabled:bg-stone-300
+                                disabled:cursor-not-allowed
+                                text-white
+                                text-xs
+                                font-bold
+                                cursor-pointer
+                                transition-colors
+                              "
+                            >
+                              {generatingSingleDocx ===
+                              item.storyPoetryId ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+
+                                  <span className="hidden xl:inline">
+                                    Generating
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <FileDown className="h-4 w-4" />
+
+                                  <span className="hidden xl:inline">
+                                    DOCX
+                                  </span>
+                                </>
+                              )}
+                            </button>
                           </div>
-                        </div>
-                      </td>
-
-                      {/* =================================================
-                          CONTRIBUTOR
-                      ================================================= */}
-
-                      <td className="px-5 py-4">
-                        <p className="font-semibold text-gray-800">
-                          {item.contributorNameMalayalam || "-"}
-                        </p>
-                      </td>
-
-                      {/* =================================================
-                          TYPE
-                      ================================================= */}
-
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getTypeStyle(
-                            item.type,
-                          )}`}
-                        >
-                          {item.type || "-"}
-                        </span>
-                      </td>
-
-                      {/* =================================================
-                          PAYMENT
-                      ================================================= */}
-
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getPaymentStyle(
-                            item.paymentStatus,
-                          )}`}
-                        >
-                          {item.paymentStatus || "Pending"}
-                        </span>
-                      </td>
-
-                      {/* =================================================
-                          DATE
-                      ================================================= */}
-
-                      <td className="px-5 py-4 text-stone-600 text-xs font-medium">
-                        {formatDate(item.createdDate)}
-                      </td>
-
-                      {/* =================================================
-                          DOWNLOAD ACTIONS
-                      ================================================= */}
-
-                      <td className="px-5 py-4">
-                        <div
-                          className="flex justify-end items-center gap-2"
-                          onClick={(e) =>
-                            e.stopPropagation()
-                          }
-                        >
-                          {/* =================================================
-                              PROFILE PICTURE DOWNLOAD
-                          ================================================= */}
-
-                          <button
-                            type="button"
-                            disabled={
-                              !item.contributorProfileImageUrl
-                            }
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              handleDownloadProfilePicture(
-                                item,
-                              );
-                            }}
-                            title={
-                              item.contributorProfileImageUrl
-                                ? "Download profile picture"
-                                : "No profile picture"
-                            }
-                            className="
-                              flex
-                              items-center
-                              justify-center
-                              gap-2
-                              px-3
-                              py-2
-                              rounded-lg
-                              border
-                              border-stone-200
-                              bg-white
-                              hover:bg-stone-100
-                              disabled:bg-stone-100
-                              disabled:text-stone-300
-                              disabled:cursor-not-allowed
-                              text-stone-700
-                              text-xs
-                              font-bold
-                              cursor-pointer
-                              transition-colors
-                            "
-                          >
-                            <ImageDown className="h-4 w-4" />
-
-                            <span className="hidden xl:inline">
-                              Photo
-                            </span>
-                          </button>
-
-                          {/* =================================================
-                              SINGLE PDF DOWNLOAD
-                          ================================================= */}
-
-                          <button
-                            type="button"
-                            disabled={
-                              generatingSinglePdf ===
-                              item.storyPoetryId
-                            }
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              handleDownloadSinglePDF(
-                                item,
-                              );
-                            }}
-                            title="Download this submission as PDF"
-                            className="
-                              flex
-                              items-center
-                              justify-center
-                              gap-2
-                              px-3
-                              py-2
-                              rounded-lg
-                              bg-[#1b3b2b]
-                              hover:bg-emerald-950
-                              disabled:bg-stone-300
-                              disabled:cursor-not-allowed
-                              text-white
-                              text-xs
-                              font-bold
-                              cursor-pointer
-                              transition-colors
-                            "
-                          >
-                            {generatingSinglePdf ===
-                            item.storyPoetryId ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-
-                                <span className="hidden xl:inline">
-                                  Generating
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <FileDown className="h-4 w-4" />
-
-                                <span className="hidden xl:inline">
-                                  PDF
-                                </span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    ),
+                  )}
                 </tbody>
               </table>
             </div>

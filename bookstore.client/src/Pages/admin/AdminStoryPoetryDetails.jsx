@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  ImageRun,
+  AlignmentType,
+  PageBreak,
+} from "docx";
+
 import {
   ArrowLeft,
   Download,
@@ -9,6 +18,7 @@ import {
   Loader2,
   UserCircle,
 } from "lucide-react";
+
 import { getStoryPoetryById } from "../../services/storyPoetryService";
 
 export default function AdminStoryPoetryDetails() {
@@ -36,7 +46,7 @@ export default function AdminStoryPoetryDetails() {
         console.error("Failed to load submission details:", error);
 
         setError(
-          error.message || "Failed to load submission details.",
+          error.message || "Failed to load submission details."
         );
       } finally {
         setLoading(false);
@@ -72,7 +82,10 @@ export default function AdminStoryPoetryDetails() {
     };
   };
 
-  const safeFileName = (name, fallback = "Story-Poetry") => {
+  const safeFileName = (
+    name,
+    fallback = "Story-Poetry"
+  ) => {
     return (
       String(name || "")
         .replace(/[\\/:*?"<>|]/g, "_")
@@ -81,980 +94,445 @@ export default function AdminStoryPoetryDetails() {
   };
 
   // =========================================================
-  // WAIT FOR IMAGES
+  // DOWNLOAD IMAGE HELPER
   // =========================================================
 
-  const waitForImages = async (container) => {
-    const images = container.querySelectorAll("img");
+  const fetchImageAsArrayBuffer = async (url) => {
+    if (!url) {
+      return null;
+    }
 
-    await Promise.all(
-      Array.from(images).map(
-        (img) =>
-          new Promise((resolve) => {
-            if (img.complete) {
-              resolve();
-              return;
-            }
+    try {
+      const response = await fetch(url, {
+        mode: "cors",
+      });
 
-            img.onload = resolve;
-            img.onerror = resolve;
-          }),
-      ),
-    );
+      if (!response.ok) {
+        throw new Error(
+          `Image request failed with status ${response.status}`
+        );
+      }
+
+      const blob = await response.blob();
+
+      return await blob.arrayBuffer();
+    } catch (error) {
+      console.warn(
+        "Could not load contributor image for DOCX:",
+        error
+      );
+
+      return null;
+    }
   };
 
   // =========================================================
-  // WAIT FOR FONTS
+  // DETECT IMAGE TYPE
   // =========================================================
 
-  const waitForFonts = async () => {
-    try {
-      if (document.fonts?.ready) {
-        await document.fonts.ready;
-      }
-    } catch (error) {
-      console.warn(
-        "Could not wait for document fonts:",
-        error,
+  const getImageType = (url = "") => {
+    const normalized = url.toLowerCase();
+
+    if (
+      normalized.includes(".png") ||
+      normalized.includes("image/png")
+    ) {
+      return "png";
+    }
+
+    if (
+      normalized.includes(".jpg") ||
+      normalized.includes(".jpeg") ||
+      normalized.includes("image/jpeg")
+    ) {
+      return "jpg";
+    }
+
+    return "jpg";
+  };
+
+  // =========================================================
+  // CREATE AUTHOR IMAGE
+  // =========================================================
+
+  const createAuthorImage = async () => {
+    if (!item?.contributorProfileImageUrl) {
+      return null;
+    }
+
+    const imageData = await fetchImageAsArrayBuffer(
+      item.contributorProfileImageUrl
+    );
+
+    if (!imageData) {
+      return null;
+    }
+
+    const imageType = getImageType(
+      item.contributorProfileImageUrl
+    );
+
+    return new ImageRun({
+      data: imageData,
+      transformation: {
+        width: 132,
+        height: 162,
+      },
+      type: imageType,
+    });
+  };
+
+  // =========================================================
+  // CREATE AUTHOR SECTION
+  // =========================================================
+
+  const createAuthorSection = async () => {
+    const children = [];
+
+    const authorImage = await createAuthorImage();
+
+    // -------------------------------------------------------
+    // AUTHOR IMAGE
+    // -------------------------------------------------------
+
+    if (authorImage) {
+      children.push(
+        new Paragraph({
+          alignment: AlignmentType.LEFT,
+          spacing: {
+            after: 120,
+          },
+          children: [authorImage],
+        })
       );
     }
 
-    // Give the browser a moment to finish font rendering.
-    await new Promise((resolve) =>
-      setTimeout(resolve, 500),
-    );
-  };
-
-  // =========================================================
-  // CREATE PDF PAGE
-  // =========================================================
-
-  const createPdfPage = ({
-    width = 210,
-    height = 297,
-  } = {}) => {
-    const page = document.createElement("div");
-
-    page.style.width = `${width}mm`;
-    page.style.height = `${height}mm`;
-    page.style.boxSizing = "border-box";
-    page.style.backgroundColor = "#ffffff";
-
-    // Safe A4 margins.
-    page.style.padding = "20mm 18mm 20mm 18mm";
-
-    page.style.fontFamily =
-      "'Manjari', sans-serif";
-
-    page.style.color = "#111827";
-
-    // IMPORTANT:
-    // We don't hide overflow.
-    //
-    // The content itself is placed only into pages where
-    // it fits. This prevents text from being silently cropped.
-    page.style.overflow = "hidden";
-
-    return page;
-  };
-
-  // =========================================================
-  // CREATE AUTHOR HEADER
-  // =========================================================
-
-  const createAuthorHeader = () => {
-    const header = document.createElement("div");
-
-    header.style.display = "flex";
-    header.style.alignItems = "flex-start";
-    header.style.gap = "8mm";
-    header.style.width = "100%";
-    header.style.boxSizing = "border-box";
-
     // -------------------------------------------------------
-    // PROFILE IMAGE
+    // AUTHOR NAME
     // -------------------------------------------------------
 
-    if (item?.contributorProfileImageUrl) {
-      const img = document.createElement("img");
+    if (item?.contributorNameMalayalam) {
+      children.push(
+        new Paragraph({
+          spacing: {
+            before: 80,
+            after: 40,
+          },
 
-      img.src = item.contributorProfileImageUrl;
-      img.crossOrigin = "anonymous";
-
-      img.style.width = "35mm";
-      img.style.height = "43mm";
-      img.style.objectFit = "cover";
-      img.style.borderRadius = "5mm";
-      img.style.display = "block";
-      img.style.flexShrink = "0";
-
-      header.appendChild(img);
-    } else {
-      const placeholder =
-        document.createElement("div");
-
-      placeholder.style.width = "35mm";
-      placeholder.style.height = "43mm";
-      placeholder.style.backgroundColor = "#f5f5f4";
-      placeholder.style.borderRadius = "5mm";
-
-      placeholder.style.display = "flex";
-      placeholder.style.alignItems = "center";
-      placeholder.style.justifyContent = "center";
-
-      placeholder.style.fontSize = "12mm";
-      placeholder.style.color = "#a8a29e";
-
-      placeholder.style.flexShrink = "0";
-
-      placeholder.textContent = "👤";
-
-      header.appendChild(placeholder);
+          children: [
+            new TextRun({
+              text: String(
+                item.contributorNameMalayalam
+              ),
+              font: {
+                name: "Manjari",
+                eastAsia: "Manjari",
+              },
+              size: 34,
+              bold: true,
+            }),
+          ],
+        })
+      );
     }
 
     // -------------------------------------------------------
-    // CONTRIBUTOR DETAILS
-    // -------------------------------------------------------
-
-    const details = document.createElement("div");
-
-    details.style.flex = "1";
-    details.style.minWidth = "0";
-    details.style.paddingTop = "2mm";
-
-    details.style.fontFamily =
-      "'Manjari', sans-serif";
-
-    details.style.lineHeight = "1.55";
-
-    // NAME
-    const authorName = document.createElement("div");
-
-    authorName.style.fontSize = "17px";
-    authorName.style.fontWeight = "700";
-
-    authorName.textContent =
-      item?.contributorNameMalayalam || "";
-
-    details.appendChild(authorName);
-
     // LOCATION
-    if (
-      item?.contributorCityMalayalam ||
-      item?.contributorDistrictMalayalam
-    ) {
-      const location =
-        document.createElement("div");
+    // -------------------------------------------------------
 
-      location.style.fontSize = "14px";
-      location.style.marginTop = "2px";
+    const city =
+      item?.contributorCityMalayalam || "";
 
-      location.textContent =
-        `${item?.contributorCityMalayalam || ""}${
-          item?.contributorCityMalayalam &&
-          item?.contributorDistrictMalayalam
-            ? ", "
-            : ""
-        }${
-          item?.contributorDistrictMalayalam || ""
-        }`;
+    const district =
+      item?.contributorDistrictMalayalam || "";
 
-      details.appendChild(location);
+    if (city || district) {
+      const location = `${city}${
+        city && district ? ", " : ""
+      }${district}`;
+
+      children.push(
+        new Paragraph({
+          spacing: {
+            after: 40,
+          },
+
+          children: [
+            new TextRun({
+              text: location,
+              font: {
+                name: "Manjari",
+                eastAsia: "Manjari",
+              },
+              size: 28,
+            }),
+          ],
+        })
+      );
     }
 
+    // -------------------------------------------------------
     // EMAIL
+    // -------------------------------------------------------
+
     if (item?.contributorEmail) {
-      const email =
-        document.createElement("div");
+      children.push(
+        new Paragraph({
+          spacing: {
+            after: 0,
+          },
 
-      email.style.fontFamily =
-        "Arial, sans-serif";
-
-      email.style.fontSize = "12px";
-      email.style.marginTop = "3px";
-
-      email.style.overflowWrap = "anywhere";
-
-      email.textContent =
-        `mail/${item.contributorEmail}`;
-
-      details.appendChild(email);
+          children: [
+            new TextRun({
+              text: `mail/${item.contributorEmail}`,
+              font: {
+                name: "Arial",
+                eastAsia: "Arial",
+              },
+              size: 22,
+            }),
+          ],
+        })
+      );
     }
 
-    header.appendChild(details);
-
-    return header;
+    return children;
   };
 
   // =========================================================
   // CREATE TITLE
   // =========================================================
 
-  const createTitle = () => {
-    const title =
-      document.createElement("div");
-
-    title.style.marginTop = "13mm";
-
-    title.style.fontFamily =
-      "'Manjari', sans-serif";
-
-    title.style.fontSize = "28px";
-    title.style.fontWeight = "700";
-
-    // Important for Malayalam glyphs.
-    title.style.lineHeight = "1.45";
-
-    title.style.color = "#111827";
-
-    title.style.width = "100%";
-
-    title.style.boxSizing = "border-box";
-
-    title.style.overflowWrap = "break-word";
-    title.style.wordBreak = "normal";
-
-    title.textContent = item?.title || "";
-
-    return title;
-  };
-
-  // =========================================================
-  // CREATE CONTENT ELEMENT
-  // =========================================================
-
-  const createContentElement = ({
-    fontSize = 16,
-    lineHeight = 1.85,
-  } = {}) => {
-    const content =
-      document.createElement("div");
-
-    content.style.width = "100%";
-
-    content.style.fontFamily =
-      "'Manjari', sans-serif";
-
-    content.style.fontSize =
-      `${fontSize}px`;
-
-    /*
-      IMPORTANT:
-
-      A generous line-height prevents Malayalam
-      characters/diacritics from being vertically clipped.
-    */
-    content.style.lineHeight =
-      String(lineHeight);
-
-    content.style.color = "#111827";
-
-    content.style.boxSizing = "border-box";
-
-    /*
-      Preserve exactly what the user typed.
-
-      Newlines remain newlines.
-      Spaces remain spaces.
-      Long Malayalam text can wrap.
-    */
-    content.style.whiteSpace = "pre-wrap";
-
-    content.style.overflowWrap =
-      "break-word";
-
-    content.style.wordBreak = "normal";
-
-    return content;
-  };
-
-  // =========================================================
-  // CREATE CONTENT PARAGRAPH
-  // =========================================================
-
-  const createContentParagraph = (text) => {
-    const paragraph =
-      document.createElement("div");
-
-    /*
-      Do NOT use fixed heights.
-
-      The browser calculates the actual height.
-    */
-    paragraph.style.width = "100%";
-
-    paragraph.style.whiteSpace = "pre-wrap";
-
-    paragraph.style.overflowWrap =
-      "break-word";
-
-    paragraph.style.wordBreak = "normal";
-
-    paragraph.style.boxSizing = "border-box";
-
-    paragraph.style.margin = "0";
-
-    /*
-      IMPORTANT:
-
-      We deliberately do NOT use:
-
-        breakInside: avoid
-
-      on every line.
-
-      That was one of the reasons the previous
-      implementation could behave badly.
-
-      Text should be allowed to naturally flow.
-    */
-
-    paragraph.textContent =
-      text === "" ? "\u00A0" : text;
-
-    return paragraph;
-  };
-
-  // =========================================================
-  // RENDER HTML PAGE INTO PDF
-  // =========================================================
-
-  const renderPageToPdf = async ({
-    pdf,
-    page,
-    pageIndex,
-  }) => {
-    await waitForImages(page);
-    await waitForFonts();
-
-    /*
-      Render at high resolution.
-
-      3x gives good quality without making the
-      browser canvas unnecessarily huge.
-    */
-    const canvas = await html2canvas(
-      page,
-      {
-        scale: 3,
-
-        useCORS: true,
-        allowTaint: false,
-
-        backgroundColor: "#ffffff",
-
-        width: page.offsetWidth,
-        height: page.offsetHeight,
-
-        windowWidth: page.offsetWidth,
-        windowHeight: page.offsetHeight,
-
-        /*
-          Important for Malayalam text rendering.
-        */
-        logging: false,
+  const createTitleParagraph = () => {
+    return new Paragraph({
+      spacing: {
+        before: 600,
+        after: 400,
+        line: 360,
       },
-    );
 
-    const image =
-      canvas.toDataURL(
-        "image/jpeg",
-        0.98,
-      );
+      keepNext: true,
 
-    if (pageIndex > 0) {
-      pdf.addPage();
-    }
-
-    pdf.addImage(
-      image,
-      "JPEG",
-      0,
-      0,
-      210,
-      297,
-    );
+      children: [
+        new TextRun({
+          text: String(item?.title || ""),
+          font: {
+            name: "Manjari",
+            eastAsia: "Manjari",
+          },
+          size: 48,
+          bold: true,
+        }),
+      ],
+    });
   };
 
   // =========================================================
-  // BUILD POETRY PDF
+  // CREATE CONTENT PARAGRAPHS
   // =========================================================
 
-  const buildPoetryPdf = async ({
-    pdf,
-    printContainer,
-  }) => {
-    const page = createPdfPage();
+  const createContentParagraphs = () => {
+    const content = String(item?.content || "");
 
-    // Author header.
-    page.appendChild(
-      createAuthorHeader(),
-    );
+    /*
+      IMPORTANT:
 
-    // Title.
-    page.appendChild(
-      createTitle(),
-    );
+      We split ONLY by actual Enter/newline characters.
 
-    // Content.
-    const contentArea =
-      createContentElement({
-        fontSize: 16,
-        lineHeight: 1.75,
+      Word will automatically wrap long lines.
+
+      We do NOT split based on character count.
+
+      Therefore the user's original content is preserved.
+    */
+
+    const lines = content.split(/\r?\n/);
+
+    return lines.map((line) => {
+      return new Paragraph({
+        spacing: {
+          before: 0,
+          after: 180,
+          line: 420,
+        },
+
+        alignment: AlignmentType.LEFT,
+
+        children: [
+          new TextRun({
+            text: line || " ",
+            font: {
+              name: "Manjari",
+              eastAsia: "Manjari",
+            },
+            size: 32,
+          }),
+        ],
       });
+    });
+  };
 
-    contentArea.style.marginTop =
-      "9mm";
+  // =========================================================
+  // BUILD DOCX
+  // =========================================================
 
-    /*
-      Poetry is limited by the user side to
-      30 lines, so normally it should fit.
+  const buildDocx = async () => {
+    const { isPoetry, isStory } =
+      getContentType();
 
-      We do NOT artificially split it.
-      The entire submitted poem goes into
-      this one page.
-    */
-    const contentText =
-      String(item?.content || "");
+    console.log(
+      "Building DOCX:",
+      isPoetry ? "Poetry" : isStory ? "Story" : "Unknown"
+    );
 
-    contentArea.textContent =
-      contentText;
+    // -------------------------------------------------------
+    // AUTHOR
+    // -------------------------------------------------------
 
-    page.appendChild(contentArea);
+    const authorSection =
+      await createAuthorSection();
 
-    printContainer.appendChild(page);
+    // -------------------------------------------------------
+    // TITLE
+    // -------------------------------------------------------
 
-    await waitForImages(page);
-    await waitForFonts();
+    const titleParagraph =
+      createTitleParagraph();
 
-    /*
-      If the poetry happens to be slightly too
-      tall because of font rendering, gradually
-      reduce font size.
+    // -------------------------------------------------------
+    // CONTENT
+    // -------------------------------------------------------
 
-      We never remove content.
-      We also keep a safe line-height.
-    */
-    let fontSize = 16;
+    const contentParagraphs =
+      createContentParagraphs();
 
-    while (
-      page.scrollHeight >
-        page.clientHeight &&
-      fontSize > 12
-    ) {
-      fontSize -= 0.5;
+    // -------------------------------------------------------
+    // DOCUMENT
+    // -------------------------------------------------------
 
-      contentArea.style.fontSize =
-        `${fontSize}px`;
+    const documentChildren = [
+      ...authorSection,
+      titleParagraph,
+      ...contentParagraphs,
+    ];
 
-      await new Promise((resolve) =>
-        requestAnimationFrame(resolve),
-      );
-    }
+    const doc = new Document({
+      creator: "BookStore",
+      title: String(item?.title || "Story-Poetry"),
+      subject: isPoetry
+        ? "Poetry Submission"
+        : isStory
+        ? "Story Submission"
+        : "Story-Poetry Submission",
 
-    /*
-      Final render.
+      description:
+        "Generated from BookStore contributor submission.",
 
-      If content still exceeds the page after
-      safe reduction, we DO NOT silently delete it.
-      The user's 30-line submission limit should
-      normally prevent this situation.
-    */
-    await renderPageToPdf({
-      pdf,
-      page,
-      pageIndex: 0,
+      styles: {
+        default: {
+          document: {
+            run: {
+              font: "Manjari",
+              size: 32,
+            },
+
+            paragraph: {
+              spacing: {
+                line: 420,
+              },
+            },
+          },
+        },
+      },
+
+      sections: [
+        {
+          properties: {
+            page: {
+              width: 11906,
+              height: 16838,
+
+              margin: {
+                top: 1134,
+                right: 1020,
+                bottom: 1134,
+                left: 1020,
+              },
+            },
+          },
+
+          children: documentChildren,
+        },
+      ],
     });
 
-    printContainer.removeChild(page);
+    return doc;
   };
 
   // =========================================================
-  // BUILD STORY PDF
+  // DOWNLOAD DOCX
   // =========================================================
 
-  const buildStoryPdf = async ({
-    pdf,
-    printContainer,
-  }) => {
-    const contentText =
-      String(item?.content || "");
-
-    /*
-      Preserve the user's actual Enter presses.
-
-      We split only by explicit newline so that
-      paragraphs/lines remain intact.
-
-      We DO NOT impose a 35-character limit here.
-      That belongs to the user submission side,
-      not the admin PDF layout.
-    */
-    const lines =
-      contentText.split(/\r?\n/);
-
-    /*
-      Story pages are created dynamically.
-
-      The story can use:
-        1 page
-        2 pages
-        3 pages
-        4 pages
-
-      depending on actual content.
-
-      We NEVER create empty extra pages.
-    */
-
-    let pageIndex = 0;
-
-    let page = null;
-    let contentArea = null;
-
-    // -------------------------------------------------------
-    // Create the first story page.
-    // -------------------------------------------------------
-
-    const createStoryPage = ({
-      firstPage = false,
-    } = {}) => {
-      const newPage = createPdfPage();
-
-      if (firstPage) {
-        // Author header only appears on page 1.
-        newPage.appendChild(
-          createAuthorHeader(),
-        );
-
-        // Title only appears on page 1.
-        newPage.appendChild(
-          createTitle(),
-        );
-      }
-
-      const newContentArea =
-        createContentElement({
-          fontSize: 16,
-          lineHeight: 1.75,
-        });
-
-      if (firstPage) {
-        newContentArea.style.marginTop =
-          "9mm";
-      } else {
-        newContentArea.style.marginTop =
-          "0mm";
-      }
-
-      newPage.appendChild(
-        newContentArea,
-      );
-
-      return {
-        page: newPage,
-        contentArea: newContentArea,
-      };
-    };
-
-    // -------------------------------------------------------
-    // Start page 1.
-    // -------------------------------------------------------
-
-    ({
-      page,
-      contentArea,
-    } = createStoryPage({
-      firstPage: true,
-    }));
-
-    printContainer.appendChild(page);
-
-    await waitForImages(page);
-    await waitForFonts();
-
-    // -------------------------------------------------------
-    // Add lines naturally.
-    // -------------------------------------------------------
-
-    let currentLineIndex = 0;
-
-    while (
-      currentLineIndex < lines.length
-    ) {
-      const line =
-        lines[currentLineIndex];
-
-      const paragraph =
-        createContentParagraph(line);
-
-      contentArea.appendChild(
-        paragraph,
-      );
-
-      /*
-        Wait one browser frame so the DOM has
-        calculated the new text height.
-      */
-      await new Promise((resolve) =>
-        requestAnimationFrame(resolve),
-      );
-
-      const pageIsOverflowing =
-        page.scrollHeight >
-        page.clientHeight + 1;
-
-      if (!pageIsOverflowing) {
-        /*
-          It fits.
-
-          Move to the next submitted line.
-        */
-        currentLineIndex++;
-        continue;
-      }
-
-      /*
-        The newly added line doesn't fit.
-
-        Remove ONLY that line from this page.
-
-        Then create the next page and put that
-        same line there.
-
-        Therefore:
-
-          Page 1 -> full
-          Page 2 -> continues
-
-        with NO text deletion.
-      */
-      contentArea.removeChild(
-        paragraph,
-      );
-
-      /*
-        If there is only one extremely tall line,
-        we still need to prevent an infinite loop.
-
-        In normal user submissions this should not
-        happen because the user-side line length
-        is limited.
-      */
-      if (
-        contentArea.children.length === 0
-      ) {
-        /*
-          A single line is taller than the page.
-
-          We reduce the font size safely until
-          that line can fit.
-
-          Again: we never delete it.
-        */
-        let fontSize = 16;
-
-        let fitsSingleLine = false;
-
-        while (
-          fontSize > 11
-        ) {
-          contentArea.style.fontSize =
-            `${fontSize}px`;
-
-          contentArea.style.lineHeight =
-            "1.65";
-
-          contentArea.appendChild(
-            paragraph,
-          );
-
-          await new Promise((resolve) =>
-            requestAnimationFrame(resolve),
-          );
-
-          if (
-            page.scrollHeight <=
-            page.clientHeight + 1
-          ) {
-            fitsSingleLine = true;
-            break;
-          }
-
-          contentArea.removeChild(
-            paragraph,
-          );
-
-          fontSize -= 0.5;
-        }
-
-        if (fitsSingleLine) {
-          currentLineIndex++;
-          continue;
-        }
-
-        /*
-          If an individual submitted line somehow
-          cannot fit even after safe reduction,
-          stop rather than silently losing data.
-        */
-        console.warn(
-          "A single story line could not fit on an A4 page.",
-        );
-
-        contentArea.appendChild(
-          paragraph,
-        );
-
-        currentLineIndex++;
-
-        continue;
-      }
-
-      // -----------------------------------------------------
-      // Current page is finished.
-      // -----------------------------------------------------
-
-      await renderPageToPdf({
-        pdf,
-        page,
-        pageIndex,
-      });
-
-      pageIndex++;
-
-      /*
-        HARD MAXIMUM:
-
-        Story is allowed up to 4 PDF pages.
-
-        The user-side limit is 120 lines, so
-        under the intended layout this should fit.
-      */
-      if (pageIndex >= 4) {
-        /*
-          We have reached the allowed maximum.
-
-          The submission system should already prevent
-          more than 120 user-entered lines.
-
-          Do NOT create a 5th page.
-        */
-        if (
-          currentLineIndex <
-          lines.length
-        ) {
-          console.warn(
-            "Story content exceeds the maximum of 4 PDF pages.",
-          );
-        }
-
-        page = null;
-        contentArea = null;
-
-        break;
-      }
-
-      // -----------------------------------------------------
-      // Create continuation page.
-      // -----------------------------------------------------
-
-      ({
-        page,
-        contentArea,
-      } = createStoryPage({
-        firstPage: false,
-      }));
-
-      printContainer.appendChild(page);
-
-      await waitForImages(page);
-      await waitForFonts();
-
-      /*
-        IMPORTANT:
-
-        currentLineIndex was NOT incremented
-        after removing the overflowing paragraph.
-
-        Therefore that exact same line will now
-        be inserted on the new page.
-      */
-    }
-
-    // -------------------------------------------------------
-    // Render final page only if it contains content.
-    // -------------------------------------------------------
-
-    if (
-      page &&
-      contentArea &&
-      contentArea.children.length > 0
-    ) {
-      await renderPageToPdf({
-        pdf,
-        page,
-        pageIndex,
-      });
-
-      printContainer.removeChild(page);
-
-      page = null;
-      contentArea = null;
-    }
-  };
-
-  // =========================================================
-  // PDF DOWNLOAD
-  // =========================================================
-
-  const handleDownloadPDF = async () => {
+  const handleDownloadDOCX = async () => {
     try {
-      if (!item) return;
-
-      const { isPoetry, isStory } =
-        getContentType();
-
-      const pdf = new jsPDF(
-        "p",
-        "mm",
-        "a4",
-      );
-
-      /*
-        IMPORTANT:
-
-        jsPDF starts with one blank page.
-
-        We will render page 0 into it.
-      */
-
-      const printContainer =
-        document.createElement("div");
-
-      printContainer.style.position =
-        "fixed";
-
-      printContainer.style.left =
-        "-100000px";
-
-      printContainer.style.top = "0";
-
-      printContainer.style.width =
-        "210mm";
-
-      printContainer.style.background =
-        "#ffffff";
-
-      printContainer.style.zIndex =
-        "-9999";
-
-      /*
-        Make sure the hidden container itself
-        doesn't inherit weird application styles.
-      */
-      printContainer.style.margin = "0";
-      printContainer.style.padding = "0";
-
-      document.body.appendChild(
-        printContainer,
-      );
-
-      try {
-        if (isPoetry) {
-          // ===============================================
-          // POETRY = ONE PAGE
-          // ===============================================
-
-          await buildPoetryPdf({
-            pdf,
-            printContainer,
-          });
-        } else if (isStory) {
-          // ===============================================
-          // STORY = UP TO FOUR PAGES
-          // ===============================================
-
-          await buildStoryPdf({
-            pdf,
-            printContainer,
-          });
-        } else {
-          /*
-            Fallback for unknown content type.
-
-            Treat it like a normal single-page submission.
-          */
-
-          const page = createPdfPage();
-
-          page.appendChild(
-            createAuthorHeader(),
-          );
-
-          page.appendChild(
-            createTitle(),
-          );
-
-          const contentArea =
-            createContentElement({
-              fontSize: 16,
-              lineHeight: 1.75,
-            });
-
-          contentArea.style.marginTop =
-            "9mm";
-
-          contentArea.textContent =
-            String(item?.content || "");
-
-          page.appendChild(
-            contentArea,
-          );
-
-          printContainer.appendChild(
-            page,
-          );
-
-          await renderPageToPdf({
-            pdf,
-            page,
-            pageIndex: 0,
-          });
-        }
-      } finally {
-        /*
-          Always remove the hidden DOM container.
-        */
-        if (
-          printContainer.parentNode
-        ) {
-          document.body.removeChild(
-            printContainer,
-          );
-        }
+      if (!item) {
+        return;
       }
 
-      // =====================================================
-      // SAVE
-      // =====================================================
+      setError("");
 
-      const fileName =
-        safeFileName(
-          item.contributorNameMalayalam,
-        );
+      console.log(
+        "Starting DOCX generation..."
+      );
 
-      pdf.save(
-        `${fileName}.pdf`,
+      const doc = await buildDocx();
+
+      console.log(
+        "DOCX document created."
+      );
+
+      const blob =
+        await Packer.toBlob(doc);
+
+      console.log(
+        "DOCX blob generated."
+      );
+
+      const fileName = safeFileName(
+        item.contributorNameMalayalam,
+        "Story-Poetry"
+      );
+
+      const url =
+        URL.createObjectURL(blob);
+
+      const link =
+        document.createElement("a");
+
+      link.href = url;
+
+      link.download =
+        `${fileName}.docx`;
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+
+      console.log(
+        "DOCX downloaded successfully."
       );
     } catch (error) {
       console.error(
-        "PDF generation failed:",
-        error,
+        "DOCX generation failed:",
+        error
       );
 
       alert(
-        "Failed to generate PDF.",
+        "Failed to generate DOCX. Please try again."
       );
     }
   };
@@ -1068,7 +546,7 @@ export default function AdminStoryPoetryDetails() {
       !item?.contributorProfileImageUrl
     ) {
       alert(
-        "No contributor profile image available.",
+        "No contributor profile image available."
       );
 
       return;
@@ -1076,12 +554,12 @@ export default function AdminStoryPoetryDetails() {
 
     try {
       const response = await fetch(
-        item.contributorProfileImageUrl,
+        item.contributorProfileImageUrl
       );
 
       if (!response.ok) {
         throw new Error(
-          "Failed to fetch image.",
+          "Failed to fetch image."
         );
       }
 
@@ -1097,7 +575,7 @@ export default function AdminStoryPoetryDetails() {
       const fileName =
         safeFileName(
           item.contributorNameMalayalam,
-          "contributor",
+          "contributor"
         );
 
       const extensionMap = {
@@ -1127,11 +605,11 @@ export default function AdminStoryPoetryDetails() {
     } catch (error) {
       console.error(
         "Image download failed:",
-        error,
+        error
       );
 
       alert(
-        "Failed to download contributor image.",
+        "Failed to download contributor image."
       );
     }
   };
@@ -1210,26 +688,21 @@ export default function AdminStoryPoetryDetails() {
             Download Photo
           </button>
 
-          {/* DOWNLOAD PDF */}
+          {/* DOWNLOAD DOCX */}
 
           <button
-            onClick={handleDownloadPDF}
+            onClick={handleDownloadDOCX}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1b3b2b] hover:bg-emerald-950 text-white rounded-xl text-sm font-bold cursor-pointer shadow-sm"
           >
             <Download className="h-4 w-4" />
 
-            Download PDF
+            Download DOCX
           </button>
         </div>
       </div>
 
       {/* =====================================================
           ADMIN BOOK PREVIEW
-
-          This is only the browser preview.
-
-          PDF generation is completely independent from
-          this preview now.
       ===================================================== */}
 
       <div
@@ -1377,12 +850,6 @@ export default function AdminStoryPoetryDetails() {
               fontFamily:
                 "'Manjari', sans-serif",
 
-              /*
-                Slightly more line-height than before.
-
-                This prevents Malayalam characters from
-                touching/cropping into the next line.
-              */
               lineHeight: "1.45",
 
               overflowWrap:
@@ -1419,11 +886,7 @@ export default function AdminStoryPoetryDetails() {
               md:text-[23px]
             "
             style={{
-              /*
-                Safer Malayalam line-height.
-              */
-              lineHeight:
-                "1.9",
+              lineHeight: "1.9",
 
               overflowWrap:
                 "break-word",
@@ -1452,7 +915,7 @@ export default function AdminStoryPoetryDetails() {
             background: white !important;
           }
 
-          .print\\\\:hidden {
+          .print\\:hidden {
             display: none !important;
           }
 
@@ -1460,11 +923,8 @@ export default function AdminStoryPoetryDetails() {
             width: 210mm !important;
             min-height: 297mm !important;
             max-width: none !important;
-
             margin: 0 !important;
-
             padding: 20mm 18mm 20mm 18mm !important;
-
             box-shadow: none !important;
             background: white !important;
           }

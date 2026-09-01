@@ -35,3 +35,55 @@ export const registerUser = async (registerData) => {
 
   return data
 }
+
+// =========================================================
+// VERIFY EMAIL OTP
+// =========================================================
+
+export const verifyEmailOtp = async (verifyData) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/Account/verify-email`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(verifyData)
+    }
+  )
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'OTP verification failed.')
+  }
+
+  return data
+}
+
+// =========================================================
+// RESEND OTP
+// =========================================================
+
+export const resendOtp = async (email) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/Account/resend-otp`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email
+      })
+    }
+  )
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to resend OTP.')
+  }
+
+  return data
+}
