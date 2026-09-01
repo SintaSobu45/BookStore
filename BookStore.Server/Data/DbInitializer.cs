@@ -72,7 +72,7 @@ namespace BookStore.Server.Data
             // =========================================================
 
             if (!context.Users.Any(
-                u => u.Email == "YOUR_REAL_ADMIN_EMAIL"))
+                u => u.Email == "theoldlibrary.info@gmail.com"))
             {
                 var realAdmin = new User
                 {
