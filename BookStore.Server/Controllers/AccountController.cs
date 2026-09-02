@@ -3,6 +3,7 @@ using BookStore.Server.DTOs.Editor;
 using BookStore.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.Server.Controllers
 {
@@ -227,6 +228,113 @@ namespace BookStore.Server.Controllers
                 await _accountService.GetAllEditorsAsync();
 
             return Ok(editors);
+        }
+
+        // =========================================================
+        // CHANGE EDITOR PASSWORD
+        // ADMIN ONLY
+        // =========================================================
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("editors/{userId}/password")]
+        public async Task<IActionResult> ChangeEditorPassword(
+            int userId,
+            ChangeEditorPasswordRequest request)
+        {
+            var result =
+                await _accountService.ChangeEditorPasswordAsync(
+                    userId,
+                    request);
+
+            if (!result)
+            {
+                return NotFound(new
+                {
+                    message = "Editor not found."
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Editor password changed successfully."
+            });
+        }
+
+        // =========================================================
+        // UPDATE EDITOR
+        // ADMIN ONLY
+        // =========================================================
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("editors/{userId}")]
+        public async Task<IActionResult> UpdateEditor(
+            int userId,
+            UpdateEditorRequest request)
+        {
+            try
+            {
+                var result =
+                    await _accountService.UpdateEditorAsync(
+                        userId,
+                        request);
+
+                if (result == null)
+                {
+                    return NotFound(new
+                    {
+                        message = "Editor not found."
+                    });
+                }
+
+                return Ok(new
+                {
+                    message = "Editor updated successfully.",
+                    editor = result
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+        // =========================================================
+        // DELETE EDITOR
+        // ADMIN ONLY
+        // =========================================================
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("editors/{userId}")]
+        public async Task<IActionResult> DeleteEditor(int userId)
+        {
+            try
+            {
+                var result =
+                    await _accountService.DeleteEditorAsync(userId);
+
+                if (!result)
+                {
+                    return NotFound(new
+                    {
+                        message = "Editor not found."
+                    });
+                }
+
+                return Ok(new
+                {
+                    message = "Editor deleted successfully."
+                });
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Editor cannot be deleted because related records exist."
+                });
+            }
         }
     }
 }

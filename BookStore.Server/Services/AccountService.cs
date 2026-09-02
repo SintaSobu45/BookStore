@@ -658,5 +658,105 @@ namespace BookStore.Server.Services
                 CreatedDate = editor.CreatedDate
             }).ToList();
         }
+        // =========================================================
+        // UPDATE EDITOR
+        // ADMIN ONLY
+        // =========================================================
+
+        
+        public async Task<EditorResponse?> UpdateEditorAsync(
+            int userId,
+            UpdateEditorRequest request)
+        {
+            var editor =
+                await _repository.GetEditorByIdAsync(userId);
+
+            if (editor == null)
+            {
+                return null;
+            }
+
+            var emailExists =
+                await _repository.EmailExistsForOtherUserAsync(
+                    request.Email,
+                    userId);
+
+            if (emailExists)
+            {
+                throw new InvalidOperationException(
+                    "Email already exists.");
+            }
+
+            editor.Name = request.Name;
+            editor.Email = request.Email;
+            editor.Phone = request.Phone;
+
+            editor.EmailVerified = true;
+
+            editor.UpdatedDate = DateTime.UtcNow;
+
+            await _repository.SaveChangesAsync();
+
+            return new EditorResponse
+            {
+                UserId = editor.UserId,
+                Name = editor.Name,
+                Email = editor.Email,
+                Phone = editor.Phone,
+                IsActive = editor.IsActive,
+                CreatedDate = editor.CreatedDate
+            };
+        }
+
+
+        // =========================================================
+        // CHANGE EDITOR PASSWORD
+        // ADMIN ONLY
+        // =========================================================
+
+        public async Task<bool> ChangeEditorPasswordAsync(
+            int userId,
+            ChangeEditorPasswordRequest request)
+        {
+            var editor =
+                await _repository.GetEditorByIdAsync(userId);
+
+            if (editor == null)
+            {
+                return false;
+            }
+
+            editor.PasswordHash =
+                _passwordHasher.HashPassword(
+                    editor,
+                    request.NewPassword
+                );
+
+            editor.UpdatedDate = DateTime.UtcNow;
+
+            await _repository.SaveChangesAsync();
+
+            return true;
+        }
+
+        // =========================================================
+        // DELETE EDITOR
+        // ADMIN ONLY
+        // =========================================================
+
+        public async Task<bool> DeleteEditorAsync(int userId)
+        {
+            var editor =
+                await _repository.GetEditorByIdAsync(userId);
+
+            if (editor == null)
+            {
+                return false;
+            }
+
+            await _repository.DeleteEditorAsync(editor);
+
+            return true;
+        }
     }
 }
