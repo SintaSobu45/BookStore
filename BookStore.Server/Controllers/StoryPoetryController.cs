@@ -19,11 +19,6 @@ namespace BookStore.Server.Controllers
             _storyPoetryService = storyPoetryService;
         }
 
-
-        // =========================================================
-        // GET USER ID FROM JWT
-        // =========================================================
-
         private int GetUserId()
         {
             var userIdClaim =
@@ -46,9 +41,10 @@ namespace BookStore.Server.Controllers
 
 
         // =========================================================
-        // ADD STORY / POETRY / SPECIAL
+        // USER - ADD STORY / POETRY / SPECIAL
         // =========================================================
 
+        [Authorize(Roles = "User")]
         [HttpPost]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Add(
@@ -66,7 +62,6 @@ namespace BookStore.Server.Controllers
                 {
                     message =
                         "Story/Poetry submitted successfully.",
-
                     data = result
                 });
             }
@@ -88,9 +83,10 @@ namespace BookStore.Server.Controllers
 
 
         // =========================================================
-        // GET MY SUBMISSIONS
+        // USER - GET MY SUBMISSIONS
         // =========================================================
 
+        [Authorize(Roles = "User")]
         [HttpGet("my")]
         public async Task<IActionResult> GetMy()
         {
@@ -115,7 +111,8 @@ namespace BookStore.Server.Controllers
 
 
         // =========================================================
-        // GET BY ID
+        // ADMIN + EDITOR - GET SUBMISSION BY ID
+        // USER - GET OWN SUBMISSION
         // =========================================================
 
         [HttpGet("{id}")]
@@ -136,21 +133,15 @@ namespace BookStore.Server.Controllers
                     });
                 }
 
-
-                // -------------------------------------------------
-                // ADMIN CAN VIEW ANY SUBMISSION
-                // -------------------------------------------------
-
-                if (User.IsInRole("Admin"))
+                // ADMIN + EDITOR
+                // Can view any submission
+                if (User.IsInRole("Admin") ||
+                    User.IsInRole("Editor"))
                 {
                     return Ok(result);
                 }
 
-
-                // -------------------------------------------------
                 // NORMAL USER
-                // -------------------------------------------------
-
                 var userId = GetUserId();
 
                 if (result.UserId != userId)
@@ -175,9 +166,10 @@ namespace BookStore.Server.Controllers
 
 
         // =========================================================
-        // UPDATE
+        // USER - UPDATE OWN SUBMISSION
         // =========================================================
 
+        [Authorize(Roles = "User")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(
             int id,
@@ -207,7 +199,6 @@ namespace BookStore.Server.Controllers
                 {
                     message =
                         "Story/Poetry updated successfully.",
-
                     data = result
                 });
             }
@@ -229,9 +220,10 @@ namespace BookStore.Server.Controllers
 
 
         // =========================================================
-        // DELETE
+        // USER - DELETE OWN SUBMISSION
         // =========================================================
 
+        [Authorize(Roles = "User")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -271,11 +263,11 @@ namespace BookStore.Server.Controllers
 
 
         // =========================================================
-        // ADMIN - GET ALL SUBMISSIONS
+        // ADMIN + EDITOR - GET ALL SUBMISSIONS
         // =========================================================
 
+        [Authorize(Roles = "Admin,Editor")]
         [HttpGet("admin/all")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
             var result =

@@ -74,6 +74,33 @@ namespace BookStore.Server.Repositories
                 .ToListAsync();
         }
 
+        // =========================================================
+        // GET EDITOR BY ID
+        // =========================================================
+
+        public async Task<User?> GetEditorByIdAsync(int userId)
+        {
+            return await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u =>
+                    u.UserId == userId &&
+                    u.Role != null &&
+                    u.Role.RoleName == "Editor");
+        }
+        // =========================================================
+        // CHECK EMAIL EXISTS FOR ANOTHER USER
+        // =========================================================
+
+        public async Task<bool> EmailExistsForOtherUserAsync(
+            string email,
+            int userId)
+        {
+            return await _context.Users
+                .AnyAsync(u =>
+                    u.Email == email &&
+                    u.UserId != userId);
+        }
+
 
         // =========================================================
         // SAVE CHANGES
@@ -82,6 +109,13 @@ namespace BookStore.Server.Repositories
 
         public async Task SaveChangesAsync()
         {
+            await _context.SaveChangesAsync();
+        }
+
+        // DELETE EDITOR
+        public async Task DeleteEditorAsync(User editor)
+        {
+            _context.Users.Remove(editor);
             await _context.SaveChangesAsync();
         }
     }
