@@ -37,7 +37,7 @@ namespace BookStore.Server.Repositories
 
 
         // =========================================================
-        // REGISTER USER
+        // REGISTER USER / CREATE EDITOR
         // =========================================================
 
         public async Task AddUserAsync(User user)
@@ -57,6 +57,21 @@ namespace BookStore.Server.Repositories
             return await _context.Users
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+
+        // =========================================================
+        // GET ALL EDITORS
+        // =========================================================
+
+        public async Task<List<User>> GetAllEditorsAsync()
+        {
+            return await _context.Users
+                .Include(u => u.Role)
+                .Where(u => u.Role != null &&
+                            u.Role.RoleName == "Editor")
+                .OrderByDescending(u => u.CreatedDate)
+                .ToListAsync();
         }
 
 

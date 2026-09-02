@@ -105,31 +105,27 @@ namespace BookStore.Server.Controllers
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(
-            int id,
-            [FromBody] AddPaymentSettingsRequest request)
+      int id,
+      [FromBody] UpdatePaymentSettingsRequest request)
         {
             try
             {
                 var setting =
-                    await _paymentSettingsService
-                        .UpdateAsync(
-                            id,
-                            request.Amount);
+                    await _paymentSettingsService.UpdateAsync(
+                        id,
+                        request.Amount);
 
                 if (setting == null)
                 {
                     return NotFound(new
                     {
-                        Message =
-                            "Payment setting not found."
+                        Message = "Payment setting not found."
                     });
                 }
 
                 return Ok(new
                 {
-                    Message =
-                        "Payment amount updated successfully.",
-
+                    Message = "Payment amount updated successfully.",
                     Data = setting
                 });
             }
