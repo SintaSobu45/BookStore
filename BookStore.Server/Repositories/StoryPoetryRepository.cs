@@ -42,6 +42,39 @@ namespace BookStore.Server.Repositories
                     s => s.StoryPoetryId == id);
         }
 
+
+        // =========================================================
+        // GET PAYMENT NOTIFICATION PENDING
+        // =========================================================
+        // Used by PaymentNotificationBackgroundService.
+        //
+        // Returns submissions where:
+        //
+        // 1. Payment is still Pending
+        // 2. PaymentEnabledAt has a value
+        // 3. PaymentEnabledAt has already passed
+        // 4. Payment Available email has not been sent
+        //
+        // User is included because the background service
+        // needs the user's email address.
+        // =========================================================
+
+        public async Task<List<StoryPoetry>> GetPaymentNotificationPendingAsync()
+        {
+            var now = DateTime.UtcNow;
+
+            return await _context.StoryPoetries
+                .Include(s => s.User)
+                .Where(s =>
+                    s.PaymentStatus == "Pending" &&
+                    s.PaymentEnabledAt.HasValue &&
+                    s.PaymentEnabledAt.Value <= now &&
+                    !s.PaymentNotificationSent)
+                .OrderBy(s => s.PaymentEnabledAt)
+                .ToListAsync();
+        }
+
+
         // =========================================================
         // GET ALL STORY / POETRY ENTITIES
         // =========================================================
@@ -55,6 +88,7 @@ namespace BookStore.Server.Repositories
                 .OrderByDescending(s => s.CreatedDate)
                 .ToListAsync();
         }
+
 
         // =========================================================
         // GET ALL SUBMISSIONS

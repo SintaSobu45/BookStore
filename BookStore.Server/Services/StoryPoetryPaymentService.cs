@@ -69,7 +69,47 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 3. Check Existing Paid Payment
+            // 3. Check 4-Hour Payment Restriction
+            // -----------------------------------------------------
+
+            if (storyPoetry.PaymentEnabledAt.HasValue &&
+                storyPoetry.PaymentEnabledAt.Value > DateTime.UtcNow)
+            {
+                var remaining =
+                    storyPoetry.PaymentEnabledAt.Value -
+                    DateTime.UtcNow;
+
+                var totalMinutes =
+                    Math.Max(
+                        0,
+                        (int)Math.Ceiling(
+                            remaining.TotalMinutes));
+
+                var hours =
+                    totalMinutes / 60;
+
+                var minutes =
+                    totalMinutes % 60;
+
+                string message;
+
+                if (hours > 0)
+                {
+                    message =
+                        $"Payment will be available after {hours} hour(s) and {minutes} minute(s).";
+                }
+                else
+                {
+                    message =
+                        $"Payment will be available after {minutes} minute(s).";
+                }
+
+                throw new InvalidOperationException(message);
+            }
+
+
+            // -----------------------------------------------------
+            // 4. Check Existing Paid Payment
             // -----------------------------------------------------
 
             var payments =
@@ -90,7 +130,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 4. Get Active Payment Setting
+            // 5. Get Active Payment Setting
             // -----------------------------------------------------
 
             var paymentSetting =
@@ -105,7 +145,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 5. Get Payment Amount
+            // 6. Get Payment Amount
             // -----------------------------------------------------
 
             decimal totalAmount =
@@ -119,7 +159,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 6. Convert Rupees To Paise
+            // 7. Convert Rupees To Paise
             // -----------------------------------------------------
 
             int amountInPaise =
@@ -127,7 +167,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 7. Create Razorpay Client
+            // 8. Create Razorpay Client
             // -----------------------------------------------------
 
             Razorpay.Api.RazorpayClient client =
@@ -137,7 +177,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 8. Razorpay Order Options
+            // 9. Razorpay Order Options
             // -----------------------------------------------------
 
             Dictionary<string, object> options =
@@ -159,7 +199,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 9. Create Razorpay Order
+            // 10. Create Razorpay Order
             // -----------------------------------------------------
 
             Razorpay.Api.Order order =
@@ -167,7 +207,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 10. Create Payment Record
+            // 11. Create Payment Record
             // -----------------------------------------------------
 
             var payment =
@@ -203,7 +243,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 11. Save Payment
+            // 12. Save Payment
             // -----------------------------------------------------
 
             var createdPayment =
@@ -212,7 +252,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 12. Return Response
+            // 13. Return Response
             // -----------------------------------------------------
 
             return MapToResponse(
@@ -404,7 +444,19 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 13. Get Payment Method From Razorpay
+            // 13. Check 4-Hour Payment Restriction
+            // -----------------------------------------------------
+
+            if (storyPoetry.PaymentEnabledAt.HasValue &&
+                storyPoetry.PaymentEnabledAt.Value > DateTime.UtcNow)
+            {
+                throw new InvalidOperationException(
+                    "Payment is not available yet. Please wait until the payment time.");
+            }
+
+
+            // -----------------------------------------------------
+            // 14. Get Payment Method From Razorpay
             // -----------------------------------------------------
 
             string? paymentMethod =
@@ -413,7 +465,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 14. Update Payment
+            // 15. Update Payment
             // -----------------------------------------------------
 
             payment.RazorpayPaymentId =
@@ -433,7 +485,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 15. Update Story / Poetry Payment Status
+            // 16. Update Story / Poetry Payment Status
             // -----------------------------------------------------
 
             storyPoetry.PaymentStatus =
@@ -444,7 +496,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 16. Save Updated Payment
+            // 17. Save Updated Payment
             // -----------------------------------------------------
 
             var updatedPayment =
@@ -458,7 +510,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 17. Save Updated Story / Poetry
+            // 18. Save Updated Story / Poetry
             // -----------------------------------------------------
 
             await _storyPoetryRepository
@@ -466,7 +518,7 @@ namespace BookStore.Server.Services
 
 
             // =====================================================
-            // 18. GENERATE RECEIPT + SEND EMAIL
+            // 19. GENERATE RECEIPT + SEND EMAIL
             // =====================================================
 
             if (storyPoetry.User != null &&
@@ -639,7 +691,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 19. Return Response
+            // 20. Return Response
             // -----------------------------------------------------
 
             return MapToResponse(

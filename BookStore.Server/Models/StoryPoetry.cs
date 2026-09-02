@@ -101,6 +101,13 @@ namespace BookStore.Server.Models
         public string PaymentStatus { get; set; } = "Pending";
 
 
+        // Payment becomes available 4 hours after submission
+        
+        public DateTime? PaymentEnabledAt { get; set; }
+
+        public bool PaymentNotificationSent { get; set; } = false;
+
+
         // =========================================================
         // DATES
         // =========================================================
