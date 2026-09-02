@@ -42,13 +42,12 @@ namespace BookStore.Server.Services
         // =========================================================
 
         public async Task<PaymentSettings> AddAsync(
-            string paymentType,
-            decimal amount)
+    string paymentType,
+    decimal amount)
         {
             if (string.IsNullOrWhiteSpace(paymentType))
             {
-                throw new ArgumentException(
-                    "Payment type is required.");
+                throw new ArgumentException("Payment type is required.");
             }
 
             if (amount <= 0)
@@ -57,17 +56,25 @@ namespace BookStore.Server.Services
                     "Amount must be greater than zero.");
             }
 
-            var paymentSettings =
-                new PaymentSettings
-                {
-                    PaymentType = paymentType,
-                    Amount = amount,
-                    IsActive = true,
-                    UpdatedDate = DateTime.UtcNow
-                };
+            // Prevent duplicate active payment type
+            var existing =
+                await _repository.GetActiveAsync(paymentType);
 
-            return await _repository
-                .AddAsync(paymentSettings);
+            if (existing != null)
+            {
+                throw new ArgumentException(
+                    $"An active payment setting already exists for {paymentType}.");
+            }
+
+            var paymentSettings = new PaymentSettings
+            {
+                PaymentType = paymentType,
+                Amount = amount,
+                IsActive = true,
+                UpdatedDate = DateTime.UtcNow
+            };
+
+            return await _repository.AddAsync(paymentSettings);
         }
 
 
@@ -76,8 +83,8 @@ namespace BookStore.Server.Services
         // =========================================================
 
         public async Task<PaymentSettings?> UpdateAsync(
-            int id,
-            decimal amount)
+     int id,
+     decimal amount)
         {
             if (amount <= 0)
             {
@@ -86,8 +93,7 @@ namespace BookStore.Server.Services
             }
 
             var paymentSettings =
-                await _repository
-                    .GetAllAsync();
+                await _repository.GetAllAsync();
 
             var existing =
                 paymentSettings.FirstOrDefault(
@@ -99,8 +105,7 @@ namespace BookStore.Server.Services
             existing.Amount = amount;
             existing.UpdatedDate = DateTime.UtcNow;
 
-            return await _repository
-                .UpdateAsync(existing);
+            return await _repository.UpdateAsync(existing);
         }
     }
 }

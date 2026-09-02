@@ -214,5 +214,19 @@ namespace BookStore.Server.Controllers
                 });
             }
         }
+        // =========================================================
+        // GET ALL EDITORS
+        // ADMIN ONLY
+        // =========================================================
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("editors")]
+        public async Task<IActionResult> GetAllEditors()
+        {
+            var editors =
+                await _accountService.GetAllEditorsAsync();
+
+            return Ok(editors);
+        }
     }
 }

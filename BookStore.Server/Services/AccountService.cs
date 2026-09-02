@@ -637,5 +637,26 @@ namespace BookStore.Server.Services
                     token
             };
         }
+
+        // =========================================================
+        // GET ALL EDITORS
+        // ADMIN ONLY
+        // =========================================================
+
+        public async Task<List<EditorResponse>> GetAllEditorsAsync()
+        {
+            var editors =
+                await _repository.GetAllEditorsAsync();
+
+            return editors.Select(editor => new EditorResponse
+            {
+                UserId = editor.UserId,
+                Name = editor.Name,
+                Email = editor.Email,
+                Phone = editor.Phone,
+                IsActive = editor.IsActive,
+                CreatedDate = editor.CreatedDate
+            }).ToList();
+        }
     }
 }
