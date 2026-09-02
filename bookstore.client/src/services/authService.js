@@ -1,5 +1,9 @@
 import { API_BASE_URL } from './api'
 
+// =========================================================
+// LOGIN
+// =========================================================
+
 export const loginUser = async (loginData) => {
   const response = await fetch(`${API_BASE_URL}/api/Account/login`, {
     method: 'POST',
@@ -18,6 +22,11 @@ export const loginUser = async (loginData) => {
   return data
 }
 
+
+// =========================================================
+// REGISTER
+// =========================================================
+
 export const registerUser = async (registerData) => {
   const response = await fetch(`${API_BASE_URL}/api/Account/register`, {
     method: 'POST',
@@ -35,6 +44,7 @@ export const registerUser = async (registerData) => {
 
   return data
 }
+
 
 // =========================================================
 // VERIFY EMAIL OTP
@@ -61,11 +71,12 @@ export const verifyEmailOtp = async (verifyData) => {
   return data
 }
 
+
 // =========================================================
 // RESEND OTP
 // =========================================================
 
-export const resendOtp = async (email) => {
+export const resendOtp = async (registrationToken) => {
   const response = await fetch(
     `${API_BASE_URL}/api/Account/resend-otp`,
     {
@@ -74,7 +85,7 @@ export const resendOtp = async (email) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        email
+        registrationToken
       })
     }
   )
