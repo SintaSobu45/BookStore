@@ -95,7 +95,7 @@ namespace BookStore.Server.Services
 
             var paymentSetting =
                 await _paymentSettingsService
-                    .GetActiveAsync("StoryPoetry");
+                    .GetActiveAsync(storyPoetry.Type);
 
             if (paymentSetting == null)
             {
