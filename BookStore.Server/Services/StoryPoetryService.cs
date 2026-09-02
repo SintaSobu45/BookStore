@@ -9,15 +9,21 @@ namespace BookStore.Server.Services
         private readonly StoryPoetryRepository _storyPoetryRepository;
         private readonly ProfileRepository _profileRepository;
         private readonly FtpImageService _ftpImageService;
+        private readonly EmailService _emailService;
+        private readonly AccountRepository _accountRepository;
 
         public StoryPoetryService(
             StoryPoetryRepository storyPoetryRepository,
             ProfileRepository profileRepository,
-            FtpImageService ftpImageService)
+            FtpImageService ftpImageService,
+            EmailService emailService,
+            AccountRepository accountRepository)
         {
             _storyPoetryRepository = storyPoetryRepository;
             _profileRepository = profileRepository;
             _ftpImageService = ftpImageService;
+            _emailService = emailService;
+            _accountRepository = accountRepository;
         }
 
 
@@ -89,8 +95,6 @@ namespace BookStore.Server.Services
                     "Contributor Malayalam name is required.");
             }
 
-            
-
             if (string.IsNullOrWhiteSpace(
                 contributorDistrictMalayalam))
             {
@@ -136,22 +140,47 @@ namespace BookStore.Server.Services
 
 
             // =====================================================
+            // CREATE DATES
+            // =====================================================
+
+            // One timestamp is used for both CreatedDate
+            // and PaymentEnabledAt calculation.
+            var createdDate = DateTime.UtcNow;
+
+            // Payment becomes available exactly 4 hours
+            // after the submission is created.
+            var paymentEnabledAt =
+                createdDate.AddHours(4);
+
+
+            // =====================================================
             // CREATE STORY / POETRY
             // =====================================================
 
             var storyPoetry = new StoryPoetry
             {
-                // Logged-in user
+                // -------------------------------------------------
+                // LOGGED-IN USER
+                // -------------------------------------------------
+
                 UserId = userId,
 
-                // Story / Poetry details
+
+                // -------------------------------------------------
+                // STORY / POETRY DETAILS
+                // -------------------------------------------------
+
                 Title = request.Title,
 
                 Type = request.Type,
 
                 Content = request.Content,
 
-                // Contributor snapshot
+
+                // -------------------------------------------------
+                // CONTRIBUTOR SNAPSHOT
+                // -------------------------------------------------
+
                 ContributorNameMalayalam =
                     contributorNameMalayalam,
 
@@ -170,21 +199,32 @@ namespace BookStore.Server.Services
                 ContributorPhone =
                     contributorPhone,
 
-                // FTP image URL
+
+                // -------------------------------------------------
+                // FTP IMAGE URL
+                // -------------------------------------------------
+
                 ContributorProfileImageUrl =
                     imageUrl,
 
+
                 // =================================================
-                // PAYMENT STATUS
+                // PAYMENT
                 // =================================================
-                //
-                // Story/Poetry is created first.
-                // Payment is completed separately.
-                //
+
+                // Submission is created first.
+                // Payment is not immediately available.
                 PaymentStatus = "Pending",
 
-                // Date
-                CreatedDate = DateTime.UtcNow
+                // Payment becomes available after 4 hours.
+                PaymentEnabledAt = paymentEnabledAt,
+
+
+                // -------------------------------------------------
+                // DATES
+                // -------------------------------------------------
+
+                CreatedDate = createdDate
             };
 
 
@@ -198,6 +238,271 @@ namespace BookStore.Server.Services
 
 
             // =====================================================
+            // SEND SUBMISSION RECEIVED EMAILS
+            // =====================================================
+
+            // IMPORTANT:
+            // These emails are sent only after the database save
+            // succeeds.
+            //
+            // Email failure must NOT make the submission fail.
+
+
+            // =====================================================
+            // 1. EMAIL USER
+            // =====================================================
+
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                try
+                {
+                    string userEmailBody = $@"
+<html>
+<body style='font-family: Arial, sans-serif; color: #333;'>
+
+    <div style='max-width: 600px; margin: auto;'>
+
+        <h2 style='text-align: center;'>
+            The Old Library
+        </h2>
+
+        <h3>
+            Submission Received
+        </h3>
+
+        <p>
+            Dear <strong>{user.Name}</strong>,
+        </p>
+
+        <p>
+            Thank you for submitting your
+            <strong>{storyPoetry.Type}</strong>
+            to The Old Library.
+        </p>
+
+        <p>
+            Your submission has been successfully received.
+        </p>
+
+        <table style='width: 100%; border-collapse: collapse;'>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Submission ID</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {created.StoryPoetryId}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Submission Type</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.Type}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Title</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.Title}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Submitted On</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {createdDate:dd-MM-yyyy HH:mm}
+                </td>
+            </tr>
+
+        </table>
+
+        <p>
+            Your submission has been recorded successfully.
+        </p>
+
+        <p>
+            Thank you for choosing The Old Library.
+        </p>
+
+        <p>
+            Regards,<br/>
+            <strong>The Old Library</strong>
+        </p>
+
+    </div>
+
+</body>
+</html>";
+
+                    await _emailService.SendEmailAsync(
+                        user.Email,
+                        "The Old Library - Submission Received",
+                        userEmailBody,
+                        true);
+                }
+                catch (Exception ex)
+                {
+                    // Email failure must not affect submission.
+                    Console.WriteLine(
+                        $"Story/Poetry submission email failed: {ex.Message}");
+                }
+            }
+
+
+            // =====================================================
+            // 2. EMAIL ALL EDITORS
+            // =====================================================
+
+            try
+            {
+                var editors =
+                    await _accountRepository
+                        .GetAllEditorsAsync();
+
+                foreach (var editor in editors)
+                {
+                    if (string.IsNullOrWhiteSpace(editor.Email))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        string editorEmailBody = $@"
+<html>
+<body style='font-family: Arial, sans-serif; color: #333;'>
+
+    <div style='max-width: 600px; margin: auto;'>
+
+        <h2 style='text-align: center;'>
+            The Old Library
+        </h2>
+
+        <h3>
+            New Story/Poetry Submission Received
+        </h3>
+
+        <p>
+            A new
+            <strong>{storyPoetry.Type}</strong>
+            submission has been received.
+        </p>
+
+        <table style='width: 100%; border-collapse: collapse;'>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Submission ID</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {created.StoryPoetryId}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Submission Type</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.Type}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Title</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.Title}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Contributor Name</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.ContributorNameMalayalam}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Contributor Email</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.ContributorEmail}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Contributor Phone</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.ContributorPhone}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Submitted On</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {createdDate:dd-MM-yyyy HH:mm}
+                </td>
+            </tr>
+
+        </table>
+
+        <p>
+            Please review the submission in the
+            Editor section of The Old Library.
+        </p>
+
+        <p>
+            Regards,<br/>
+            <strong>The Old Library</strong>
+        </p>
+
+    </div>
+
+</body>
+</html>";
+
+                        await _emailService.SendEmailAsync(
+                            editor.Email,
+                            "The Old Library - New Story/Poetry Submission Received",
+                            editorEmailBody,
+                            true);
+                    }
+                    catch (Exception ex)
+                    {
+                        // One editor's email failure must not prevent
+                        // other editors from receiving the notification.
+                        Console.WriteLine(
+                            $"Editor submission email failed for {editor.Email}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Failure to retrieve editors must not affect
+                // the already-saved submission.
+                Console.WriteLine(
+                    $"Could not retrieve editors for submission email: {ex.Message}");
+            }
+
+
+            // =====================================================
             // GET SAVED RECORD
             // =====================================================
 
@@ -206,8 +511,14 @@ namespace BookStore.Server.Services
                     .GetByIdAsync(
                         created.StoryPoetryId);
 
+            if (result == null)
+            {
+                throw new Exception(
+                    "Story/Poetry submission could not be retrieved after saving.");
+            }
 
-            return MapToResponse(result!);
+
+            return MapToResponse(result);
         }
 
 
@@ -360,6 +671,10 @@ namespace BookStore.Server.Services
         {
             return new StoryPoetryResponse
             {
+                // -------------------------------------------------
+                // SUBMISSION
+                // -------------------------------------------------
+
                 StoryPoetryId =
                     storyPoetry.StoryPoetryId,
 
@@ -380,6 +695,7 @@ namespace BookStore.Server.Services
                 Content =
                     storyPoetry.Content,
 
+
                 // -------------------------------------------------
                 // PAYMENT STATUS
                 // -------------------------------------------------
@@ -387,34 +703,31 @@ namespace BookStore.Server.Services
                 PaymentStatus =
                     storyPoetry.PaymentStatus,
 
+                PaymentEnabledAt =
+                    storyPoetry.PaymentEnabledAt,
+
 
                 // -------------------------------------------------
                 // CONTRIBUTOR DETAILS
                 // -------------------------------------------------
 
                 ContributorNameMalayalam =
-                    storyPoetry
-                        .ContributorNameMalayalam,
+                    storyPoetry.ContributorNameMalayalam,
 
                 ContributorAddressMalayalam =
-                    storyPoetry
-                        .ContributorAddressMalayalam,
+                    storyPoetry.ContributorAddressMalayalam,
 
                 ContributorDistrictMalayalam =
-                    storyPoetry
-                        .ContributorDistrictMalayalam,
+                    storyPoetry.ContributorDistrictMalayalam,
 
                 ContributorCityMalayalam =
-                    storyPoetry
-                        .ContributorCityMalayalam,
+                    storyPoetry.ContributorCityMalayalam,
 
                 ContributorEmail =
-                    storyPoetry
-                        .ContributorEmail,
+                    storyPoetry.ContributorEmail,
 
                 ContributorPhone =
-                    storyPoetry
-                        .ContributorPhone,
+                    storyPoetry.ContributorPhone,
 
 
                 // -------------------------------------------------
@@ -422,8 +735,7 @@ namespace BookStore.Server.Services
                 // -------------------------------------------------
 
                 ContributorProfileImageUrl =
-                    storyPoetry
-                        .ContributorProfileImageUrl,
+                    storyPoetry.ContributorProfileImageUrl,
 
 
                 // -------------------------------------------------

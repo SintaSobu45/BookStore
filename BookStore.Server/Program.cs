@@ -164,6 +164,8 @@ namespace BookStore.Server
 
             builder.Services.AddScoped<RegistrationTokenService>();
 
+            builder.Services.AddHostedService<PaymentNotificationBackgroundService>();
+
 
 
             // JWT Authentication
