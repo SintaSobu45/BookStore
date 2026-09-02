@@ -1,5 +1,7 @@
 ﻿using BookStore.Server.DTOs;
+using BookStore.Server.DTOs.Editor;
 using BookStore.Server.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.Server.Controllers
@@ -14,6 +16,7 @@ namespace BookStore.Server.Controllers
         {
             _accountService = accountService;
         }
+
 
         // =========================================================
         // REGISTER
@@ -164,6 +167,44 @@ namespace BookStore.Server.Controllers
                 }
 
                 return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        // =========================================================
+        // CREATE EDITOR
+        // ADMIN ONLY
+        // =========================================================
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("create-editor")]
+        public async Task<IActionResult> CreateEditor(
+            CreateEditorRequest request)
+        {
+            try
+            {
+                var result =
+                    await _accountService.CreateEditorAsync(request);
+
+                if (result == null)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Email already exists."
+                    });
+                }
+
+                return Ok(new
+                {
+                    message = result
+                });
             }
             catch (InvalidOperationException ex)
             {

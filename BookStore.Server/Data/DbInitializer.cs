@@ -11,21 +11,37 @@ namespace BookStore.Server.Data
             // CREATE ROLES
             // =========================================================
 
-            if (!context.Roles.Any())
+            if (!context.Roles.Any(r => r.RoleName == "Admin"))
             {
-                context.Roles.AddRange(
+                context.Roles.Add(
                     new Role
                     {
                         RoleName = "Admin"
-                    },
+                    }
+                );
+            }
+
+            if (!context.Roles.Any(r => r.RoleName == "User"))
+            {
+                context.Roles.Add(
                     new Role
                     {
                         RoleName = "User"
                     }
                 );
-
-                context.SaveChanges();
             }
+
+            if (!context.Roles.Any(r => r.RoleName == "Editor"))
+            {
+                context.Roles.Add(
+                    new Role
+                    {
+                        RoleName = "Editor"
+                    }
+                );
+            }
+
+            context.SaveChanges();
 
 
             // =========================================================

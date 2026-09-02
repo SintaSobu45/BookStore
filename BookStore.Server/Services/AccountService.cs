@@ -1,4 +1,5 @@
 ﻿using BookStore.Server.DTOs;
+using BookStore.Server.DTOs.Editor;
 using BookStore.Server.Helpers;
 using BookStore.Server.Models;
 using BookStore.Server.Repositories;
@@ -428,6 +429,127 @@ namespace BookStore.Server.Services
             // =====================================================
 
             return newRegistrationToken;
+        }
+
+
+        // =========================================================
+        // CREATE EDITOR
+        // =========================================================
+
+        public async Task<string?> CreateEditorAsync(
+            CreateEditorRequest request)
+        {
+            // =====================================================
+            // CHECK EMAIL
+            // =====================================================
+
+            if (await _repository.EmailExistsAsync(request.Email))
+            {
+                return null;
+            }
+
+
+            // =====================================================
+            // GET EDITOR ROLE
+            // =====================================================
+
+            var editorRole =
+                await _repository.GetRoleByNameAsync("Editor");
+
+
+            if (editorRole == null)
+            {
+                throw new InvalidOperationException(
+                    "Editor role not found."
+                );
+            }
+
+
+            // =====================================================
+            // CREATE EDITOR USER
+            // =====================================================
+
+            var editor = new User
+            {
+                Name = request.Name,
+
+                Email = request.Email,
+
+                Phone = request.Phone,
+
+                RoleId = editorRole.RoleId,
+
+                IsActive = true,
+
+                // Admin-created account
+                // OTP verification is not required
+                EmailVerified = true,
+
+                CreatedDate = DateTime.UtcNow
+            };
+
+
+            // =====================================================
+            // HASH PASSWORD
+            // =====================================================
+
+            editor.PasswordHash =
+                _passwordHasher.HashPassword(
+                    editor,
+                    request.Password
+                );
+
+
+            // =====================================================
+            // SAVE EDITOR
+            // =====================================================
+
+            await _repository.AddUserAsync(editor);
+
+
+            // =====================================================
+            // SEND EMAIL
+            // =====================================================
+
+            var emailBody = $@"
+                <div style='font-family: Arial, sans-serif;'>
+
+                    <h2>Editor Account Created</h2>
+
+                    <p>Hello {editor.Name},</p>
+
+                    <p>
+                        An Editor account has been created for you
+                        by The Old Library administrator.
+                    </p>
+
+                    <p>
+                        <strong>Email:</strong> {editor.Email}
+                    </p>
+
+                    <p>
+                        You can now log in using your email and password.
+                    </p>
+
+                    <br />
+
+                    <p>
+                        Regards,<br />
+                        <strong>The Old Library Team</strong>
+                    </p>
+
+                </div>
+            ";
+
+
+            await _emailService.SendEmailAsync(
+                editor.Email,
+                "Editor Account Created - The Old Library",
+                emailBody
+            );
+
+
+            return "Editor account created successfully.";
         }
 
 
