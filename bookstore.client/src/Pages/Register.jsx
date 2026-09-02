@@ -55,6 +55,9 @@ export default function Register() {
 
   const [showOtpScreen, setShowOtpScreen] = useState(false);
 
+  // Registration token returned by backend
+  const [registrationToken, setRegistrationToken] = useState("");
+
   const [otp, setOtp] = useState([
     "",
     "",
@@ -242,6 +245,18 @@ export default function Register() {
       const response = await registerUser(registerData);
 
       console.log("Registration response:", response);
+
+      // -------------------------------------------------------
+      // STORE REGISTRATION TOKEN
+      // -------------------------------------------------------
+
+      if (!response.registrationToken) {
+        throw new Error(
+          "Registration token was not received from the server."
+        );
+      }
+
+      setRegistrationToken(response.registrationToken);
 
       // -------------------------------------------------------
       // REGISTRATION SUCCESS
@@ -432,6 +447,17 @@ export default function Register() {
     setOtpError("");
     setOtpSuccess("");
 
+    // ---------------------------------------------------------
+    // CHECK REGISTRATION TOKEN
+    // ---------------------------------------------------------
+
+    if (!registrationToken) {
+      setOtpError(
+        "Registration session is invalid. Please register again."
+      );
+      return;
+    }
+
     const enteredOtp = otp.join("");
 
     // ---------------------------------------------------------
@@ -457,13 +483,17 @@ export default function Register() {
     try {
       setOtpLoading(true);
 
+      // -------------------------------------------------------
+      // NEW BACKEND FLOW
+      // -------------------------------------------------------
+
       const verifyData = {
-        email: formData.email,
+        registrationToken,
         otp: enteredOtp,
       };
 
       console.log("OTP verification data:", {
-        email: formData.email,
+        registrationToken: "********",
         otp: "******",
       });
 
@@ -480,6 +510,9 @@ export default function Register() {
       );
 
       setOtpError("");
+
+      // Clear registration token
+      setRegistrationToken("");
 
       // Redirect after short delay
       setTimeout(() => {
@@ -506,15 +539,43 @@ export default function Register() {
       return;
     }
 
+    // ---------------------------------------------------------
+    // CHECK REGISTRATION TOKEN
+    // ---------------------------------------------------------
+
+    if (!registrationToken) {
+      setOtpError(
+        "Registration session is invalid. Please register again."
+      );
+      return;
+    }
+
     setOtpError("");
     setOtpSuccess("");
 
     try {
       setOtpLoading(true);
 
-      const response = await resendOtp(formData.email);
+      // -------------------------------------------------------
+      // NEW BACKEND FLOW
+      // Send registrationToken instead of email
+      // -------------------------------------------------------
+
+      const response = await resendOtp(registrationToken);
 
       console.log("Resend OTP response:", response);
+
+      // -------------------------------------------------------
+      // REPLACE OLD REGISTRATION TOKEN
+      // -------------------------------------------------------
+
+      if (!response.registrationToken) {
+        throw new Error(
+          "New registration token was not received from the server."
+        );
+      }
+
+      setRegistrationToken(response.registrationToken);
 
       // -------------------------------------------------------
       // RESET OTP
@@ -561,6 +622,9 @@ export default function Register() {
 
   const handleBackToRegister = () => {
     setShowOtpScreen(false);
+
+    // Clear registration token
+    setRegistrationToken("");
 
     setOtp([
       "",

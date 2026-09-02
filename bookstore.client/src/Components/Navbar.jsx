@@ -398,7 +398,7 @@ export default function Navbar() {
                   <BookOpen className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="font-bold text-lg">BOOK STORE</p>
+                  <p className="font-bold text-lg">THE OLD LIBRARY</p>
                   <p className="text-xs text-white/70">Malayalam Books</p>
                 </div>
               </div>
