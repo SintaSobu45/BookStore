@@ -58,7 +58,10 @@ function Login() {
       // Navigate based on user role
       if (result.role === "Admin") {
         navigate("/admin");
-      } else {
+      }else if(result.role === "Editor"){
+        navigate('/admin/story')
+      } 
+      else {
         navigate("/");
       }
     } catch (error) {

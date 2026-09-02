@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Categories from "./Categories";
 import Authors from "./Author";
 import Publishers from "./Publishers";
+import EditorManagement from "./EditorManagement";
 
 function LibraryManagement() {
   const [activeTab, setActiveTab] = useState("categories");
@@ -129,6 +130,36 @@ function LibraryManagement() {
             <span className="text-base sm:text-lg">🏢</span>
             Publishers
           </button>
+
+          {/* Editors */}
+
+          <button
+            onClick={() => setActiveTab("editors")}
+            className={`
+    flex
+    items-center
+    gap-2
+    px-4
+    sm:px-5
+    py-2.5
+    sm:py-3
+    rounded-xl
+    text-sm
+    sm:text-base
+    font-semibold
+    whitespace-nowrap
+    transition-all
+    duration-200
+    ${
+      activeTab === "editors"
+        ? "bg-gray-900 text-white shadow-sm"
+        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+    }
+  `}
+          >
+            <span className="text-base sm:text-lg">👥</span>
+            Editors
+          </button>
         </div>
       </div>
 
@@ -142,6 +173,8 @@ function LibraryManagement() {
         {activeTab === "authors" && <Authors />}
 
         {activeTab === "publishers" && <Publishers />}
+
+         {activeTab === "editors" && <EditorManagement />}
       </div>
     </div>
   );
