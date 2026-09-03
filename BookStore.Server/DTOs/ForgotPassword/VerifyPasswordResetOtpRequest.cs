@@ -1,0 +1,16 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace BookStore.Server.DTOs.ForgotPassword
+{
+    public class VerifyPasswordResetOtpRequest
+    {
+        [Required]
+        [EmailAddress]
+        [StringLength(150)]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(6, MinimumLength = 6)]
+        public string Otp { get; set; } = string.Empty;
+    }
+}

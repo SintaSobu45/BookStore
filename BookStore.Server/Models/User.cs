@@ -105,6 +105,12 @@ namespace BookStore.Server.Models
 
         public DateTime? EmailVerificationOtpExpiry { get; set; }
 
+
+        // PASSWORD RESET
+        public string? PasswordResetOtp { get; set; }
+
+        public DateTime? PasswordResetOtpExpiry { get; set; }
+
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedDate { get; set; }

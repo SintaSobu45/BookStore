@@ -1,5 +1,6 @@
 ﻿using BookStore.Server.DTOs;
 using BookStore.Server.DTOs.Editor;
+using BookStore.Server.DTOs.ForgotPassword;
 using BookStore.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -335,6 +336,84 @@ namespace BookStore.Server.Controllers
                         "Editor cannot be deleted because related records exist."
                 });
             }
+        }
+
+        // =========================================================
+        // FORGOT PASSWORD
+        // =========================================================
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(
+            ForgotPasswordRequest request)
+        {
+            var result =
+                await _accountService.ForgotPasswordAsync(request);
+
+            if (!result)
+            {
+                return BadRequest(new
+                {
+                    message = "Email not found."
+                });
+            }
+
+            return Ok(new
+            {
+                message =
+                    "Password reset OTP has been sent to your email."
+            });
+        }
+
+
+        // =========================================================
+        // VERIFY PASSWORD RESET OTP
+        // =========================================================
+
+        [HttpPost("verify-password-reset-otp")]
+        public async Task<IActionResult> VerifyPasswordResetOtp(
+            VerifyPasswordResetOtpRequest request)
+        {
+            var result =
+                await _accountService.VerifyPasswordResetOtpAsync(request);
+
+            if (!result)
+            {
+                return BadRequest(new
+                {
+                    message = "Invalid or expired OTP."
+                });
+            }
+
+            return Ok(new
+            {
+                message = "OTP verified successfully."
+            });
+        }
+
+
+        // =========================================================
+        // RESET PASSWORD
+        // =========================================================
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(
+            ResetPasswordRequest request)
+        {
+            var result =
+                await _accountService.ResetPasswordAsync(request);
+
+            if (!result)
+            {
+                return BadRequest(new
+                {
+                    message = "Invalid or expired OTP."
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Password reset successfully."
+            });
         }
     }
 }
