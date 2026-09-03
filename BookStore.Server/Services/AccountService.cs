@@ -1,5 +1,6 @@
 ﻿using BookStore.Server.DTOs;
 using BookStore.Server.DTOs.Editor;
+using BookStore.Server.DTOs.ForgotPassword;
 using BookStore.Server.Helpers;
 using BookStore.Server.Models;
 using BookStore.Server.Repositories;
@@ -755,6 +756,217 @@ namespace BookStore.Server.Services
             }
 
             await _repository.DeleteEditorAsync(editor);
+
+            return true;
+
+        }
+        // =========================================================
+        // FORGOT PASSWORD
+        // SEND PASSWORD RESET OTP
+        // =========================================================
+
+        public async Task<bool> ForgotPasswordAsync(
+            ForgotPasswordRequest request)
+        {
+            var user =
+                await _repository.GetUserByEmailAsync(
+                    request.Email);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+
+            // =====================================================
+            // GENERATE PASSWORD RESET OTP
+            // =====================================================
+
+            var otp =
+                Random.Shared
+                    .Next(100000, 1000000)
+                    .ToString();
+
+
+            // =====================================================
+            // SAVE OTP
+            // =====================================================
+
+            user.PasswordResetOtp = otp;
+
+            user.PasswordResetOtpExpiry =
+                DateTime.UtcNow.AddMinutes(5);
+
+            user.UpdatedDate = DateTime.UtcNow;
+
+
+            await _repository.SaveChangesAsync();
+
+
+            // =====================================================
+            // SEND OTP EMAIL
+            // =====================================================
+
+            var emailBody = $@"
+        <div style='font-family: Arial, sans-serif;'>
+
+            <h2>Password Reset Request</h2>
+
+            <p>Hello {user.Name},</p>
+
+            <p>
+                We received a request to reset your
+                <strong>The Old Library</strong> account password.
+            </p>
+
+            <p>
+                Your password reset OTP is:
+            </p>
+
+            <h1 style='letter-spacing: 5px;'>
+                {otp}
+            </h1>
+
+            <p>
+                This OTP will expire in
+                <strong>5 minutes</strong>.
+            </p>
+
+            <p>
+                If you did not request a password reset,
+                please ignore this email.
+            </p>
+
+            <br />
+
+            <p>
+                Regards,<br />
+                <strong>The Old Library Team</strong>
+            </p>
+
+        </div>
+    ";
+
+
+            await _emailService.SendEmailAsync(
+                user.Email,
+                "Password Reset OTP - The Old Library",
+                emailBody
+            );
+
+
+            return true;
+        }
+
+
+        // =========================================================
+        // VERIFY PASSWORD RESET OTP
+        // =========================================================
+
+        public async Task<bool> VerifyPasswordResetOtpAsync(
+            VerifyPasswordResetOtpRequest request)
+        {
+            var user =
+                await _repository.GetUserByEmailAsync(
+                    request.Email);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+
+            // =====================================================
+            // CHECK OTP
+            // =====================================================
+
+            if (user.PasswordResetOtp != request.Otp)
+            {
+                return false;
+            }
+
+
+            // =====================================================
+            // CHECK OTP EXPIRY
+            // =====================================================
+
+            if (user.PasswordResetOtpExpiry == null ||
+                user.PasswordResetOtpExpiry < DateTime.UtcNow)
+            {
+                return false;
+            }
+
+
+            return true;
+        }
+
+
+        // =========================================================
+        // RESET PASSWORD
+        // =========================================================
+
+        public async Task<bool> ResetPasswordAsync(
+            ResetPasswordRequest request)
+        {
+            var user =
+                await _repository.GetUserByEmailAsync(
+                    request.Email);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+
+            // =====================================================
+            // CHECK OTP
+            // =====================================================
+
+            if (user.PasswordResetOtp != request.Otp)
+            {
+                return false;
+            }
+
+
+            // =====================================================
+            // CHECK OTP EXPIRY
+            // =====================================================
+
+            if (user.PasswordResetOtpExpiry == null ||
+                user.PasswordResetOtpExpiry < DateTime.UtcNow)
+            {
+                return false;
+            }
+
+
+            // =====================================================
+            // HASH NEW PASSWORD
+            // =====================================================
+
+            user.PasswordHash =
+                _passwordHasher.HashPassword(
+                    user,
+                    request.NewPassword
+                );
+
+
+            // =====================================================
+            // CLEAR RESET OTP
+            // =====================================================
+
+            user.PasswordResetOtp = null;
+
+            user.PasswordResetOtpExpiry = null;
+
+            user.UpdatedDate = DateTime.UtcNow;
+
+
+            // =====================================================
+            // SAVE PASSWORD
+            // =====================================================
+
+            await _repository.SaveChangesAsync();
+
 
             return true;
         }

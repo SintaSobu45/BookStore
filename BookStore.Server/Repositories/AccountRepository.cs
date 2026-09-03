@@ -104,7 +104,10 @@ namespace BookStore.Server.Repositories
 
         // =========================================================
         // SAVE CHANGES
-        // Used for email verification and OTP updates
+       
+        // Used for email verification,
+        // password reset, OTP updates,
+        // editor updates, etc.
         // =========================================================
 
         public async Task SaveChangesAsync()
