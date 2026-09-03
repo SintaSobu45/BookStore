@@ -149,8 +149,10 @@ namespace BookStore.Server.Services
 
             // Payment becomes available exactly 4 hours
             // after the submission is created.
-            var paymentEnabledAt =
-                createdDate.AddHours(4);
+            //var paymentEnabledAt =
+            //    createdDate.AddHours(4);
+
+            var paymentEnabledAt = createdDate.AddMinutes(5);
 
 
             // =====================================================
@@ -327,6 +329,10 @@ namespace BookStore.Server.Services
         <p>
             Your submission has been recorded successfully.
         </p>
+        <p>
+    Your submission will be reviewed, and once the review period is complete,
+    you will receive a separate email when payment becomes available.
+        </p>
 
         <p>
             Thank you for choosing The Old Library.
@@ -387,7 +393,7 @@ namespace BookStore.Server.Services
         </h2>
 
         <h3>
-            New Story/Poetry Submission Received
+           - New Submission Received
         </h3>
 
         <p>
