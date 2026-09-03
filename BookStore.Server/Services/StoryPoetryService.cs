@@ -258,92 +258,146 @@ namespace BookStore.Server.Services
             {
                 try
                 {
-                    string userEmailBody = $@"
+                    string emailBody = $@"
+<!DOCTYPE html>
 <html>
-<body style='font-family: Arial, sans-serif; color: #333;'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+</head>
 
-    <div style='max-width: 600px; margin: auto;'>
+<body style='margin:0; padding:0; background-color:#f4f6f5; font-family:Arial, Helvetica, sans-serif;'>
 
-        <h2 style='text-align: center;'>
-            The Old Library
-        </h2>
+    <table width='100%' cellpadding='0' cellspacing='0' border='0'
+           style='background-color:#f4f6f5; padding:30px 15px;'>
+        <tr>
+            <td align='center'>
 
-        <h3>
-            Submission Received
-        </h3>
+                <table width='600' cellpadding='0' cellspacing='0' border='0'
+                       style='max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden;'>
 
-        <p>
-            Dear <strong>{user.Name}</strong>,
-        </p>
+                    <!-- HEADER -->
+                    <tr>
+                        <td style='background-color:#1b3b2b; padding:28px 25px; text-align:center;'>
+                            <h1 style='margin:0; color:#ffffff; font-size:26px;'>
+                                The Old Library
+                            </h1>
 
-        <p>
-            Thank you for submitting your
-            <strong>{storyPoetry.Type}</strong>
-            to The Old Library.
-        </p>
+                            <p style='margin:8px 0 0; color:#dce8df; font-size:14px;'>
+                                Story &amp; Poetry Submission
+                            </p>
+                        </td>
+                    </tr>
 
-        <p>
-            Your submission has been successfully received.
-        </p>
+                    <!-- CONTENT -->
+                    <tr>
+                        <td style='padding:35px 30px;'>
 
-        <table style='width: 100%; border-collapse: collapse;'>
+                            <h2 style='margin:0 0 20px; color:#1b3b2b; font-size:22px;'>
+                                Submission Received
+                            </h2>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Submission ID</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {created.StoryPoetryId}
-                </td>
-            </tr>
+                            <p style='margin:0 0 16px; color:#333333; font-size:15px; line-height:1.7;'>
+                                Dear <strong>{user.Name}</strong>,
+                            </p>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Submission Type</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {storyPoetry.Type}
-                </td>
-            </tr>
+                            <p style='margin:0 0 18px; color:#333333; font-size:15px; line-height:1.7;'>
+                                Thank you for submitting your
+                                <strong>{storyPoetry.Type}</strong>
+                                to The Old Library.
+                            </p>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Title</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {storyPoetry.Title}
-                </td>
-            </tr>
+                            <!-- SUBMISSION DETAILS -->
+                            <table width='100%' cellpadding='0' cellspacing='0' border='0'
+                                   style='margin:25px 0; border:1px solid #e1e5e2; border-radius:8px;'>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Submitted On</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {createdDate:dd-MM-yyyy HH:mm}
-                </td>
-            </tr>
+                                <tr>
+                                    <td colspan='2'
+                                        style='padding:14px 16px; background-color:#f1f5f2; color:#1b3b2b; font-size:15px; font-weight:bold;'>
+                                        Submission Details
+                                    </td>
+                                </tr>
 
-        </table>
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px; width:40%;'>
+                                        Submission ID
+                                    </td>
 
-        <p>
-            Your submission has been recorded successfully.
-        </p>
-        <p>
-    Your submission will be reviewed, and once the review period is complete,
-    you will receive a separate email when payment becomes available.
-        </p>
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px; font-weight:bold;'>
+                                        {storyPoetry.StoryPoetryId}
+                                    </td>
+                                </tr>
 
-        <p>
-            Thank you for choosing The Old Library.
-        </p>
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
+                                        Type
+                                    </td>
 
-        <p>
-            Regards,<br/>
-            <strong>The Old Library</strong>
-        </p>
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
+                                        {storyPoetry.Type}
+                                    </td>
+                                </tr>
 
-    </div>
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
+                                        Title
+                                    </td>
+
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
+                                        {storyPoetry.Title}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
+                                        Submitted On
+                                    </td>
+
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
+                                        {storyPoetry.CreatedDate:dd MMM yyyy, hh:mm tt}
+                                    </td>
+                                </tr>
+
+                            </table>
+
+                            <p style='margin:0 0 16px; color:#333333; font-size:15px; line-height:1.7;'>
+                                Your submission has been recorded successfully.
+                            </p>
+
+                            <p style='margin:0 0 20px; color:#333333; font-size:15px; line-height:1.7;'>
+                                Your submission will be reviewed, and once the review
+                                period is complete, you will receive a separate email
+                                when payment becomes available.
+                            </p>
+
+                            <p style='margin:0; color:#333333; font-size:15px; line-height:1.7;'>
+                                Thank you for choosing
+                                <strong>The Old Library</strong>.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style='background-color:#f1f3f2; padding:20px 25px; text-align:center;'>
+
+                            <p style='margin:0 0 6px; color:#666666; font-size:13px;'>
+                                Regards,
+                            </p>
+
+                            <p style='margin:0; color:#1b3b2b; font-size:14px; font-weight:bold;'>
+                                The Old Library
+                            </p>
+
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
 
 </body>
 </html>";
@@ -351,7 +405,7 @@ namespace BookStore.Server.Services
                     await _emailService.SendEmailAsync(
                         user.Email,
                         "The Old Library - Submission Received",
-                        userEmailBody,
+                        emailBody,
                         true);
                 }
                 catch (Exception ex)
@@ -383,103 +437,168 @@ namespace BookStore.Server.Services
                     try
                     {
                         string editorEmailBody = $@"
+<!DOCTYPE html>
 <html>
-<body style='font-family: Arial, sans-serif; color: #333;'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+</head>
 
-    <div style='max-width: 600px; margin: auto;'>
+<body style='margin:0; padding:0; background-color:#f4f6f5; font-family:Arial, Helvetica, sans-serif;'>
 
-        <h2 style='text-align: center;'>
-            The Old Library
-        </h2>
+    <table width='100%' cellpadding='0' cellspacing='0' border='0'
+           style='background-color:#f4f6f5; padding:30px 15px;'>
+        <tr>
+            <td align='center'>
 
-        <h3>
-           - New Submission Received
-        </h3>
+                <table width='600' cellpadding='0' cellspacing='0' border='0'
+                       style='max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden;'>
 
-        <p>
-            A new
-            <strong>{storyPoetry.Type}</strong>
-            submission has been received.
-        </p>
+                    <!-- HEADER -->
+                    <tr>
+                        <td style='background-color:#1b3b2b; padding:28px 25px; text-align:center;'>
 
-        <table style='width: 100%; border-collapse: collapse;'>
+                            <h1 style='margin:0; color:#ffffff; font-size:26px;'>
+                                The Old Library
+                            </h1>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Submission ID</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {created.StoryPoetryId}
-                </td>
-            </tr>
+                            <p style='margin:8px 0 0; color:#dce8df; font-size:14px;'>
+                                Editor Notification
+                            </p>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Submission Type</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {storyPoetry.Type}
-                </td>
-            </tr>
+                        </td>
+                    </tr>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Title</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {storyPoetry.Title}
-                </td>
-            </tr>
+                    <!-- CONTENT -->
+                    <tr>
+                        <td style='padding:35px 30px;'>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Contributor Name</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {storyPoetry.ContributorNameMalayalam}
-                </td>
-            </tr>
+                            <h2 style='margin:0 0 20px; color:#1b3b2b; font-size:22px;'>
+                                New Submission Received
+                            </h2>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Contributor Email</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {storyPoetry.ContributorEmail}
-                </td>
-            </tr>
+                            <p style='margin:0 0 20px; color:#333333; font-size:15px; line-height:1.7;'>
+                                A new
+                                <strong>{storyPoetry.Type}</strong>
+                                submission has been received and is ready for review.
+                            </p>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Contributor Phone</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {storyPoetry.ContributorPhone}
-                </td>
-            </tr>
+                            <!-- SUBMISSION DETAILS -->
+                            <table width='100%' cellpadding='0' cellspacing='0' border='0'
+                                   style='margin:25px 0; border:1px solid #e1e5e2; border-radius:8px;'>
 
-            <tr>
-                <td style='padding: 8px;'>
-                    <strong>Submitted On</strong>
-                </td>
-                <td style='padding: 8px;'>
-                    {createdDate:dd-MM-yyyy HH:mm}
-                </td>
-            </tr>
+                                <tr>
+                                    <td colspan='2'
+                                        style='padding:14px 16px; background-color:#f1f5f2; color:#1b3b2b; font-size:15px; font-weight:bold;'>
+                                        Submission Details
+                                    </td>
+                                </tr>
 
-        </table>
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px; width:40%;'>
+                                        Submission ID
+                                    </td>
 
-        <p>
-            Please review the submission in the
-            Editor section of The Old Library.
-        </p>
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px; font-weight:bold;'>
+                                        {created.StoryPoetryId}
+                                    </td>
+                                </tr>
 
-        <p>
-            Regards,<br/>
-            <strong>The Old Library</strong>
-        </p>
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
+                                        Submission Type
+                                    </td>
 
-    </div>
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
+                                        {storyPoetry.Type}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
+                                        Title
+                                    </td>
+
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
+                                        {storyPoetry.Title}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
+                                        Contributor Name
+                                    </td>
+
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
+                                        {storyPoetry.ContributorNameMalayalam}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
+                                        Contributor Email
+                                    </td>
+
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
+                                        {storyPoetry.ContributorEmail}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
+                                        Contributor Phone
+                                    </td>
+
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
+                                        {storyPoetry.ContributorPhone}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
+                                        Submitted On
+                                    </td>
+
+                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
+                                        {createdDate:dd MMM yyyy, hh:mm tt}
+                                    </td>
+                                </tr>
+
+                            </table>
+
+                            <p style='margin:0 0 16px; color:#333333; font-size:15px; line-height:1.7;'>
+                                Please review this submission in the
+                                <strong>Editor</strong> section of The Old Library.
+                            </p>
+
+                            <p style='margin:0; color:#333333; font-size:15px; line-height:1.7;'>
+                                Thank you for your contribution to
+                                <strong>The Old Library</strong>.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style='background-color:#f1f3f2; padding:20px 25px; text-align:center;'>
+
+                            <p style='margin:0 0 6px; color:#666666; font-size:13px;'>
+                                Regards,
+                            </p>
+
+                            <p style='margin:0; color:#1b3b2b; font-size:14px; font-weight:bold;'>
+                                The Old Library
+                            </p>
+
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
 
 </body>
 </html>";

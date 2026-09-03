@@ -165,6 +165,9 @@ namespace BookStore.Server.Repositories
                     PaymentStatus =
                         s.PaymentStatus,
 
+                    PaymentEnabledAt =
+    s.PaymentEnabledAt,
+
 
                     // -------------------------------------------------
                     // DATES
@@ -258,6 +261,8 @@ namespace BookStore.Server.Repositories
 
                     PaymentStatus =
                         s.PaymentStatus,
+                    PaymentEnabledAt =
+    s.PaymentEnabledAt,
 
 
                     // -------------------------------------------------
