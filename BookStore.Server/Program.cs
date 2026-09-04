@@ -112,6 +112,9 @@ namespace BookStore.Server
             builder.Services.AddScoped<BookPaymentRepository>();
 
 
+            builder.Services.AddScoped<PromotionBannerRepository>();
+          
+
 
             // Helpers
             builder.Services.AddScoped<PasswordHasher>();
@@ -166,6 +169,8 @@ namespace BookStore.Server
 
             builder.Services.AddHostedService<PaymentNotificationBackgroundService>();
 
+
+            builder.Services.AddScoped<PromotionBannerService>();
 
 
             // JWT Authentication

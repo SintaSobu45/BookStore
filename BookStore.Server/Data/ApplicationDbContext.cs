@@ -49,8 +49,12 @@ namespace BookStore.Server.Data
         public DbSet<BookPayment> BookPayments { get; set; }
 
 
+
         // Certificate
         public DbSet<Certificate> Certificates { get; set; }
+
+        // Banner
+        public DbSet<PromotionBanner> PromotionBanners { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
