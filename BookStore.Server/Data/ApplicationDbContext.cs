@@ -56,6 +56,9 @@ namespace BookStore.Server.Data
         // Banner
         public DbSet<PromotionBanner> PromotionBanners { get; set; }
 
+        //Warning
+        public DbSet<PageWarning> PageWarnings { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
