@@ -58,6 +58,19 @@ namespace BookStore.Server.Models
         [StringLength(500)]
         public string? ContributorAddressMalayalam { get; set; }
 
+        [Required]
+        [StringLength(500)]
+        public string ContributorAddress { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(6)]
+        [RegularExpression(
+    @"^\d{6}$",
+    ErrorMessage = "Pincode must be exactly 6 digits."
+)]
+        public string ContributorPincode { get; set; } = string.Empty;
+   
+
 
         [Required]
         [StringLength(100)]

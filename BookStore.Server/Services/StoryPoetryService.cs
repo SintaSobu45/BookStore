@@ -71,6 +71,12 @@ namespace BookStore.Server.Services
             var contributorAddressMalayalam =
                 request.ContributorAddressMalayalam;
 
+            var contributorAddress =
+                request.ContributorAddress;
+
+            var contributorPincode =
+                request.ContributorPincode;
+
             var contributorDistrictMalayalam =
                 request.ContributorDistrictMalayalam;
 
@@ -93,6 +99,18 @@ namespace BookStore.Server.Services
             {
                 throw new ArgumentException(
                     "Contributor Malayalam name is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(contributorAddress))
+            {
+                throw new ArgumentException(
+                    "Contributor English address is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(contributorPincode))
+            {
+                throw new ArgumentException(
+                    "Contributor pincode is required.");
             }
 
             if (string.IsNullOrWhiteSpace(
@@ -188,6 +206,10 @@ namespace BookStore.Server.Services
 
                 ContributorAddressMalayalam =
                     contributorAddressMalayalam,
+
+                ContributorAddress = contributorAddress,
+
+                ContributorPincode = contributorPincode,
 
                 ContributorDistrictMalayalam =
                     contributorDistrictMalayalam,
@@ -841,6 +863,12 @@ namespace BookStore.Server.Services
 
                 ContributorAddressMalayalam =
                     storyPoetry.ContributorAddressMalayalam,
+
+                ContributorAddress =
+    storyPoetry.ContributorAddress,
+
+                ContributorPincode =
+    storyPoetry.ContributorPincode,
 
                 ContributorDistrictMalayalam =
                     storyPoetry.ContributorDistrictMalayalam,

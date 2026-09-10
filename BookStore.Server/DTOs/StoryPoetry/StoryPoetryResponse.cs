@@ -31,6 +31,10 @@
 
         public string ContributorAddressMalayalam { get; set; } = string.Empty;
 
+
+        public string ContributorAddress { get; set; } = string.Empty;
+
+        public string ContributorPincode { get; set; } = string.Empty;
         public string ContributorDistrictMalayalam { get; set; } = string.Empty;
 
         public string ContributorCityMalayalam { get; set; } = string.Empty;
