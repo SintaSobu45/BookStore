@@ -254,234 +254,214 @@ export default function MyRegistrations() {
   // =====================================================
 
   return (
-    <>
-      <Navbar />
+  <>
+    <Navbar />
 
-      <main className="min-h-screen bg-stone-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          {/* HEADER */}
+    <main className="min-h-screen bg-stone-50">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10">
+        {/* HEADER */}
+        <div className="mb-5 sm:mb-8">
+          <h1 className="text-xl sm:text-3xl font-black text-gray-900">
+            My Registrations
+          </h1>
+          <p className="text-xs sm:text-sm text-stone-500 mt-1 sm:mt-2">
+            View your event registrations and payment status.
+          </p>
+        </div>
 
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
-              My Registrations
-            </h1>
-
-            <p className="text-sm text-stone-500 mt-2">
-              View your event registrations and payment status.
-            </p>
+        {/* ERROR */}
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-xs sm:text-sm">
+            {error}
           </div>
+        )}
 
-          {/* ERROR */}
+        {/* SUCCESS */}
+        {success && (
+          <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-xs sm:text-sm">
+            {success}
+          </div>
+        )}
 
-          {error && (
-            <div className="mb-5 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-              {error}
-            </div>
-          )}
+        {/* NO REGISTRATIONS */}
+        {registrations.length === 0 ? (
+          <div className="bg-white border border-stone-200 rounded-2xl sm:rounded-3xl p-8 sm:p-10 text-center shadow-sm">
+            <CalendarDays className="w-10 h-10 sm:w-12 sm:h-12 text-stone-300 mx-auto mb-3 sm:mb-4" />
+            <h2 className="text-base sm:text-lg font-bold text-gray-900">
+              No Registrations Yet
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-500 mt-1 sm:mt-2 mb-5 sm:mb-6">
+              You haven't registered for any events yet.
+            </p>
+            <Link
+              to="/events"
+              className="inline-flex items-center bg-[#1b3b2b] text-white px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold"
+            >
+              Browse Events
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3.5 sm:space-y-5">
+            {registrations.map((registration) => {
+              const status = getStatus(registration.status);
+              const StatusIcon = status.icon;
+              const isPending =
+                registration.status?.toLowerCase() === "pending";
+              const isRetrying = retryingId === registration.registrationId;
 
-          {/* SUCCESS */}
+              const eventTimeStr =
+                registration.eventTime ||
+                (typeof event !== "undefined" && event?.eventTime);
 
-          {success && (
-            <div className="mb-5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-sm">
-              {success}
-            </div>
-          )}
-
-          {/* NO REGISTRATIONS */}
-
-          {registrations.length === 0 ? (
-            <div className="bg-white border border-stone-200 rounded-3xl p-10 text-center shadow-sm">
-              <CalendarDays className="w-12 h-12 text-stone-300 mx-auto mb-4" />
-
-              <h2 className="text-lg font-bold text-gray-900">
-                No Registrations Yet
-              </h2>
-
-              <p className="text-sm text-stone-500 mt-2 mb-6">
-                You haven't registered for any events yet.
-              </p>
-
-              <Link
-                to="/events"
-                className="inline-flex items-center bg-[#1b3b2b] text-white px-5 py-3 rounded-xl text-sm font-bold"
-              >
-                Browse Events
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {registrations.map((registration) => {
-                const status = getStatus(registration.status);
-
-                const StatusIcon = status.icon;
-
-                const isPending =
-                  registration.status?.toLowerCase() === "pending";
-
-                const isRetrying = retryingId === registration.registrationId;
-
-                return (
-                  <div
-                    key={registration.registrationId}
-                    className="bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden"
-                  >
-                    <div className="p-6 sm:p-7">
-                      {/* TOP */}
-
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div>
-                          <h2 className="text-lg font-extrabold text-gray-900">
-                            {registration.eventName}
-                          </h2>
-
-                          <p className="text-xs text-stone-400 mt-1">
-                            Registration #{registration.registrationId}
-                          </p>
-                        </div>
-
-                        <div
-                          className={`inline-flex items-center gap-2 border rounded-full px-3 py-1.5 text-xs font-bold ${status.className}`}
-                        >
-                          <StatusIcon className="w-3.5 h-3.5" />
-
-                          {status.label}
-                        </div>
+              return (
+                <div
+                  key={registration.registrationId}
+                  className="bg-white border border-stone-200 rounded-2xl sm:rounded-3xl shadow-sm overflow-hidden"
+                >
+                  <div className="p-4 sm:p-7">
+                    {/* TOP: Header & Status Badge Inline */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-base sm:text-lg font-extrabold text-gray-900 truncate">
+                          {registration.eventName}
+                        </h2>
+                        <p className="text-[11px] sm:text-xs text-stone-400 mt-0.5">
+                          #{registration.registrationId}
+                        </p>
                       </div>
 
-                      {/* DETAILS */}
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
-                            <CalendarDays className="w-4 h-4 text-emerald-800" />
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-stone-400">
-                              Date
-                            </p>
-
-                            <p className="text-xs font-semibold text-gray-800">
-                              {new Date(
-                                registration.eventDate,
-                              ).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
-                            <Clock className="w-4 h-4 text-emerald-800" />
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-stone-400">
-                              Time
-                            </p>
-
-                            <p className="text-xs font-semibold text-gray-800">
-                              {event.eventTime
-                                ? new Date(
-                                    `1970-01-01T${event.eventTime}`,
-                                  ).toLocaleTimeString("en-IN", {
-                                    hour: "numeric",
-                                    minute: "2-digit",
-                                    hour12: true,
-                                  })
-                                : "Time not available"}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
-                            <MapPin className="w-4 h-4 text-emerald-800" />
-                          </div>
-
-                          <div className="min-w-0">
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-stone-400">
-                              Venue
-                            </p>
-
-                            <p className="text-xs font-semibold text-gray-800 truncate">
-                              {registration.venue}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
-                            <Users className="w-4 h-4 text-emerald-800" />
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-stone-400">
-                              Seats
-                            </p>
-
-                            <p className="text-xs font-semibold text-gray-800">
-                              {registration.numberOfSeats}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* BOTTOM */}
-
-                      <div className="border-t border-stone-100 mt-6 pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider font-bold text-stone-400">
-                            Registration Amount
-                          </p>
-
-                          <p className="text-xl font-black text-emerald-900">
-                            ₹{Number(registration.totalAmount).toFixed(2)}
-                          </p>
-                        </div>
-
-                        {/* RETRY PAYMENT */}
-
-                        {isPending && (
-                          <button
-                            onClick={() => handleRetryPayment(registration)}
-                            disabled={isRetrying}
-                            className="inline-flex items-center justify-center gap-2 bg-[#1b3b2b] hover:bg-emerald-950 disabled:opacity-60 text-white font-bold text-sm px-5 py-3 rounded-xl transition"
-                          >
-                            {isRetrying ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                <RefreshCcw className="w-4 h-4" />
-                                Retry Payment
-                              </>
-                            )}
-                          </button>
-                        )}
-
-                        {!isPending && (
-                          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
-                            <CheckCircle className="w-4 h-4" />
-                            Registration confirmed
-                          </div>
-                        )}
+                      <div
+                        className={`shrink-0 inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-[11px] sm:text-xs font-bold ${status.className}`}
+                      >
+                        <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span>{status.label}</span>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </main>
 
-      <Footer />
-    </>
-  );
+                    {/* DETAILS: 2-Column Grid on Mobile, 4-Column on Desktop */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
+                      {/* Date */}
+                      <div className="flex items-center gap-2.5 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                          <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-stone-400">
+                            Date
+                          </p>
+                          <p className="text-[11px] sm:text-xs font-semibold text-gray-800 truncate">
+                            {new Date(
+                              registration.eventDate
+                            ).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Time */}
+                      <div className="flex items-center gap-2.5 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-stone-400">
+                            Time
+                          </p>
+                          <p className="text-[11px] sm:text-xs font-semibold text-gray-800 truncate">
+                            {eventTimeStr
+                              ? new Date(
+                                  `1970-01-01T${eventTimeStr}`
+                                ).toLocaleTimeString("en-IN", {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Venue */}
+                      <div className="flex items-center gap-2.5 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                          <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-stone-400">
+                            Venue
+                          </p>
+                          <p className="text-[11px] sm:text-xs font-semibold text-gray-800 truncate">
+                            {registration.venue}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Seats */}
+                      <div className="flex items-center gap-2.5 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                          <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-800" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-stone-400">
+                            Seats
+                          </p>
+                          <p className="text-[11px] sm:text-xs font-semibold text-gray-800 truncate">
+                            {registration.numberOfSeats}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* BOTTOM: Compact Row for Mobile */}
+                    <div className="border-t border-stone-100 mt-4 sm:mt-6 pt-3.5 sm:pt-5 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[9px] sm:text-[10px] uppercase tracking-wider font-bold text-stone-400">
+                          Amount
+                        </p>
+                        <p className="text-base sm:text-xl font-black text-emerald-900">
+                          ₹{Number(registration.totalAmount).toFixed(2)}
+                        </p>
+                      </div>
+
+                      {/* RETRY / STATUS ACTION */}
+                      {isPending ? (
+                        <button
+                          onClick={() => handleRetryPayment(registration)}
+                          disabled={isRetrying}
+                          className="inline-flex items-center justify-center gap-1.5 bg-[#1b3b2b] hover:bg-emerald-950 disabled:opacity-60 text-white font-bold text-xs sm:text-sm px-3.5 py-2 sm:px-5 sm:py-3 rounded-xl transition"
+                        >
+                          {isRetrying ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCcw className="w-3.5 h-3.5" />
+                              <span>Retry Payment</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-emerald-700">
+                          <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span>Confirmed</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </main>
+
+    <Footer />
+  </>
+);
 }

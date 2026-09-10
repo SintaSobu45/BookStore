@@ -63,3 +63,43 @@
     stroke-dashoffset: 0;
   }
 }
+
+
+
+
+/* Desktop - completely normal existing behavior */
+.mobile-poetry-textarea {
+  white-space: normal;
+  overflow-x: hidden;
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .mobile-poetry-textarea {
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: auto;
+    min-width: 700px;
+  }
+}
+
+
+/* footer */
+
+@media (max-width:767px){
+  .footer-section{
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+.social-icon {
+  transition: transform 0.3s ease;
+}
+
+.social-icon:hover{
+  transform: rotateX('90deg');
+}
+
+
+

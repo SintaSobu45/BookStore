@@ -12,6 +12,7 @@ import {
   getPublishers,
 } from "../../services/publisherService";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
 
 function Books() {
   // =========================
@@ -318,12 +319,26 @@ function Books() {
 
       if (editMode) {
         const updateData = buildBookFormData(updatedFormData, true);
+
         await updateBook(editingBookId, updateData);
-        setSuccess("Book updated successfully.");
+
+        await Swal.fire({
+          icon: "success",
+          title: "Book Updated!",
+          text: "Book updated successfully.",
+          confirmButtonColor: "#1b3b2b",
+        });
       } else {
         const bookData = buildBookFormData(updatedFormData, false);
+
         await createBook(bookData);
-        setSuccess("Book added successfully.");
+
+        await Swal.fire({
+          icon: "success",
+          title: "Book Added!",
+          text: "Book added successfully.",
+          confirmButtonColor: "#1b3b2b",
+        });
       }
 
       resetForm();
@@ -332,6 +347,7 @@ function Books() {
       await loadPublishers();
     } catch (err) {
       console.error(err);
+
       setError(err.message || "Failed to save book.");
     }
   };
@@ -371,21 +387,46 @@ function Books() {
   // =========================
   // Delete
   // =========================
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this book?",
-    );
+  const handleDelete = async (book) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `Do you want to delete "${book.title}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#1b3b2b",
+      cancelButtonColor: "#78716c",
+    });
 
-    if (!confirmed) return;
+    if (!result.isConfirmed) return;
 
     try {
-      setError("");
-      setSuccess("");
-      await deleteBook(id);
-      setSuccess("Book deleted successfully.");
-      await loadBooks();
+      setDeletingBookId(book.bookId);
+
+      await deleteBook(book.bookId);
+
+      setBooks((previousBooks) =>
+        previousBooks.filter((item) => item.bookId !== book.bookId),
+      );
+
+      Swal.fire({
+        title: "Deleted!",
+        text: "Book deleted successfully.",
+        icon: "success",
+        confirmButtonColor: "#1b3b2b",
+      });
     } catch (err) {
-      setError(err.message);
+      console.error("Delete book error:", err);
+
+      Swal.fire({
+        title: "Cannot Delete Book",
+        text: "This book has already been purchased by a user and cannot be deleted.",
+        icon: "error",
+        confirmButtonColor: "#1b3b2b",
+      });
+    } finally {
+      setDeletingBookId(null);
     }
   };
 
@@ -453,12 +494,13 @@ function Books() {
         </div>
 
         <div className="d-flex gap-3">
-          <Link to={'/admin/orders'}
+          <Link
+            to={"/admin/orders"}
             className="w-full sm:w-auto px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
           >
             My Orders
           </Link>
-  
+
           <button
             onClick={() => {
               if (showForm) {
@@ -707,7 +749,10 @@ function Books() {
                 {/* Image */}
                 <div className="lg:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Book Image
+                    Book Image{" "}
+                    <span>
+                      (approx <span className="text-danger">[1000x1200]</span>)
+                    </span>
                   </label>
                   <input
                     type="file"
@@ -782,14 +827,25 @@ function Books() {
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="px-5 sm:px-6 py-5 border-b border-gray-100">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">All Books</h2>
+            <div className="flex items-center justify-center">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">All Books</h2>
 
-              <p className="text-sm text-gray-500 mt-1">
-                {filteredBooks.length} book
-                {filteredBooks.length !== 1 ? "s" : ""} found
-                {searchTerm && ` for "${searchTerm}"`}
-              </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {filteredBooks.length} book
+                  {filteredBooks.length !== 1 ? "s" : ""} found
+                  {searchTerm && ` for "${searchTerm}"`}
+                </p>
+              </div>
+
+              <div className="ms-3">
+                <Link
+                  to={"/admin/promotion/banners"}
+                  className="btn btn-success text-light mt-3 fw-bold"
+                >
+                  + Add promo cover
+                </Link>
+              </div>
             </div>
 
             {/* Search */}

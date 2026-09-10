@@ -379,7 +379,7 @@ export default function EventsAndNewsletter() {
           rounded-3xl
           p-6
           sm:p-8
-          md:p-10
+          md:p-16
           flex
           flex-col
           lg:flex-row
@@ -444,45 +444,25 @@ export default function EventsAndNewsletter() {
           "
         >
 
-          <input
-            type="email"
-            placeholder="Enter your email"
-            className="
-              bg-white
-              border
-              border-gray-300
-              focus:border-emerald-700
-              focus:ring-1
-              focus:ring-emerald-700
-              outline-none
-              px-4
-              py-3
-              rounded-xl
-              text-sm
-              w-full
-              sm:w-80
-              shadow-sm
-            "
-          />
 
           <button
             className="
               bg-emerald-900
               hover:bg-emerald-800
               text-white
-              font-medium
+              fw-bold
               text-sm
               px-6
               py-3
               rounded-xl
               transition-colors
               shadow-sm
-              w-full
+              w-100
               sm:w-auto
               cursor-pointer
             "
           >
-            Subscribe
+           Get Enquiry
           </button>
 
         </div>

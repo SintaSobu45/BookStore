@@ -411,345 +411,340 @@ export default function EventRegistration() {
   }
 
   return (
-    <>
-      <Navbar />
+  <>
+    <Navbar />
 
-      {/* =========================
+    {/* =========================
         PAGE CONTENT
     ========================= */}
 
-      <div className="relative min-h-screen bg-stone-50/60">
-        {/* =========================
+    <div className="relative min-h-screen bg-stone-50/60 pb-12 sm:pb-16">
+      {/* =========================
           BLURRED PAGE
       ========================= */}
 
-        <div
-          className={
-            !profile ? "blur-[1px] pointer-events-none select-none" : ""
-          }
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* =========================
+      <div
+        className={
+          !profile ? "blur-[2px] pointer-events-none select-none" : ""
+        }
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+            {/* =========================
                 LEFT - REGISTRATION
             ========================= */}
 
-              <div className="lg:col-span-7">
-                <div className="bg-white border border-stone-200/80 rounded-3xl p-6 sm:p-8 shadow-sm">
-                  <h3 className="font-extrabold text-gray-900 text-base border-b border-stone-100 pb-3 mb-6">
-                    Event Registration
-                  </h3>
+            <div className="lg:col-span-7">
+              <div className="bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm">
+                <h3 className="font-extrabold text-gray-900 text-sm sm:text-base border-b border-stone-100 pb-3 mb-5 sm:mb-6">
+                  Event Registration
+                </h3>
 
-                  {/* Number of Seats */}
+                {/* Number of Seats */}
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-2">
-                      Number of Seats
-                    </label>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-2">
+                    Number of Seats
+                  </label>
 
-                    <select
-                      value={seats}
-                      onChange={(e) => setSeats(Number(e.target.value))}
-                      className="w-full bg-stone-50/75 border border-stone-200 rounded-xl py-3 px-3.5 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 font-medium"
-                    >
-                      {Array.from(
-                        {
-                          length: Math.min(10, event.availableSeats),
-                        },
-                        (_, index) => index + 1,
-                      ).map((number) => (
-                        <option key={number} value={number}>
-                          {number} {number === 1 ? "Seat" : "Seats"}
-                        </option>
-                      ))}
-                    </select>
+                  <select
+                    value={seats}
+                    onChange={(e) => setSeats(Number(e.target.value))}
+                    className="w-full bg-stone-50/75 border border-stone-200 rounded-xl py-3 px-3.5 text-xs sm:text-sm text-gray-800 focus:outline-none focus:border-emerald-800 font-medium transition-colors"
+                  >
+                    {Array.from(
+                      {
+                        length: Math.min(10, event.availableSeats),
+                      },
+                      (_, index) => index + 1,
+                    ).map((number) => (
+                      <option key={number} value={number}>
+                        {number} {number === 1 ? "Seat" : "Seats"}
+                      </option>
+                    ))}
+                  </select>
 
-                    <p className="text-[10px] text-stone-400 mt-2">
-                      Maximum 10 seats per registration
-                    </p>
-                  </div>
+                  <p className="text-[10px] sm:text-xs text-stone-400 mt-2">
+                    Maximum 10 seats per registration
+                  </p>
+                </div>
 
-                  {/* =========================
+                {/* =========================
                     PAYMENT
                 ========================= */}
 
-                  <div className="mt-8">
-                    <h3 className="font-extrabold text-gray-900 text-sm border-b border-stone-100 pb-3 mb-4">
-                      Payment
-                    </h3>
+                <div className="mt-6 sm:mt-8">
+                  <h3 className="font-extrabold text-gray-900 text-xs sm:text-sm border-b border-stone-100 pb-3 mb-4">
+                    Payment Method
+                  </h3>
 
-                    <div className="border-2 border-[#1b3b2b] bg-emerald-50/20 rounded-2xl p-4 flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="radio"
-                          checked
-                          readOnly
-                          className="accent-[#1b3b2b]"
-                        />
-
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-xs">
-                            Razorpay
-                          </h4>
-
-                          <p className="text-[10px] text-stone-500">
-                            UPI, Cards, NetBanking & Wallets
-                          </p>
-                        </div>
-                      </div>
-
-                      <span className="font-extrabold text-blue-900 text-xs bg-blue-50 px-2.5 py-1 rounded-lg">
-                        Razorpay
-                      </span>
-                    </div>
-
-                    <div className="mt-4 bg-stone-50 border border-stone-200 rounded-2xl p-4 flex items-center space-x-3">
-                      <ShieldCheck className="h-5 w-5 text-emerald-900" />
+                  <div className="border-2 border-[#1b3b2b] bg-emerald-50/20 rounded-2xl p-3.5 sm:p-4 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="radio"
+                        checked
+                        readOnly
+                        className="accent-[#1b3b2b] h-4 w-4"
+                      />
 
                       <div>
-                        <h4 className="font-bold text-gray-900 text-xs">
-                          Secure Payment
+                        <h4 className="font-bold text-gray-900 text-xs sm:text-sm">
+                          Razorpay
                         </h4>
 
-                        <p className="text-[10px] text-stone-500">
-                          Your payment will be processed securely through
-                          Razorpay.
+                        <p className="text-[10px] sm:text-xs text-stone-500">
+                          UPI, Cards, NetBanking & Wallets
                         </p>
                       </div>
+                    </div>
+
+                    <span className="font-extrabold text-blue-900 text-[10px] sm:text-xs bg-blue-50 px-2.5 py-1 rounded-lg shrink-0">
+                      Razorpay
+                    </span>
+                  </div>
+
+                  <div className="mt-3.5 sm:mt-4 bg-stone-50 border border-stone-200 rounded-2xl p-3.5 sm:p-4 flex items-center space-x-3">
+                    <ShieldCheck className="h-5 w-5 text-emerald-900 shrink-0" />
+
+                    <div>
+                      <h4 className="font-bold text-gray-900 text-xs sm:text-sm">
+                        Secure Payment
+                      </h4>
+
+                      <p className="text-[10px] sm:text-xs text-stone-500 leading-tight">
+                        Your payment will be processed securely through
+                        Razorpay.
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* =========================
+            {/* =========================
                 RIGHT - ORDER SUMMARY
             ========================= */}
 
-              <div className="lg:col-span-5">
-                <div className="sticky top-6 bg-white border border-stone-200/80 rounded-3xl shadow-sm overflow-hidden">
-                  {/* =========================
-        EVENT BANNER
-    ========================= */}
-                  <div className="w-full bg-stone-100 overflow-hidden">
-                    <img
-                      src={
-                        event.imageUrl ||
-                        "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80"
-                      }
-                      alt={event.eventName}
-                      className="w-full h-auto block"
-                    />
+            <div className="lg:col-span-5">
+              <div className="lg:sticky lg:top-6 bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl shadow-sm overflow-hidden">
+                {/* =========================
+                    EVENT BANNER
+                ========================= */}
+                <div className="w-full bg-stone-100 overflow-hidden aspect-[16/9] sm:aspect-auto">
+                  <img
+                    src={
+                      event.imageUrl ||
+                      "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80"
+                    }
+                    alt={event.eventName}
+                    className="w-full h-full sm:h-auto object-cover block"
+                  />
+                </div>
+
+                {/* =========================
+                    ORDER CONTENT
+                ========================= */}
+                <div className="p-5 sm:p-8 space-y-5 sm:space-y-6">
+                  {/* Heading */}
+                  <div className="border-b border-stone-100 pb-3">
+                    <h3 className="font-extrabold text-gray-900 text-sm sm:text-base">
+                      Order Summary
+                    </h3>
                   </div>
 
                   {/* =========================
-        ORDER CONTENT
-    ========================= */}
-                  <div className="p-6 sm:p-8 space-y-6">
-                    {/* Heading */}
-                    <div className="border-b border-stone-100 pb-3">
-                      <h3 className="font-extrabold text-gray-900 text-base">
-                        Order Summary
-                      </h3>
-                    </div>
+                      EVENT DETAILS
+                  ========================= */}
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold tracking-widest text-stone-400 mb-2.5 sm:mb-3">
+                      Event Details
+                    </span>
 
-                    {/* =========================
-          EVENT DETAILS
-      ========================= */}
-                    <div>
-                      <span className="block text-[10px] uppercase font-bold tracking-widest text-stone-400 mb-3">
-                        Event Details
-                      </span>
+                    <div className="space-y-3">
+                      {/* Event Name */}
+                      <h4 className="font-extrabold text-gray-900 text-sm sm:text-base leading-snug">
+                        {event.eventName}
+                      </h4>
 
-                      <div className="space-y-3">
-                        {/* Event Name */}
-                        <h4 className="font-extrabold text-gray-900 text-sm leading-snug">
-                          {event.eventName}
-                        </h4>
-
-                        {/* Date */}
-                        <div className="flex items-center gap-2 text-xs text-stone-600">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-                            <CalendarDays className="h-3.5 w-3.5 text-emerald-800" />
-                          </div>
-
-                          <span>
-                            {new Date(event.eventDate).toLocaleDateString(
-                              "en-IN",
-                              {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              },
-                            )}
-                          </span>
+                      {/* Date */}
+                      <div className="flex items-center gap-2.5 text-xs sm:text-sm text-stone-600">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                          <CalendarDays className="h-3.5 w-3.5 text-emerald-800" />
                         </div>
 
-                        {/* Time */}
-                        <div className="flex items-center gap-2 text-xs text-stone-600">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-                            <Clock className="h-3.5 w-3.5 text-emerald-800" />
-                          </div>
-
-                          <span>
-                            {event.eventTime
-                              ? new Date(
-                                  `1970-01-01T${event.eventTime}`,
-                                ).toLocaleTimeString("en-IN", {
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                })
-                              : "Time not available"}
-                          </span>
-                        </div>
-
-                        {/* Venue */}
-                        <div className="flex items-center gap-2 text-xs text-stone-600">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-                            <MapPin className="h-3.5 w-3.5 text-emerald-800" />
-                          </div>
-
-                          <span className="truncate">{event.venue}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* =========================
-          SUMMARY
-      ========================= */}
-                    <div className="border-t border-stone-100 pt-5">
-                      <span className="block text-[10px] uppercase font-bold tracking-widest text-stone-400 mb-3">
-                        Summary
-                      </span>
-
-                      <div className="flex justify-between items-center text-xs text-stone-600">
                         <span>
-                          Entry Fee ({seats} {seats === 1 ? "Seat" : "Seats"})
-                        </span>
-
-                        <span className="font-bold text-gray-900">
-                          ₹{entryFee}.00
+                          {new Date(event.eventDate).toLocaleDateString(
+                            "en-IN",
+                            {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            },
+                          )}
                         </span>
                       </div>
-                    </div>
 
-                    {/* =========================
-          TOTAL
-      ========================= */}
-                    <div className="border-t border-stone-200 pt-5 flex items-center justify-between">
-                      <span className="font-extrabold text-gray-900 text-sm">
-                        Total
-                      </span>
+                      {/* Time */}
+                      <div className="flex items-center gap-2.5 text-xs sm:text-sm text-stone-600">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                          <Clock className="h-3.5 w-3.5 text-emerald-800" />
+                        </div>
 
-                      <span className="font-black text-emerald-900 text-2xl">
-                        ₹{totalAmount}.00
-                      </span>
-                    </div>
-
-                    {/* =========================
-          TERMS
-      ========================= */}
-                    <div className="flex items-start gap-2">
-                      <input
-                        type="checkbox"
-                        id="agreeTerms"
-                        checked={agreed}
-                        onChange={(e) => setAgreed(e.target.checked)}
-                        className="accent-[#1b3b2b] h-4 w-4 mt-0.5 rounded cursor-pointer"
-                      />
-
-                      <label
-                        htmlFor="agreeTerms"
-                        className="text-xs text-stone-600 leading-relaxed cursor-pointer"
-                      >
-                        I agree to the{" "}
-                        <span className="text-emerald-900 font-bold">
-                          Terms & Conditions
-                        </span>{" "}
-                        and{" "}
-                        <span className="text-emerald-900 font-bold">
-                          Privacy Policy
+                        <span>
+                          {event.eventTime
+                            ? new Date(
+                                `1970-01-01T${event.eventTime}`,
+                              ).toLocaleTimeString("en-IN", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                              })
+                            : "Time not available"}
                         </span>
-                      </label>
+                      </div>
+
+                      {/* Venue */}
+                      <div className="flex items-center gap-2.5 text-xs sm:text-sm text-stone-600">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                          <MapPin className="h-3.5 w-3.5 text-emerald-800" />
+                        </div>
+
+                        <span className="truncate">{event.venue}</span>
+                      </div>
                     </div>
+                  </div>
 
-                    {/* =========================
-          REGISTER BUTTON
-      ========================= */}
-                    <button
-                      onClick={handleSubmit}
-                      type="submit"
-                      className="w-full bg-[#1b3b2b] hover:bg-emerald-950 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm"
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  {/* =========================
+                      SUMMARY
+                  ========================= */}
+                  <div className="border-t border-stone-100 pt-4 sm:pt-5">
+                    <span className="block text-[10px] uppercase font-bold tracking-widest text-stone-400 mb-2.5 sm:mb-3">
+                      Summary
+                    </span>
 
-                          <span>Registering...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="h-4 w-4" />
+                    <div className="flex justify-between items-center text-xs sm:text-sm text-stone-600">
+                      <span>
+                        Entry Fee ({seats} {seats === 1 ? "Seat" : "Seats"})
+                      </span>
 
-                          <span>Register for ₹{totalAmount}.00</span>
-                        </>
-                      )}
-                    </button>
-
-                    {/* Secure text */}
-                    <div className="text-center">
-                      <span className="text-[10px] text-stone-400 font-medium">
-                        🔒 Secure event registration
+                      <span className="font-bold text-gray-900">
+                        ₹{entryFee}.00
                       </span>
                     </div>
+                  </div>
+
+                  {/* =========================
+                      TOTAL
+                  ========================= */}
+                  <div className="border-t border-stone-200 pt-4 sm:pt-5 flex items-center justify-between">
+                    <span className="font-extrabold text-gray-900 text-sm sm:text-base">
+                      Total
+                    </span>
+
+                    <span className="font-black text-emerald-900 text-xl sm:text-2xl">
+                      ₹{totalAmount}.00
+                    </span>
+                  </div>
+
+                  {/* =========================
+                      TERMS
+                  ========================= */}
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      id="agreeTerms"
+                      checked={agreed}
+                      onChange={(e) => setAgreed(e.target.checked)}
+                      className="accent-[#1b3b2b] h-4 w-4 mt-0.5 rounded cursor-pointer shrink-0"
+                    />
+
+                    <label
+                      htmlFor="agreeTerms"
+                      className="text-xs text-stone-600 leading-relaxed cursor-pointer select-none"
+                    >
+                      I agree to the{" "}
+                      <span className="text-emerald-900 font-bold">
+                        Terms & Conditions
+                      </span>{" "}
+                      and{" "}
+                      <span className="text-emerald-900 font-bold">
+                        Privacy Policy
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* =========================
+                      REGISTER BUTTON
+                  ========================= */}
+                  <button
+                    onClick={handleSubmit}
+                    type="submit"
+                    className="w-full bg-[#1b3b2b] active:scale-[0.99] hover:bg-emerald-950 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Registering...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-4 w-4" />
+                        <span>Register for ₹{totalAmount}.00</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Secure text */}
+                  <div className="text-center pt-1">
+                    <span className="text-[10px] sm:text-xs text-stone-400 font-medium">
+                      🔒 Secure event registration
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* ==================================================
-          LOGIN OVERLAY
-          This stays OUTSIDE the blurred container
-      ================================================== */}
-
-        {!profile && (
-          <div className="absolute inset-0 z-1 flex items-center justify-center bg-black/10" >
-            <div className="bg-white border border-stone-200 shadow-2xl rounded-3xl px-8 py-8 sm:px-10 sm:py-10 text-center w-[90%] max-w-md" style={{marginBottom:"400px"}}>
-              {/* Lock Icon */}
-
-              <div className="w-16 h-16 bg-emerald-100 text-emerald-900 rounded-full flex items-center justify-center mx-auto mb-5">
-                <Lock className="h-7 w-7" />
-              </div>
-
-              {/* Title */}
-
-              <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">
-                Please Login
-              </h2>
-
-              {/* Description */}
-
-              <p className="text-sm text-stone-500 mt-2 leading-relaxed">
-                You need to login to register for this event and make a payment.
-              </p>
-
-              {/* Login Button */}
-
-              <Link
-                to="/login"
-                className="mt-6 inline-flex items-center justify-center bg-[#1b3b2b] hover:bg-emerald-950 text-white font-bold text-sm px-7 py-3 rounded-xl shadow-md transition-colors"
-              >
-                Login to Continue
-              </Link>
-            </div>
-          </div>
-        )}
       </div>
 
-      <Footer />
-    </>
-  );
+      {/* ==================================================
+          LOGIN OVERLAY
+          Fixed overlay centered on screen for mobile/desktop
+      ================================================== */}
+
+      {!profile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-[1px]">
+          <div className="bg-white border border-stone-200 shadow-2xl rounded-2xl sm:rounded-3xl px-6 py-8 sm:px-10 sm:py-10 text-center w-full max-w-md">
+            {/* Lock Icon */}
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-emerald-100 text-emerald-900 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5">
+              <Lock className="h-6 w-6 sm:h-7 sm:w-7" />
+            </div>
+
+            {/* Title */}
+            <h2 className="text-lg sm:text-2xl font-extrabold text-gray-900">
+              Please Login
+            </h2>
+
+            {/* Description */}
+            <p className="text-xs sm:text-sm text-stone-500 mt-2 leading-relaxed">
+              You need to login to register for this event and make a payment.
+            </p>
+
+            {/* Login Button */}
+            <Link
+              to="/login"
+              state={{ from: "/events" }}
+              className="mt-6 w-full sm:w-auto inline-flex items-center justify-center bg-[#1b3b2b] hover:bg-emerald-950 text-white font-bold text-xs sm:text-sm px-7 py-3.5 rounded-xl shadow-md transition-colors"
+            >
+              Login to Continue
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+
+    <Footer />
+  </>
+);
 }

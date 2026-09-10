@@ -787,7 +787,7 @@ export default function BookDetail() {
                             ========================= */}
 
               {activeTab === "reviews" && (
-                <div className="space-y-6">
+                <div className="w-full max-w-none space-y-6">
                   {/* Review Header */}
 
                   <div className="flex items-center justify-between border-b border-stone-100 pb-4">
@@ -818,7 +818,7 @@ export default function BookDetail() {
                   {/* Review Form */}
 
                   {showReviewForm && (
-                    <div className="bg-stone-50/70 border border-stone-200 rounded-2xl p-5 space-y-4">
+                    <div className="w-full max-w-none bg-stone-50/70 border border-stone-200 rounded-2xl p-4 sm:p-5 space-y-4">
                       <h4 className="font-bold text-gray-900 text-sm">
                         Write Your Review
                       </h4>
@@ -861,9 +861,9 @@ export default function BookDetail() {
                           value={reviewComment}
                           onChange={(e) => setReviewComment(e.target.value)}
                           maxLength={1000}
-                          rows={4}
+                          rows={6}
                           placeholder="Write your review..."
-                          className="w-full bg-white border border-stone-200 rounded-xl p-3 text-sm outline-none focus:border-emerald-700 resize-none"
+                          className="w-full min-w-0 bg-white border border-stone-200 rounded-xl p-4 text-sm outline-none focus:border-emerald-700 resize-none"
                         />
 
                         <p className="text-right text-xs text-gray-400 mt-1">

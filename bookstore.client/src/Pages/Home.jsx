@@ -6,6 +6,7 @@ import TopCategories from "../Components/TopCategories";
 import EventsAndNewsletter from "../Components/Events";
 import Footer from "../Components/Footer";
 import { toast } from "react-toastify";
+import BookPromotions from "../Components/BookPromotions";
 
 
 function Home() {
@@ -29,6 +30,8 @@ function Home() {
 
       <HeroSection />
       <BookSections />
+
+      <BookPromotions/>
       <TopCategories />
       <EventsAndNewsletter />
 

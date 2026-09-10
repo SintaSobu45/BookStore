@@ -24,6 +24,16 @@ import {
 import { getAllStoryPoetry } from "../../services/storyPoetryService";
 import { useNavigate } from "react-router-dom";
 
+import PageWarningManager from "./PageWarningManager";
+
+import {
+  getAllPageWarnings,
+  createPageWarning,
+  updatePageWarning,
+  deletePageWarning,
+  togglePageWarning,
+} from "../../services/pageWarningService";
+
 export default function AdminStoryPoetry() {
   const navigate = useNavigate();
 
@@ -41,6 +51,32 @@ export default function AdminStoryPoetry() {
   // Type filter
   const [selectedType, setSelectedType] = useState("All");
 
+  // Payment filter
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState("All");
+
+  // warning & modal
+  const [warnings, setWarnings] = useState([]);
+
+  const [showWarningModal, setShowWarningModal] = useState(false);
+
+  const [editingWarning, setEditingWarning] = useState(null);
+
+  const [warningForm, setWarningForm] = useState({
+    pageName: "",
+    message: "",
+    isActive: true,
+  });
+
+  const [warningData, setWarningData] = useState({
+  pageName: "StoryPoetry",
+  message: "",
+  isActive: true,
+});
+
+const [warningId, setWarningId] = useState(null);
+
+  const [warningLoading, setWarningLoading] = useState(false);
+
   // Date filters
   const [selectedMonth, setSelectedMonth] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -48,8 +84,184 @@ export default function AdminStoryPoetry() {
 
   // DOCX states
   const [generatingDocx, setGeneratingDocx] = useState(false);
-  const [generatingSingleDocx, setGeneratingSingleDocx] =
-    useState(null);
+  const [generatingSingleDocx, setGeneratingSingleDocx] = useState(null);
+
+  //loda warnings
+
+  const loadWarnings = async () => {
+    try {
+      const data = await getAllPageWarnings();
+      setWarnings(data);
+    } catch (error) {
+      console.error("Failed to load warnings:", error);
+    }
+  };
+
+  //handle warning
+
+  const handleAddWarning = async () => {
+    if (!warningForm.message.trim()) {
+      return;
+    }
+
+    try {
+      setWarningSubmitting(true);
+
+      await createPageWarning({
+        pageName: warningForm.pageName,
+        message: warningForm.message,
+        isActive: warningForm.isActive,
+      });
+
+      setShowWarningModal(false);
+
+      setWarningForm({
+        pageName: "UploadPoetry",
+        message: "",
+        isActive: true,
+      });
+    } catch (err) {
+      console.error("Failed to add warning:", err);
+    } finally {
+      setWarningSubmitting(false);
+    }
+  };
+
+  
+  const handleSaveWarning = async () => {
+  if (!warningData.message.trim()) {
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "warning",
+      title: "Please enter a warning message",
+      showConfirmButton: false,
+      timer: 2500,
+    });
+
+    return;
+  }
+
+  try {
+    if (warningId) {
+      await updatePageWarning(warningId, warningData);
+
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: "Warning updated successfully",
+        showConfirmButton: false,
+        timer: 2000,
+      });
+    } else {
+      await createPageWarning(warningData);
+
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: "Warning added successfully",
+        showConfirmButton: false,
+        timer: 2000,
+      });
+    }
+
+    setShowWarningModal(false);
+  } catch (error) {
+    console.error(error);
+
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "error",
+      title: "Failed to save warning",
+      showConfirmButton: false,
+      timer: 2500,
+    });
+  }
+};
+
+//handle opening warning
+
+const handleOpenWarning = async () => {
+  try {
+    const warnings = await getAllPageWarnings();
+
+    const existingWarning = warnings.find(
+      (warning) => warning.pageName === "StoryPoetry"
+    );
+
+    if (existingWarning) {
+      setWarningId(existingWarning.pageWarningId);
+
+      setWarningData({
+        pageName: existingWarning.pageName,
+        message: existingWarning.message,
+        isActive: existingWarning.isActive,
+      });
+    } else {
+      setWarningId(null);
+
+      setWarningData({
+        pageName: "StoryPoetry",
+        message: "",
+        isActive: true,
+      });
+    }
+
+    setShowWarningModal(true);
+  } catch (error) {
+    console.error(error);
+
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "error",
+      title: "Failed to load warning",
+      showConfirmButton: false,
+      timer: 2500,
+    });
+  }
+};
+
+const handleDeleteWarning = async () => {
+  if (!warningId) return;
+
+  try {
+    await deletePageWarning(warningId);
+
+    setWarningId(null);
+
+    setWarningData({
+      pageName: "StoryPoetry",
+      message: "",
+      isActive: true,
+    });
+
+    setShowWarningModal(false);
+
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "success",
+      title: "Warning deleted successfully",
+      showConfirmButton: false,
+      timer: 2000,
+    });
+  } catch (error) {
+    console.error(error);
+
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "error",
+      title: "Failed to delete warning",
+      showConfirmButton: false,
+      timer: 2500,
+    });
+  }
+};
 
   // =========================================================
   // LOAD SUBMISSIONS
@@ -69,8 +281,7 @@ export default function AdminStoryPoetry() {
       console.error("Failed to load submissions:", err);
 
       setError(
-        err?.message ||
-          "Failed to load Story, Poetry and Special submissions.",
+        err?.message || "Failed to load Story, Poetry and Special submissions.",
       );
     } finally {
       setLoading(false);
@@ -79,6 +290,7 @@ export default function AdminStoryPoetry() {
 
   useEffect(() => {
     loadSubmissions();
+    loadWarnings();
   }, []);
 
   // =========================================================
@@ -104,11 +316,7 @@ export default function AdminStoryPoetry() {
 
     const [year, month, day] = dateOnly.split("-");
 
-    const parsedDate = new Date(
-      Number(year),
-      Number(month) - 1,
-      Number(day),
-    );
+    const parsedDate = new Date(Number(year), Number(month) - 1, Number(day));
 
     if (Number.isNaN(parsedDate.getTime())) {
       return "-";
@@ -127,14 +335,10 @@ export default function AdminStoryPoetry() {
 
   const renderTypeIcon = (type) => {
     if (type === "Poetry") {
-      return (
-        <Leaf className="h-4 w-4 text-emerald-800" />
-      );
+      return <Leaf className="h-4 w-4 text-emerald-800" />;
     }
 
-    return (
-      <BookOpen className="h-4 w-4 text-emerald-800" />
-    );
+    return <BookOpen className="h-4 w-4 text-emerald-800" />;
   };
 
   // =========================================================
@@ -177,25 +381,29 @@ export default function AdminStoryPoetry() {
     }
 
     // Month
-    const matchesMonth =
-      !selectedMonth ||
-      itemDate.startsWith(selectedMonth);
+    const matchesMonth = !selectedMonth || itemDate.startsWith(selectedMonth);
 
     // From
-    const matchesFromDate =
-      !fromDate ||
-      itemDate >= fromDate;
+    const matchesFromDate = !fromDate || itemDate >= fromDate;
 
     // To
-    const matchesToDate =
-      !toDate ||
-      itemDate <= toDate;
+    const matchesToDate = !toDate || itemDate <= toDate;
 
-    return (
-      matchesMonth &&
-      matchesFromDate &&
-      matchesToDate
-    );
+    return matchesMonth && matchesFromDate && matchesToDate;
+  };
+
+  // =========================================================
+  // PAYMENT FILTER
+  // =========================================================
+
+  const matchesPaymentFilter = (item) => {
+    if (selectedPaymentStatus === "All") {
+      return true;
+    }
+
+    const paymentStatus = item?.paymentStatus?.toLowerCase() || "pending";
+
+    return paymentStatus === selectedPaymentStatus.toLowerCase();
   };
 
   // =========================================================
@@ -215,47 +423,31 @@ export default function AdminStoryPoetry() {
   // =========================================================
 
   const filteredSubmissions = useMemo(() => {
-    const search = searchTerm
-      .toLowerCase()
-      .trim();
+    const search = searchTerm.toLowerCase().trim();
 
     return submissions.filter((item) => {
-      // Only paid submissions
-      const isPaid =
-        item?.paymentStatus === "Paid";
-
-      if (!isPaid) {
-        return false;
-      }
-
       // Search
       const matchesSearch =
         !search ||
-        item?.title
-          ?.toLowerCase()
-          .includes(search) ||
-        item?.contributorNameMalayalam
-          ?.toLowerCase()
-          .includes(search);
+        item?.title?.toLowerCase().includes(search) ||
+        item?.contributorNameMalayalam?.toLowerCase().includes(search);
 
       // Type
-      const matchesType =
-        matchesTypeFilter(item);
+      const matchesType = matchesTypeFilter(item);
+
+      // Payment
+      const matchesPayment = matchesPaymentFilter(item);
 
       // Date
-      const matchesDate =
-        matchesDateFilter(item);
+      const matchesDate = matchesDateFilter(item);
 
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesDate
-      );
+      return matchesSearch && matchesType && matchesPayment && matchesDate;
     });
   }, [
     submissions,
     searchTerm,
     selectedType,
+    selectedPaymentStatus,
     selectedMonth,
     fromDate,
     toDate,
@@ -291,10 +483,9 @@ export default function AdminStoryPoetry() {
   // =========================================================
 
   const makeSafeFileName = (value, fallback) => {
-    const safe =
-      String(value || "")
-        .replace(/[^\w\u0D00-\u0D7F-]+/g, "_")
-        .replace(/^_+|_+$/g, "");
+    const safe = String(value || "")
+      .replace(/[^\w\u0D00-\u0D7F-]+/g, "_")
+      .replace(/^_+|_+$/g, "");
 
     return safe || fallback;
   };
@@ -318,13 +509,8 @@ export default function AdminStoryPoetry() {
     // MONTH
     // -------------------------------------------------------
 
-    if (
-      selectedMonth &&
-      !fromDate &&
-      !toDate
-    ) {
-      const [year, month] =
-        selectedMonth.split("-");
+    if (selectedMonth && !fromDate && !toDate) {
+      const [year, month] = selectedMonth.split("-");
 
       const monthName = new Date(
         Number(year),
@@ -334,10 +520,7 @@ export default function AdminStoryPoetry() {
         year: "numeric",
       });
 
-      return `${typePrefix}-${monthName.replace(
-        " ",
-        "-",
-      )}.docx`;
+      return `${typePrefix}-${monthName.replace(" ", "-")}.docx`;
     }
 
     // -------------------------------------------------------
@@ -395,31 +578,23 @@ export default function AdminStoryPoetry() {
       });
 
       if (!response.ok) {
-        throw new Error(
-          `Image request failed: ${response.status}`,
-        );
+        throw new Error(`Image request failed: ${response.status}`);
       }
 
       const blob = await response.blob();
 
       if (!blob || blob.size === 0) {
-        throw new Error(
-          "Image response is empty.",
-        );
+        throw new Error("Image response is empty.");
       }
 
-      const arrayBuffer =
-        await blob.arrayBuffer();
+      const arrayBuffer = await blob.arrayBuffer();
 
       return {
         data: arrayBuffer,
         type: blob.type,
       };
     } catch (err) {
-      console.warn(
-        "Profile image could not be added to DOCX:",
-        err,
-      );
+      console.warn("Profile image could not be added to DOCX:", err);
 
       return null;
     }
@@ -430,8 +605,7 @@ export default function AdminStoryPoetry() {
   // =========================================================
 
   const getDocxImageType = (mimeType, url) => {
-    const type =
-      String(mimeType || "").toLowerCase();
+    const type = String(mimeType || "").toLowerCase();
 
     if (type.includes("png")) {
       return "png";
@@ -441,15 +615,11 @@ export default function AdminStoryPoetry() {
       return "gif";
     }
 
-    if (
-      type.includes("jpg") ||
-      type.includes("jpeg")
-    ) {
+    if (type.includes("jpg") || type.includes("jpeg")) {
       return "jpg";
     }
 
-    const lowerUrl =
-      String(url || "").toLowerCase();
+    const lowerUrl = String(url || "").toLowerCase();
 
     if (lowerUrl.includes(".png")) {
       return "png";
@@ -467,12 +637,9 @@ export default function AdminStoryPoetry() {
   // =========================================================
 
   const getContributorLocation = (item) => {
-    const city =
-      item?.contributorCityMalayalam || "";
+    const city = item?.contributorCityMalayalam || "";
 
-    const district =
-      item?.contributorDistrictMalayalam ||
-      "";
+    const district = item?.contributorDistrictMalayalam || "";
 
     if (city && district) {
       return `${city}, ${district}`;
@@ -485,18 +652,13 @@ export default function AdminStoryPoetry() {
   // CREATE DOCX
   // =========================================================
 
-  const generateDOCX = async (
-    items,
-    fileName,
-  ) => {
+  const generateDOCX = async (items, fileName) => {
     if (!items || items.length === 0) {
       alert("No submissions found.");
       return;
     }
 
-    console.log(
-      `Starting DOCX generation for ${items.length} submissions...`,
-    );
+    console.log(`Starting DOCX generation for ${items.length} submissions...`);
 
     try {
       const children = [];
@@ -505,17 +667,10 @@ export default function AdminStoryPoetry() {
       // LOOP SUBMISSIONS
       // =====================================================
 
-      for (
-        let index = 0;
-        index < items.length;
-        index++
-      ) {
+      for (let index = 0; index < items.length; index++) {
         const item = items[index];
 
-        console.log(
-          `Preparing ${index + 1}/${items.length}:`,
-          item?.title,
-        );
+        console.log(`Preparing ${index + 1}/${items.length}:`, item?.title);
 
         // ===================================================
         // PROFILE IMAGE
@@ -523,13 +678,10 @@ export default function AdminStoryPoetry() {
 
         let profileImage = null;
 
-        if (
-          item?.contributorProfileImageUrl
-        ) {
-          profileImage =
-            await fetchImageAsArrayBuffer(
-              item.contributorProfileImageUrl,
-            );
+        if (item?.contributorProfileImageUrl) {
+          profileImage = await fetchImageAsArrayBuffer(
+            item.contributorProfileImageUrl,
+          );
         }
 
         // ===================================================
@@ -537,16 +689,14 @@ export default function AdminStoryPoetry() {
         // ===================================================
 
         if (profileImage) {
-          const imageType =
-            getDocxImageType(
-              profileImage.type,
-              item.contributorProfileImageUrl,
-            );
+          const imageType = getDocxImageType(
+            profileImage.type,
+            item.contributorProfileImageUrl,
+          );
 
           children.push(
             new Paragraph({
-              alignment:
-                AlignmentType.LEFT,
+              alignment: AlignmentType.LEFT,
               spacing: {
                 after: 150,
               },
@@ -579,9 +729,7 @@ export default function AdminStoryPoetry() {
 
             children: [
               new TextRun({
-                text:
-                  item?.contributorNameMalayalam ||
-                  "-",
+                text: item?.contributorNameMalayalam || "-",
 
                 bold: true,
 
@@ -601,8 +749,7 @@ export default function AdminStoryPoetry() {
         // LOCATION
         // ===================================================
 
-        const location =
-          getContributorLocation(item);
+        const location = getContributorLocation(item);
 
         if (location) {
           children.push(
@@ -691,8 +838,7 @@ export default function AdminStoryPoetry() {
 
         children.push(
           new Paragraph({
-            alignment:
-              AlignmentType.LEFT,
+            alignment: AlignmentType.LEFT,
 
             spacing: {
               before: 500,
@@ -701,8 +847,7 @@ export default function AdminStoryPoetry() {
 
             children: [
               new TextRun({
-                text:
-                  item?.title || "-",
+                text: item?.title || "-",
 
                 bold: true,
 
@@ -722,12 +867,9 @@ export default function AdminStoryPoetry() {
         // CONTENT
         // ===================================================
 
-        const content = String(
-          item?.content || "",
-        );
+        const content = String(item?.content || "");
 
-        const lines =
-          content.split(/\r?\n/);
+        const lines = content.split(/\r?\n/);
 
         if (lines.length === 0) {
           lines.push("");
@@ -743,10 +885,7 @@ export default function AdminStoryPoetry() {
 
               children: [
                 new TextRun({
-                  text:
-                    line === ""
-                      ? " "
-                      : line,
+                  text: line === "" ? " " : line,
 
                   size: 28,
 
@@ -768,9 +907,7 @@ export default function AdminStoryPoetry() {
         if (index < items.length - 1) {
           children.push(
             new Paragraph({
-              children: [
-                new PageBreak(),
-              ],
+              children: [new PageBreak()],
             }),
           );
         }
@@ -783,11 +920,9 @@ export default function AdminStoryPoetry() {
       const doc = new Document({
         creator: "Story Poetry Admin",
 
-        title:
-          "Story, Poetry & Special Submissions",
+        title: "Story, Poetry & Special Submissions",
 
-        description:
-          "Story, Poetry and Special submissions",
+        description: "Story, Poetry and Special submissions",
 
         styles: {
           default: {
@@ -828,41 +963,29 @@ export default function AdminStoryPoetry() {
       // CREATE BLOB
       // =====================================================
 
-      console.log(
-        "Converting document to Blob...",
-      );
+      console.log("Converting document to Blob...");
 
-      const blob =
-        await Packer.toBlob(doc);
+      const blob = await Packer.toBlob(doc);
 
       if (!blob || blob.size === 0) {
-        throw new Error(
-          "DOCX blob is empty.",
-        );
+        throw new Error("DOCX blob is empty.");
       }
 
-      console.log(
-        "DOCX blob created:",
-        blob.size,
-        "bytes",
-      );
+      console.log("DOCX blob created:", blob.size, "bytes");
 
       // =====================================================
       // DOWNLOAD
       // =====================================================
 
-      const blobUrl =
-        window.URL.createObjectURL(blob);
+      const blobUrl = window.URL.createObjectURL(blob);
 
-      const link =
-        document.createElement("a");
+      const link = document.createElement("a");
 
       link.href = blobUrl;
 
-      link.download =
-        fileName.endsWith(".docx")
-          ? fileName
-          : `${fileName}.docx`;
+      link.download = fileName.endsWith(".docx")
+        ? fileName
+        : `${fileName}.docx`;
 
       link.style.display = "none";
 
@@ -877,20 +1000,12 @@ export default function AdminStoryPoetry() {
       // =====================================================
 
       setTimeout(() => {
-        window.URL.revokeObjectURL(
-          blobUrl,
-        );
+        window.URL.revokeObjectURL(blobUrl);
       }, 1500);
 
-      console.log(
-        "DOCX downloaded successfully:",
-        fileName,
-      );
+      console.log("DOCX downloaded successfully:", fileName);
     } catch (err) {
-      console.error(
-        "DOCX generation failed:",
-        err,
-      );
+      console.error("DOCX generation failed:", err);
 
       throw err;
     }
@@ -900,245 +1015,162 @@ export default function AdminStoryPoetry() {
   // DOWNLOAD MONTHLY / FILTERED DOCX
   // =========================================================
 
-  const handleDownloadMonthlyDOCX =
-    async () => {
-      // -----------------------------------------------------
-      // DATE VALIDATION
-      // -----------------------------------------------------
+  const handleDownloadMonthlyDOCX = async () => {
+    // -----------------------------------------------------
+    // DATE VALIDATION
+    // -----------------------------------------------------
 
-      if (
-        fromDate &&
-        toDate &&
-        fromDate > toDate
-      ) {
-        alert(
-          "From date cannot be after To date.",
-        );
+    if (fromDate && toDate && fromDate > toDate) {
+      alert("From date cannot be after To date.");
 
-        return;
-      }
+      return;
+    }
 
-      // -----------------------------------------------------
-      // FILTER VALIDATION
-      // -----------------------------------------------------
+    // -----------------------------------------------------
+    // FILTER VALIDATION
+    // -----------------------------------------------------
 
-      if (
-        !selectedMonth &&
-        !fromDate &&
-        !toDate &&
-        selectedType === "All"
-      ) {
-        alert(
-          "Please select a type, month, or choose a From / To date range.",
-        );
+    if (!selectedMonth && !fromDate && !toDate && selectedType === "All") {
+      alert("Please select a type, month, or choose a From / To date range.");
 
-        return;
-      }
+      return;
+    }
 
-      // -----------------------------------------------------
-      // GET SUBMISSIONS
-      // -----------------------------------------------------
+    // -----------------------------------------------------
+    // GET SUBMISSIONS
+    // -----------------------------------------------------
 
-      const docxSubmissions =
-        getDOCXSubmissions();
+    const docxSubmissions = getDOCXSubmissions();
 
-      if (docxSubmissions.length === 0) {
-        alert(
-          "No paid submissions found for the selected filters.",
-        );
+    if (docxSubmissions.length === 0) {
+      alert("No paid submissions found for the selected filters.");
 
-        return;
-      }
+      return;
+    }
 
-      try {
-        setGeneratingDocx(true);
+    try {
+      setGeneratingDocx(true);
 
-        const fileName =
-          getDOCXFilename();
+      const fileName = getDOCXFilename();
 
-        await generateDOCX(
-          docxSubmissions,
-          fileName,
-        );
-      } catch (err) {
-        console.error(
-          "Filtered DOCX generation failed:",
-          err,
-        );
+      await generateDOCX(docxSubmissions, fileName);
+    } catch (err) {
+      console.error("Filtered DOCX generation failed:", err);
 
-        alert(
-          `Failed to generate DOCX.\n\n${
-            err?.message ||
-            "Unknown error"
-          }`,
-        );
-      } finally {
-        setGeneratingDocx(false);
-      }
-    };
+      alert(`Failed to generate DOCX.\n\n${err?.message || "Unknown error"}`);
+    } finally {
+      setGeneratingDocx(false);
+    }
+  };
 
   // =========================================================
   // DOWNLOAD SINGLE DOCX
   // =========================================================
 
-  const handleDownloadSingleDOCX =
-    async (item) => {
-      if (!item) return;
+  const handleDownloadSingleDOCX = async (item) => {
+    if (!item) return;
 
-      try {
-        setGeneratingSingleDocx(
-          item.storyPoetryId,
-        );
+    try {
+      setGeneratingSingleDocx(item.storyPoetryId);
 
-        const safeTitle =
-          makeSafeFileName(
-            item.title,
-            "story",
-          );
+      const safeTitle = makeSafeFileName(item.title, "story");
 
-        const safeName =
-          makeSafeFileName(
-            item.contributorNameMalayalam,
-            "contributor",
-          );
+      const safeName = makeSafeFileName(
+        item.contributorNameMalayalam,
+        "contributor",
+      );
 
-        const fileName =
-          `${safeName}-${safeTitle}.docx`;
+      const fileName = `${safeName}-${safeTitle}.docx`;
 
-        await generateDOCX(
-          [item],
-          fileName,
-        );
-      } catch (err) {
-        console.error(
-          "Single DOCX generation failed:",
-          err,
-        );
+      await generateDOCX([item], fileName);
+    } catch (err) {
+      console.error("Single DOCX generation failed:", err);
 
-        alert(
-          `Failed to generate DOCX.\n\n${
-            err?.message ||
-            "Unknown error"
-          }`,
-        );
-      } finally {
-        setGeneratingSingleDocx(null);
-      }
-    };
+      alert(`Failed to generate DOCX.\n\n${err?.message || "Unknown error"}`);
+    } finally {
+      setGeneratingSingleDocx(null);
+    }
+  };
 
   // =========================================================
   // DOWNLOAD PROFILE PHOTO
   // =========================================================
 
-  const handleDownloadProfilePicture =
-    async (item) => {
-      if (
-        !item?.contributorProfileImageUrl
-      ) {
-        alert(
-          "Profile picture is not available.",
-        );
+  const handleDownloadProfilePicture = async (item) => {
+    if (!item?.contributorProfileImageUrl) {
+      alert("Profile picture is not available.");
 
-        return;
+      return;
+    }
+
+    try {
+      const response = await fetch(item.contributorProfileImageUrl, {
+        mode: "cors",
+        credentials: "omit",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download profile picture.");
       }
 
+      const blob = await response.blob();
+
+      if (!blob || blob.size === 0) {
+        throw new Error("Downloaded image is empty.");
+      }
+
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = blobUrl;
+
+      const safeName = makeSafeFileName(
+        item.contributorNameMalayalam,
+        "contributor",
+      );
+
+      const extension = blob.type.includes("png") ? "png" : "jpg";
+
+      link.download = `${safeName}-profile-picture.${extension}`;
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 1000);
+    } catch (err) {
+      console.error("Profile picture download failed:", err);
+
+      // ---------------------------------------------------
+      // FALLBACK
+      // ---------------------------------------------------
+
       try {
-        const response =
-          await fetch(
-            item.contributorProfileImageUrl,
-            {
-              mode: "cors",
-              credentials: "omit",
-            },
-          );
+        const link = document.createElement("a");
 
-        if (!response.ok) {
-          throw new Error(
-            "Failed to download profile picture.",
-          );
-        }
+        link.href = item.contributorProfileImageUrl;
 
-        const blob =
-          await response.blob();
+        link.target = "_blank";
 
-        if (!blob || blob.size === 0) {
-          throw new Error(
-            "Downloaded image is empty.",
-          );
-        }
-
-        const blobUrl =
-          window.URL.createObjectURL(blob);
-
-        const link =
-          document.createElement("a");
-
-        link.href = blobUrl;
-
-        const safeName =
-          makeSafeFileName(
-            item.contributorNameMalayalam,
-            "contributor",
-          );
-
-        const extension =
-          blob.type.includes("png")
-            ? "png"
-            : "jpg";
-
-        link.download =
-          `${safeName}-profile-picture.${extension}`;
+        link.rel = "noopener noreferrer";
 
         document.body.appendChild(link);
 
         link.click();
 
         document.body.removeChild(link);
+      } catch (fallbackError) {
+        console.error("Profile picture fallback failed:", fallbackError);
 
-        setTimeout(() => {
-          window.URL.revokeObjectURL(
-            blobUrl,
-          );
-        }, 1000);
-      } catch (err) {
-        console.error(
-          "Profile picture download failed:",
-          err,
-        );
-
-        // ---------------------------------------------------
-        // FALLBACK
-        // ---------------------------------------------------
-
-        try {
-          const link =
-            document.createElement("a");
-
-          link.href =
-            item.contributorProfileImageUrl;
-
-          link.target = "_blank";
-
-          link.rel =
-            "noopener noreferrer";
-
-          document.body.appendChild(link);
-
-          link.click();
-
-          document.body.removeChild(link);
-        } catch (fallbackError) {
-          console.error(
-            "Profile picture fallback failed:",
-            fallbackError,
-          );
-
-          alert(
-            "Unable to download the profile picture.",
-          );
-        }
+        alert("Unable to download the profile picture.");
       }
-    };
+    }
+  };
 
   // =========================================================
   // CLEAR FILTERS
@@ -1147,6 +1179,7 @@ export default function AdminStoryPoetry() {
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedType("All");
+    setSelectedPaymentStatus("All");
     setSelectedMonth("");
     setFromDate("");
     setToDate("");
@@ -1157,9 +1190,7 @@ export default function AdminStoryPoetry() {
   // =========================================================
 
   const handleOpenStory = (item) => {
-    navigate(
-      `/admin/story/${item.storyPoetryId}`,
-    );
+    navigate(`/admin/story/${item.storyPoetryId}`);
   };
 
   // =========================================================
@@ -1169,6 +1200,7 @@ export default function AdminStoryPoetry() {
   const hasFilters =
     searchTerm ||
     selectedType !== "All" ||
+    selectedPaymentStatus !== "All" ||
     selectedMonth ||
     fromDate ||
     toDate;
@@ -1183,15 +1215,20 @@ export default function AdminStoryPoetry() {
           HEADER
       ===================================================== */}
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-900">
-          Story, Poetry & Special Submissions
-        </h1>
+      <div className="mb-6 flex justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900">
+            Story, Poetry & Special Submissions
+          </h1>
 
-        <p className="text-sm text-stone-500 mt-1">
-          View all Story, Poetry and Special
-          submissions from contributors.
-        </p>
+          <p className="text-sm text-stone-500 mt-1">
+            View all Story, Poetry and Special submissions from contributors.
+          </p>
+        </div>
+
+        <div>
+          <PageWarningManager pageName="StoryPoetry" />
+        </div>
       </div>
 
       {/* =====================================================
@@ -1224,13 +1261,10 @@ export default function AdminStoryPoetry() {
         <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
           <BookOpen className="h-10 w-10 mx-auto text-stone-300 mb-3" />
 
-          <h3 className="font-bold text-gray-900">
-            No submissions found
-          </h3>
+          <h3 className="font-bold text-gray-900">No submissions found</h3>
 
           <p className="text-sm text-stone-500 mt-1">
-            There are currently no Story,
-            Poetry or Special submissions.
+            There are currently no Story, Poetry or Special submissions.
           </p>
         </div>
       ) : (
@@ -1258,15 +1292,8 @@ export default function AdminStoryPoetry() {
                   </h2>
 
                   <p className="text-xs text-stone-500 mt-0.5">
-                    {
-                      filteredSubmissions.length
-                    }{" "}
-                    submission
-                    {filteredSubmissions.length !==
-                    1
-                      ? "s"
-                      : ""}{" "}
-                    found
+                    {filteredSubmissions.length} submission
+                    {filteredSubmissions.length !== 1 ? "s" : ""} found
                   </p>
                 </div>
 
@@ -1276,11 +1303,7 @@ export default function AdminStoryPoetry() {
                   <input
                     type="text"
                     value={searchTerm}
-                    onChange={(e) =>
-                      setSearchTerm(
-                        e.target.value,
-                      )
-                    }
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search title or contributor..."
                     className="
                       w-full
@@ -1306,9 +1329,7 @@ export default function AdminStoryPoetry() {
                   {searchTerm && (
                     <button
                       type="button"
-                      onClick={() =>
-                        setSearchTerm("")
-                      }
+                      onClick={() => setSearchTerm("")}
                       className="
                         absolute
                         right-3
@@ -1335,22 +1356,14 @@ export default function AdminStoryPoetry() {
                 </label>
 
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    "All",
-                    "Story",
-                    "Poetry",
-                    "Special",
-                  ].map((type) => {
-                    const active =
-                      selectedType === type;
+                  {["All", "Story", "Poetry", "Special"].map((type) => {
+                    const active = selectedType === type;
 
                     return (
                       <button
                         key={type}
                         type="button"
-                        onClick={() =>
-                          setSelectedType(type)
-                        }
+                        onClick={() => setSelectedType(type)}
                         className={`
                           px-4
                           py-2
@@ -1375,6 +1388,47 @@ export default function AdminStoryPoetry() {
               </div>
 
               {/* =================================================
+    PAYMENT FILTER
+================================================= */}
+
+              <div>
+                <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide block mb-2">
+                  Payment Status
+                </label>
+
+                <div className="flex flex-wrap gap-2">
+                  {["All", "Paid", "Pending"].map((status) => {
+                    const active = selectedPaymentStatus === status;
+
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => setSelectedPaymentStatus(status)}
+                        className={`
+            px-4
+            py-2
+            rounded-xl
+            text-sm
+            font-bold
+            border
+            cursor-pointer
+            transition-colors
+            ${
+              active
+                ? "bg-[#1b3b2b] text-white border-[#1b3b2b]"
+                : "bg-white text-stone-700 border-stone-200 hover:bg-stone-100"
+            }
+          `}
+                      >
+                        {status}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* =================================================
                   DATE FILTERS
               ================================================= */}
 
@@ -1389,11 +1443,7 @@ export default function AdminStoryPoetry() {
                   <input
                     type="month"
                     value={selectedMonth}
-                    onChange={(e) =>
-                      setSelectedMonth(
-                        e.target.value,
-                      )
-                    }
+                    onChange={(e) => setSelectedMonth(e.target.value)}
                     className="
                       w-full
                       xl:w-44
@@ -1424,11 +1474,7 @@ export default function AdminStoryPoetry() {
                   <input
                     type="date"
                     value={fromDate}
-                    onChange={(e) =>
-                      setFromDate(
-                        e.target.value,
-                      )
-                    }
+                    onChange={(e) => setFromDate(e.target.value)}
                     className="
                       w-full
                       xl:w-44
@@ -1459,14 +1505,8 @@ export default function AdminStoryPoetry() {
                   <input
                     type="date"
                     value={toDate}
-                    min={
-                      fromDate || undefined
-                    }
-                    onChange={(e) =>
-                      setToDate(
-                        e.target.value,
-                      )
-                    }
+                    min={fromDate || undefined}
+                    onChange={(e) => setToDate(e.target.value)}
                     className="
                       w-full
                       xl:w-44
@@ -1520,18 +1560,14 @@ export default function AdminStoryPoetry() {
                   <button
                     type="button"
                     disabled={
-                      (!selectedType ||
-                        selectedType ===
-                          "All") &&
+                      (!selectedType || selectedType === "All") &&
                       !selectedMonth &&
                       !fromDate &&
                       !toDate
                         ? true
                         : generatingDocx
                     }
-                    onClick={
-                      handleDownloadMonthlyDOCX
-                    }
+                    onClick={handleDownloadMonthlyDOCX}
                     className="
                       w-full
                       xl:w-auto
@@ -1557,13 +1593,11 @@ export default function AdminStoryPoetry() {
                     {generatingDocx ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-
                         Generating...
                       </>
                     ) : (
                       <>
                         <Download className="h-4 w-4" />
-
                         Download DOCX
                       </>
                     )}
@@ -1581,40 +1615,44 @@ export default function AdminStoryPoetry() {
                     Active filters:
                   </span>
 
-                  {selectedType !==
-                    "All" && (
+                  {selectedType !== "All" && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
-                      Type:{" "}
-                      {selectedType}
+                      Type: {selectedType}
+                    </span>
+                  )}
+
+                  {selectedPaymentStatus !== "All" && (
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full font-bold ${
+                        selectedPaymentStatus === "Paid"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      Payment: {selectedPaymentStatus}
                     </span>
                   )}
 
                   {selectedMonth && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold">
-                      Month:{" "}
-                      {selectedMonth}
+                      Month: {selectedMonth}
                     </span>
                   )}
 
                   {fromDate && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
-                      From:{" "}
-                      {formatDate(
-                        fromDate,
-                      )}
+                      From: {formatDate(fromDate)}
                     </span>
                   )}
 
                   {toDate && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-100 text-purple-800 font-bold">
-                      To:{" "}
-                      {formatDate(toDate)}
+                      To: {formatDate(toDate)}
                     </span>
                   )}
 
                   <span className="text-stone-400">
-                    Only paid submissions are
-                    included.
+                    Showing submissions based on the selected filters.
                   </span>
                 </div>
               )}
@@ -1625,18 +1663,14 @@ export default function AdminStoryPoetry() {
               NO RESULTS
           ================================================= */}
 
-          {filteredSubmissions.length ===
-          0 ? (
+          {filteredSubmissions.length === 0 ? (
             <div className="py-16 px-6 text-center">
               <BookOpen className="h-10 w-10 mx-auto text-stone-300 mb-3" />
 
-              <h3 className="font-bold text-gray-900">
-                No submissions found
-              </h3>
+              <h3 className="font-bold text-gray-900">No submissions found</h3>
 
               <p className="text-sm text-stone-500 mt-1">
-                No paid submissions match
-                the selected filters.
+                No submissions match the selected filters.
               </p>
 
               <button
@@ -1703,139 +1737,114 @@ export default function AdminStoryPoetry() {
                 ============================================= */}
 
                 <tbody className="divide-y divide-stone-100">
-                  {filteredSubmissions.map(
-                    (item) => (
-                      <tr
-                        key={
-                          item.storyPoetryId
-                        }
-                        onClick={() =>
-                          handleOpenStory(
-                            item,
-                          )
-                        }
-                        className="
+                  {filteredSubmissions.map((item) => (
+                    <tr
+                      key={item.storyPoetryId}
+                      onClick={() => handleOpenStory(item)}
+                      className="
                           group
                           hover:bg-emerald-50/60
                           transition-colors
                           cursor-pointer
                         "
-                      >
-                        {/* ===================================
+                    >
+                      {/* ===================================
                             SUBMISSION
                         =================================== */}
 
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
-                              {renderTypeIcon(
-                                item.type,
-                              )}
-                            </div>
-
-                            <div>
-                              <p className="font-bold text-gray-900">
-                                {item.title ||
-                                  "-"}
-                              </p>
-
-                              <p className="text-[11px] text-stone-500 mt-0.5">
-                                ID #
-                                {
-                                  item.storyPoetryId
-                                }
-                              </p>
-
-                              <p className="text-[10px] text-emerald-700 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                Click row to
-                                open
-                              </p>
-                            </div>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
+                            {renderTypeIcon(item.type)}
                           </div>
-                        </td>
 
-                        {/* ===================================
+                          <div>
+                            <p className="font-bold text-gray-900">
+                              {item.title || "-"}
+                            </p>
+
+                            <p className="text-[11px] text-stone-500 mt-0.5">
+                              ID #{item.storyPoetryId}
+                            </p>
+
+                            <p className="text-[10px] text-emerald-700 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              Click row to open
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* ===================================
                             CONTRIBUTOR
                         =================================== */}
 
-                        <td className="px-5 py-4">
-                          <p className="font-semibold text-gray-800">
-                            {item.contributorNameMalayalam ||
-                              "-"}
-                          </p>
-                        </td>
+                      <td className="px-5 py-4">
+                        <p className="font-semibold text-gray-800">
+                          {item.contributorNameMalayalam || "-"}
+                        </p>
+                      </td>
 
-                        {/* ===================================
+                      {/* ===================================
                             TYPE
                         =================================== */}
 
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getTypeStyle(
-                              item.type,
-                            )}`}
-                          >
-                            {item.type ||
-                              "-"}
-                          </span>
-                        </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getTypeStyle(
+                            item.type,
+                          )}`}
+                        >
+                          {item.type || "-"}
+                        </span>
+                      </td>
 
-                        {/* ===================================
+                      {/* ===================================
                             PAYMENT
                         =================================== */}
 
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getPaymentStyle(
-                              item.paymentStatus,
-                            )}`}
-                          >
-                            {item.paymentStatus ||
-                              "Pending"}
-                          </span>
-                        </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getPaymentStyle(
+                            item.paymentStatus,
+                          )}`}
+                        >
+                          {item.paymentStatus || "Pending"}
+                        </span>
+                      </td>
 
-                        {/* ===================================
+                      {/* ===================================
                             DATE
                         =================================== */}
 
-                        <td className="px-5 py-4 text-stone-600 text-xs font-medium">
-                          {formatDate(
-                            item.createdDate,
-                          )}
-                        </td>
+                      <td className="px-5 py-4 text-stone-600 text-xs font-medium">
+                        {formatDate(item.createdDate)}
+                      </td>
 
-                        {/* ===================================
+                      {/* ===================================
                             DOWNLOADS
                         =================================== */}
 
-                        <td className="px-5 py-4">
-                          <div
-                            className="flex justify-end items-center gap-2"
-                            onClick={(e) =>
-                              e.stopPropagation()
+                      <td className="px-5 py-4">
+                        <div
+                          className="flex justify-end items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* PROFILE PHOTO */}
+
+                          <button
+                            type="button"
+                            disabled={!item.contributorProfileImageUrl}
+                            onClick={(e) => {
+                              e.stopPropagation();
+
+                              handleDownloadProfilePicture(item);
+                            }}
+                            title={
+                              item.contributorProfileImageUrl
+                                ? "Download profile picture"
+                                : "No profile picture"
                             }
-                          >
-                            {/* PROFILE PHOTO */}
-
-                            <button
-                              type="button"
-                              disabled={
-                                !item.contributorProfileImageUrl
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation();
-
-                                handleDownloadProfilePicture(
-                                  item,
-                                );
-                              }}
-                              title={
-                                item.contributorProfileImageUrl
-                                  ? "Download profile picture"
-                                  : "No profile picture"
-                              }
-                              className="
+                            className="
                                 flex
                                 items-center
                                 justify-center
@@ -1856,31 +1865,26 @@ export default function AdminStoryPoetry() {
                                 cursor-pointer
                                 transition-colors
                               "
-                            >
-                              <ImageDown className="h-4 w-4" />
+                          >
+                            <ImageDown className="h-4 w-4" />
 
-                              <span className="hidden xl:inline">
-                                Photo
-                              </span>
-                            </button>
+                            <span className="hidden xl:inline">Photo</span>
+                          </button>
 
-                            {/* DOCX */}
+                          {/* DOCX */}
 
-                            <button
-                              type="button"
-                              disabled={
-                                generatingSingleDocx ===
-                                item.storyPoetryId
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation();
+                          <button
+                            type="button"
+                            disabled={
+                              generatingSingleDocx === item.storyPoetryId
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
 
-                                handleDownloadSingleDOCX(
-                                  item,
-                                );
-                              }}
-                              title="Download this submission as DOCX"
-                              className="
+                              handleDownloadSingleDOCX(item);
+                            }}
+                            title="Download this submission as DOCX"
+                            className="
                                 flex
                                 items-center
                                 justify-center
@@ -1898,35 +1902,234 @@ export default function AdminStoryPoetry() {
                                 cursor-pointer
                                 transition-colors
                               "
-                            >
-                              {generatingSingleDocx ===
-                              item.storyPoetryId ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin" />
+                          >
+                            {generatingSingleDocx === item.storyPoetryId ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
 
-                                  <span className="hidden xl:inline">
-                                    Generating
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <FileDown className="h-4 w-4" />
+                                <span className="hidden xl:inline">
+                                  Generating
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <FileDown className="h-4 w-4" />
 
-                                  <span className="hidden xl:inline">
-                                    DOCX
-                                  </span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ),
-                  )}
+                                <span className="hidden xl:inline">DOCX</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {showWarningModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-gray-900 mb-5">
+              {editingWarning ? "Edit Warning" : "Add Warning"}
+            </h2>
+
+            {/* Page Name */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Page Name
+              </label>
+
+              <input
+                type="text"
+                value={warningForm.pageName}
+                onChange={(e) =>
+                  setWarningForm((prev) => ({
+                    ...prev,
+                    pageName: e.target.value,
+                  }))
+                }
+                placeholder="Enter page name"
+                className="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-700"
+              />
+            </div>
+
+            {/* Message */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Warning Message
+              </label>
+
+              <textarea
+                value={warningForm.message}
+                onChange={(e) =>
+                  setWarningForm((prev) => ({
+                    ...prev,
+                    message: e.target.value,
+                  }))
+                }
+                placeholder="Enter warning message"
+                rows={4}
+                className="w-full border border-stone-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-700 resize-none"
+              />
+            </div>
+
+            {/* Active */}
+            <div className="flex items-center gap-2 mb-6">
+              <input
+                type="checkbox"
+                checked={warningForm.isActive}
+                onChange={(e) =>
+                  setWarningForm((prev) => ({
+                    ...prev,
+                    isActive: e.target.checked,
+                  }))
+                }
+                className="h-4 w-4"
+              />
+
+              <label className="text-sm text-gray-700">Active</label>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowWarningModal(false)}
+                className="px-5 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold text-gray-700 hover:bg-stone-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveWarning}
+                disabled={warningLoading}
+                className="px-5 py-2.5 rounded-xl bg-emerald-900 text-white text-sm font-semibold hover:bg-emerald-800 disabled:opacity-50"
+              >
+                {warningLoading
+                  ? "Saving..."
+                  : editingWarning
+                    ? "Update Warning"
+                    : "Add Warning"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+    ADD WARNING MODAL
+========================================================= */}
+
+      {showWarningModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">
+                  Add Page Warning
+                </h2>
+
+                <p className="text-xs text-stone-500 mt-1">
+                  Add the important message displayed on the submission page.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowWarningModal(false)}
+                className="text-gray-400 hover:text-gray-700 text-xl cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Page */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Page
+              </label>
+
+              <select
+                value={warningForm.pageName}
+                onChange={(e) =>
+                  setWarningForm((prev) => ({
+                    ...prev,
+                    pageName: e.target.value,
+                  }))
+                }
+                className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-emerald-700"
+              >
+                <option value="UploadPoetry">Upload Poetry / Story</option>
+
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            {/* Message */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Warning Message
+              </label>
+
+              <textarea
+                value={warningForm.message}
+                onChange={(e) =>
+                  setWarningForm((prev) => ({
+                    ...prev,
+                    message: e.target.value,
+                  }))
+                }
+                rows={4}
+                placeholder="Enter the important warning message..."
+                className="w-full border border-stone-200 rounded-xl px-3 py-3 text-sm outline-none resize-none focus:border-emerald-700"
+              />
+            </div>
+
+            {/* Active */}
+            <label className="flex items-center gap-2 mb-6 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={warningForm.isActive}
+                onChange={(e) =>
+                  setWarningForm((prev) => ({
+                    ...prev,
+                    isActive: e.target.checked,
+                  }))
+                }
+                className="h-4 w-4 accent-emerald-900"
+              />
+
+              <span className="text-sm text-gray-700">
+                Make this warning active
+              </span>
+            </label>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowWarningModal(false)}
+                className="px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold text-gray-700 hover:bg-stone-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAddWarning}
+                disabled={warningSubmitting}
+                className="px-5 py-2.5 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-white text-sm font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {warningSubmitting ? "Adding..." : "Add Warning"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

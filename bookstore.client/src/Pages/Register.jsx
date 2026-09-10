@@ -516,7 +516,11 @@ export default function Register() {
 
       // Redirect after short delay
       setTimeout(() => {
-        navigate("/login");
+        navigate("/login",{
+          state:{
+            email:formData.email,
+          },
+        });
       }, 1500);
     } catch (error) {
       console.error("OTP verification failed:", error);
