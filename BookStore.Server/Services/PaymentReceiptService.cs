@@ -311,6 +311,11 @@ namespace BookStore.Server.Services
             string contributorNameMalayalam,
             string contributorEmail,
             string contributorPhone,
+            int freeCopies,
+            int extraCopies,
+            decimal extraCopyPrice,
+            int totalCopies,
+            decimal baseAmount,
             decimal amountPaid,
             string? paymentMethod,
             string paymentId,
@@ -318,6 +323,7 @@ namespace BookStore.Server.Services
         {
             QuestPDF.Settings.License =
                 LicenseType.Community;
+
 
             // =========================================================
             // RECEIPT NUMBER
@@ -331,18 +337,18 @@ namespace BookStore.Server.Services
             // SUBMISSION TYPE
             // =========================================================
 
-            // Type comes directly from StoryPoetry table.
-            //
-            // Story
-            // Poetry
-            // Special
-            //
-            // No hardcoding is required.
-
             string submissionType =
                 string.IsNullOrWhiteSpace(type)
                     ? "Submission"
                     : type;
+
+
+            // =========================================================
+            // EXTRA COPY AMOUNT
+            // =========================================================
+
+            decimal extraCopyAmount =
+                extraCopies * extraCopyPrice;
 
 
             // =========================================================
@@ -491,6 +497,36 @@ namespace BookStore.Server.Services
 
 
                             // =========================================
+                            // COPY DETAILS
+                            // =========================================
+
+                            column.Item()
+                                .PaddingTop(10)
+                                .Text("COPY DETAILS")
+                                .Bold()
+                                .FontSize(13);
+
+                            column.Item()
+                                .LineHorizontal(1);
+
+                            column.Item()
+                                .Text(
+                                    $"Free Copies: {freeCopies}");
+
+                            column.Item()
+                                .Text(
+                                    $"Extra Copies: {extraCopies}");
+
+                            column.Item()
+                                .Text(
+                                    $"Extra Copy Price: ₹{extraCopyPrice:F2}");
+
+                            column.Item()
+                                .Text(
+                                    $"Total Copies: {totalCopies}");
+
+
+                            // =========================================
                             // CONTRIBUTOR DETAILS
                             // =========================================
 
@@ -540,6 +576,14 @@ namespace BookStore.Server.Services
                             column.Item()
                                 .Text(
                                     $"Payment Date: {paymentDate:dd-MM-yyyy hh:mm tt}");
+
+                            column.Item()
+                                .Text(
+                                    $"Base Amount: ₹{baseAmount:F2}");
+
+                            column.Item()
+                                .Text(
+                                    $"Extra Copy Amount: ₹{extraCopyAmount:F2}");
 
 
                             // =========================================

@@ -14,7 +14,6 @@ namespace BookStore.Server.Models
         // =========================================================
 
         // Logged-in user -> UserId has value
-       
 
         [Required]
         public int UserId { get; set; }
@@ -48,6 +47,26 @@ namespace BookStore.Server.Models
 
 
         // =========================================================
+        // STORY / POETRY PARTICULAR
+        // =========================================================
+
+        [Required]
+        public int StoryPoetryParticularId { get; set; }
+
+        [ForeignKey(nameof(StoryPoetryParticularId))]
+        public StoryPoetryParticular? StoryPoetryParticular { get; set; }
+
+
+        // Historical snapshot of the particular name.
+        // If admin changes the particular name later,
+        // old submissions will still keep the original name.
+
+        [Required]
+        [StringLength(200)]
+        public string ParticularNameSnapshot { get; set; } = string.Empty;
+
+
+        // =========================================================
         // CONTRIBUTOR SNAPSHOT
         // =========================================================
 
@@ -55,21 +74,23 @@ namespace BookStore.Server.Models
         [StringLength(200)]
         public string ContributorNameMalayalam { get; set; } = string.Empty;
 
+
         [StringLength(500)]
         public string? ContributorAddressMalayalam { get; set; }
+
 
         [Required]
         [StringLength(500)]
         public string ContributorAddress { get; set; } = string.Empty;
 
+
         [Required]
         [StringLength(6)]
         [RegularExpression(
-    @"^\d{6}$",
-    ErrorMessage = "Pincode must be exactly 6 digits."
-)]
+            @"^\d{6}$",
+            ErrorMessage = "Pincode must be exactly 6 digits."
+        )]
         public string ContributorPincode { get; set; } = string.Empty;
-   
 
 
         [Required]
@@ -80,7 +101,6 @@ namespace BookStore.Server.Models
         [Required]
         [StringLength(100)]
         public string ContributorCityMalayalam { get; set; } = string.Empty;
-
 
 
         [Required]
@@ -103,6 +123,44 @@ namespace BookStore.Server.Models
 
 
         // =========================================================
+        // PAYMENT / COPY SNAPSHOT
+        // =========================================================
+
+        // Base price taken from PaymentSettings based on Type
+        // Example: Poetry = ₹600
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal BaseAmount { get; set; }
+
+
+        // Number of additional copies requested by the user
+
+        public int ExtraCopies { get; set; }
+
+
+        // Fixed free copies provided for every submission
+        // Business rule: 2 free copies
+        public int FreeCopies { get; set; }
+
+
+        // Extra copy price at the time of payment
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal ExtraCopyPrice { get; set; }
+
+
+        // FreeCopies + ExtraCopies
+
+        public int TotalCopies { get; set; }
+
+
+        // Final amount actually paid
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Amount { get; set; }
+
+
+        // =========================================================
         // PAYMENT STATUS
         // =========================================================
 
@@ -115,8 +173,9 @@ namespace BookStore.Server.Models
 
 
         // Payment becomes available 4 hours after submission
-        
+
         public DateTime? PaymentEnabledAt { get; set; }
+
 
         public bool PaymentNotificationSent { get; set; } = false;
 

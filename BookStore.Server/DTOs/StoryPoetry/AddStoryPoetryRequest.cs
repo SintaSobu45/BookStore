@@ -26,6 +26,16 @@ namespace BookStore.Server.DTOs.StoryPoetry
 
 
         // =========================================================
+        // STORY / POETRY PARTICULAR
+        // =========================================================
+
+        // User selects the particular/category from active particulars
+        [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Please select a valid particular.")]
+        public int StoryPoetryParticularId { get; set; }
+
+
+        // =========================================================
         // CONTRIBUTOR DETAILS - MALAYALAM
         // =========================================================
 
@@ -37,16 +47,22 @@ namespace BookStore.Server.DTOs.StoryPoetry
         [StringLength(500)]
         public string? ContributorAddressMalayalam { get; set; }
 
+
+        // English address
         [Required]
         [StringLength(500)]
         public string ContributorAddress { get; set; } = string.Empty;
 
+
+        // Exactly 6 digits
         [Required]
+        [StringLength(6)]
         [RegularExpression(
             @"^\d{6}$",
             ErrorMessage = "Pincode must be exactly 6 digits."
         )]
         public string ContributorPincode { get; set; } = string.Empty;
+
 
         [Required]
         [StringLength(100)]

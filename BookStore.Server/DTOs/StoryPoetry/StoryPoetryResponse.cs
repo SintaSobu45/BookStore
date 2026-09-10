@@ -24,6 +24,19 @@
 
 
         // =========================================================
+        // STORY / POETRY PARTICULAR
+        // =========================================================
+
+        public int StoryPoetryParticularId { get; set; }
+
+        // Current particular name
+        public string ParticularName { get; set; } = string.Empty;
+
+        // Historical name saved when submission was created
+        public string ParticularNameSnapshot { get; set; } = string.Empty;
+
+
+        // =========================================================
         // CONTRIBUTOR DETAILS
         // =========================================================
 
@@ -31,10 +44,10 @@
 
         public string ContributorAddressMalayalam { get; set; } = string.Empty;
 
-
         public string ContributorAddress { get; set; } = string.Empty;
 
         public string ContributorPincode { get; set; } = string.Empty;
+
         public string ContributorDistrictMalayalam { get; set; } = string.Empty;
 
         public string ContributorCityMalayalam { get; set; } = string.Empty;
@@ -52,6 +65,23 @@
 
 
         // =========================================================
+        // PAYMENT / COPY INFORMATION
+        // =========================================================
+
+        public decimal BaseAmount { get; set; }
+
+        public int ExtraCopies { get; set; }
+
+        public decimal ExtraCopyPrice { get; set; }
+
+        public int FreeCopies { get; set; }
+
+        public int TotalCopies { get; set; }
+
+        public decimal Amount { get; set; }
+
+
+        // =========================================================
         // PAYMENT STATUS
         // =========================================================
 
@@ -62,6 +92,9 @@
 
         // Payment becomes available 4 hours after submission
         public DateTime? PaymentEnabledAt { get; set; }
+
+        public bool PaymentNotificationSent { get; set; }
+
 
         // =========================================================
         // DATES
