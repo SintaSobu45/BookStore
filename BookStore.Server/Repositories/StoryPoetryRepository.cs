@@ -37,9 +37,19 @@ namespace BookStore.Server.Repositories
         public async Task<StoryPoetry?> GetByIdAsync(int id)
         {
             return await _context.StoryPoetries
-                .Include(s => s.User)
-                .FirstOrDefaultAsync(
-                    s => s.StoryPoetryId == id);
+        .Include(s => s.User)
+        .Include(s => s.StoryPoetryParticular)
+        .FirstOrDefaultAsync(
+            s => s.StoryPoetryId == id);
+        }
+        public async Task<bool> ExistsByUserAndParticularAsync(
+    int userId,
+    int particularId)
+        {
+            return await _context.StoryPoetries
+                .AnyAsync(s =>
+                    s.UserId == userId &&
+                    s.StoryPoetryParticularId == particularId);
         }
 
 
@@ -106,26 +116,29 @@ namespace BookStore.Server.Repositories
                     // SUBMISSION
                     // -------------------------------------------------
 
-                    StoryPoetryId =
-                        s.StoryPoetryId,
-
-                    UserId =
-                        s.UserId,
-
+                    StoryPoetryId = s.StoryPoetryId,
+                    UserId = s.UserId,
 
                     // -------------------------------------------------
                     // STORY / POETRY DETAILS
                     // -------------------------------------------------
 
-                    Title =
-                        s.Title,
+                    Title = s.Title,
+                    Type = s.Type,
+                    Content = s.Content,
 
-                    Type =
-                        s.Type,
+                    // -------------------------------------------------
+                    // PARTICULAR / CATEGORY
+                    // -------------------------------------------------
 
-                    Content =
-                        s.Content,
+                    StoryPoetryParticularId =
+                        s.StoryPoetryParticularId,
 
+                    ParticularName =
+                        s.ParticularNameSnapshot,
+
+                    ParticularNameSnapshot =
+                        s.ParticularNameSnapshot,
 
                     // -------------------------------------------------
                     // CONTRIBUTOR DETAILS
@@ -136,6 +149,12 @@ namespace BookStore.Server.Repositories
 
                     ContributorAddressMalayalam =
                         s.ContributorAddressMalayalam,
+
+                    ContributorAddress =
+                        s.ContributorAddress,
+
+                    ContributorPincode =
+                        s.ContributorPincode,
 
                     ContributorDistrictMalayalam =
                         s.ContributorDistrictMalayalam,
@@ -149,14 +168,34 @@ namespace BookStore.Server.Repositories
                     ContributorPhone =
                         s.ContributorPhone,
 
-
                     // -------------------------------------------------
-                    // CONTRIBUTOR PROFILE IMAGE
+                    // PROFILE IMAGE
                     // -------------------------------------------------
 
                     ContributorProfileImageUrl =
                         s.ContributorProfileImageUrl,
 
+                    // -------------------------------------------------
+                    // COPY / PAYMENT DETAILS
+                    // -------------------------------------------------
+
+                    BaseAmount =
+                        s.BaseAmount,
+
+                    ExtraCopies =
+                        s.ExtraCopies,
+
+                    ExtraCopyPrice =
+                        s.ExtraCopyPrice,
+
+                    FreeCopies =
+                        s.FreeCopies,
+
+                    TotalCopies =
+                        s.TotalCopies,
+
+                    Amount =
+                        s.Amount,
 
                     // -------------------------------------------------
                     // PAYMENT STATUS
@@ -166,8 +205,10 @@ namespace BookStore.Server.Repositories
                         s.PaymentStatus,
 
                     PaymentEnabledAt =
-    s.PaymentEnabledAt,
+                        s.PaymentEnabledAt,
 
+                    PaymentNotificationSent =
+                        s.PaymentNotificationSent,
 
                     // -------------------------------------------------
                     // DATES
@@ -179,11 +220,9 @@ namespace BookStore.Server.Repositories
                     UpdatedDate =
                         s.UpdatedDate
                 })
-                .OrderByDescending(
-                    s => s.CreatedDate)
+                .OrderByDescending(s => s.CreatedDate)
                 .ToListAsync();
         }
-
 
         // =========================================================
         // GET USER'S OWN SUBMISSIONS
@@ -193,7 +232,7 @@ namespace BookStore.Server.Repositories
         // =========================================================
 
         public async Task<List<StoryPoetryResponse>> GetByUserIdAsync(
-            int userId)
+     int userId)
         {
             return await _context.StoryPoetries
                 .Where(s => s.UserId == userId)
@@ -203,26 +242,29 @@ namespace BookStore.Server.Repositories
                     // SUBMISSION
                     // -------------------------------------------------
 
-                    StoryPoetryId =
-                        s.StoryPoetryId,
-
-                    UserId =
-                        s.UserId,
-
+                    StoryPoetryId = s.StoryPoetryId,
+                    UserId = s.UserId,
 
                     // -------------------------------------------------
                     // STORY / POETRY DETAILS
                     // -------------------------------------------------
 
-                    Title =
-                        s.Title,
+                    Title = s.Title,
+                    Type = s.Type,
+                    Content = s.Content,
 
-                    Type =
-                        s.Type,
+                    // -------------------------------------------------
+                    // PARTICULAR / CATEGORY
+                    // -------------------------------------------------
 
-                    Content =
-                        s.Content,
+                    StoryPoetryParticularId =
+                        s.StoryPoetryParticularId,
 
+                    ParticularName =
+                        s.ParticularNameSnapshot,
+
+                    ParticularNameSnapshot =
+                        s.ParticularNameSnapshot,
 
                     // -------------------------------------------------
                     // CONTRIBUTOR DETAILS
@@ -233,6 +275,12 @@ namespace BookStore.Server.Repositories
 
                     ContributorAddressMalayalam =
                         s.ContributorAddressMalayalam,
+
+                    ContributorAddress =
+                        s.ContributorAddress,
+
+                    ContributorPincode =
+                        s.ContributorPincode,
 
                     ContributorDistrictMalayalam =
                         s.ContributorDistrictMalayalam,
@@ -246,14 +294,34 @@ namespace BookStore.Server.Repositories
                     ContributorPhone =
                         s.ContributorPhone,
 
-
                     // -------------------------------------------------
-                    // CONTRIBUTOR PROFILE IMAGE
+                    // PROFILE IMAGE
                     // -------------------------------------------------
 
                     ContributorProfileImageUrl =
                         s.ContributorProfileImageUrl,
 
+                    // -------------------------------------------------
+                    // COPY / PAYMENT DETAILS
+                    // -------------------------------------------------
+
+                    BaseAmount =
+                        s.BaseAmount,
+
+                    ExtraCopies =
+                        s.ExtraCopies,
+
+                    ExtraCopyPrice =
+                        s.ExtraCopyPrice,
+
+                    FreeCopies =
+                        s.FreeCopies,
+
+                    TotalCopies =
+                        s.TotalCopies,
+
+                    Amount =
+                        s.Amount,
 
                     // -------------------------------------------------
                     // PAYMENT STATUS
@@ -261,9 +329,12 @@ namespace BookStore.Server.Repositories
 
                     PaymentStatus =
                         s.PaymentStatus,
-                    PaymentEnabledAt =
-    s.PaymentEnabledAt,
 
+                    PaymentEnabledAt =
+                        s.PaymentEnabledAt,
+
+                    PaymentNotificationSent =
+                        s.PaymentNotificationSent,
 
                     // -------------------------------------------------
                     // DATES
@@ -275,11 +346,9 @@ namespace BookStore.Server.Repositories
                     UpdatedDate =
                         s.UpdatedDate
                 })
-                .OrderByDescending(
-                    s => s.CreatedDate)
+                .OrderByDescending(s => s.CreatedDate)
                 .ToListAsync();
         }
-
 
         // =========================================================
         // UPDATE

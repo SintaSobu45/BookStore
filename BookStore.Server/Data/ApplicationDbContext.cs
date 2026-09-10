@@ -59,6 +59,9 @@ namespace BookStore.Server.Data
         //Warning
         public DbSet<PageWarning> PageWarnings { get; set; }
 
+        //new
+        public DbSet<StoryPoetryParticular> StoryPoetryParticular { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

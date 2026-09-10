@@ -113,7 +113,9 @@ namespace BookStore.Server
 
 
             builder.Services.AddScoped<PromotionBannerRepository>();
-          
+
+
+            builder.Services.AddScoped<StoryPoetryParticularRepository>();
 
 
             // Helpers
@@ -171,6 +173,8 @@ namespace BookStore.Server
 
 
             builder.Services.AddScoped<PromotionBannerService>();
+
+            builder.Services.AddScoped<StoryPoetryParticularService>();
 
 
             // JWT Authentication

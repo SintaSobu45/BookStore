@@ -11,19 +11,22 @@ namespace BookStore.Server.Services
         private readonly FtpImageService _ftpImageService;
         private readonly EmailService _emailService;
         private readonly AccountRepository _accountRepository;
+        private readonly StoryPoetryParticularService _particularService;       
 
         public StoryPoetryService(
             StoryPoetryRepository storyPoetryRepository,
             ProfileRepository profileRepository,
             FtpImageService ftpImageService,
             EmailService emailService,
-            AccountRepository accountRepository)
+            AccountRepository accountRepository,
+            StoryPoetryParticularService particularService)
         {
             _storyPoetryRepository = storyPoetryRepository;
             _profileRepository = profileRepository;
             _ftpImageService = ftpImageService;
             _emailService = emailService;
             _accountRepository = accountRepository;
+            _particularService = particularService;
         }
 
 
@@ -48,6 +51,61 @@ namespace BookStore.Server.Services
                     "User profile not found.");
             }
 
+            // =====================================================
+            // VALIDATE STORY / POETRY PARTICULAR
+            // =====================================================
+
+            var particular =
+                await _particularService.GetByIdAsync(
+                    request.StoryPoetryParticularId);
+
+            if (particular == null)
+            {
+                throw new ArgumentException(
+                    "Selected particular was not found.");
+            }
+
+
+            // -----------------------------------------------------
+            // PARTICULAR MUST BE ACTIVE
+            // -----------------------------------------------------
+
+            if (!particular.IsActive)
+            {
+                throw new ArgumentException(
+                    "Selected particular is no longer active.");
+            }
+
+
+            // -----------------------------------------------------
+            // PARTICULAR TYPE MUST MATCH SUBMISSION TYPE
+            // -----------------------------------------------------
+
+            if (!string.Equals(
+                    particular.Type,
+                    request.Type,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(
+                    "Selected particular does not belong to the selected type.");
+            }
+
+
+            // -----------------------------------------------------
+            // SAME USER + SAME PARTICULAR CANNOT BE SUBMITTED AGAIN
+            // -----------------------------------------------------
+
+            var alreadySubmitted =
+                await _storyPoetryRepository
+                    .ExistsByUserAndParticularAsync(
+                        userId,
+                        request.StoryPoetryParticularId);
+
+            if (alreadySubmitted)
+            {
+                throw new InvalidOperationException(
+                    "You have already submitted this particular.");
+            }
 
             // -----------------------------------------------------
             // IMAGE IS REQUIRED
@@ -196,6 +254,16 @@ namespace BookStore.Server.Services
 
                 Content = request.Content,
 
+                // -------------------------------------------------
+                // PARTICULAR / CATEGORY
+                // -------------------------------------------------
+
+                StoryPoetryParticularId =
+    particular.StoryPoetryParticularId,
+
+                ParticularNameSnapshot =
+    particular.Name,
+
 
                 // -------------------------------------------------
                 // CONTRIBUTOR SNAPSHOT
@@ -231,6 +299,28 @@ namespace BookStore.Server.Services
                 ContributorProfileImageUrl =
                     imageUrl,
 
+                // =================================================
+                // COPY / PAYMENT SNAPSHOT
+                // =================================================
+
+                // Base price will be calculated during payment
+                // using PaymentSettings based on Type.
+                BaseAmount = 0,
+
+                // User has not requested extra copies during upload.
+                ExtraCopies = 0,
+
+                // Snapshot the category's extra-copy price.
+                ExtraCopyPrice =
+    particular.ExtraCopyPrice,
+
+                FreeCopies = 2,
+
+                TotalCopies = 2,
+
+                // No payment has been made at submission time.
+                Amount = 0,
+
 
                 // =================================================
                 // PAYMENT
@@ -249,6 +339,10 @@ namespace BookStore.Server.Services
                 // -------------------------------------------------
 
                 CreatedDate = createdDate
+
+
+
+
             };
 
 
@@ -749,8 +843,8 @@ namespace BookStore.Server.Services
             storyPoetry.Title =
                 request.Title;
 
-            storyPoetry.Type =
-                request.Type;
+          
+
 
             storyPoetry.Content =
                 request.Content;
@@ -799,7 +893,11 @@ namespace BookStore.Server.Services
                 throw new UnauthorizedAccessException(
                     "You can only delete your own submission.");
             }
-
+            if (storyPoetry.PaymentStatus == "Paid")
+            {
+                throw new InvalidOperationException(
+                    "Paid submissions cannot be deleted.");
+            }
 
             await _storyPoetryRepository
                 .DeleteAsync(storyPoetry);
@@ -844,6 +942,42 @@ namespace BookStore.Server.Services
 
 
                 // -------------------------------------------------
+                // PARTICULAR / CATEGORY
+                // -------------------------------------------------
+
+                StoryPoetryParticularId =
+    storyPoetry.StoryPoetryParticularId,
+
+                ParticularName =
+    storyPoetry.StoryPoetryParticular?.Name
+    ?? storyPoetry.ParticularNameSnapshot,
+
+                ParticularNameSnapshot =
+    storyPoetry.ParticularNameSnapshot,
+
+
+                // -------------------------------------------------
+                // PAYMENT / COPY DETAILS
+                // -------------------------------------------------
+
+                BaseAmount =
+    storyPoetry.BaseAmount,
+
+                ExtraCopies =
+    storyPoetry.ExtraCopies,
+
+                ExtraCopyPrice =
+    storyPoetry.ExtraCopyPrice,
+
+                FreeCopies =
+    storyPoetry.FreeCopies,
+
+                TotalCopies =
+    storyPoetry.TotalCopies,
+
+                Amount =
+    storyPoetry.Amount,
+                // -------------------------------------------------
                 // PAYMENT STATUS
                 // -------------------------------------------------
 
@@ -852,6 +986,8 @@ namespace BookStore.Server.Services
 
                 PaymentEnabledAt =
                     storyPoetry.PaymentEnabledAt,
+                PaymentNotificationSent =
+    storyPoetry.PaymentNotificationSent,
 
 
                 // -------------------------------------------------

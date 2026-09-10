@@ -44,7 +44,7 @@ namespace BookStore.Server.Services
                 int userId)
         {
             // -----------------------------------------------------
-            // 1. Get Story / Poetry / Special submission
+            // 1. GET STORY / POETRY / SPECIAL SUBMISSION
             // -----------------------------------------------------
 
             var storyPoetry =
@@ -58,7 +58,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 2. Check Ownership
+            // 2. CHECK OWNERSHIP
             // -----------------------------------------------------
 
             if (storyPoetry.UserId != userId)
@@ -69,7 +69,29 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 3. Check 4-Hour Payment Restriction
+            // 3. VALIDATE EXTRA COPIES
+            // -----------------------------------------------------
+
+            if (request.ExtraCopies < 0)
+            {
+                throw new ArgumentException(
+                    "Extra copies cannot be negative.");
+            }
+
+
+            // -----------------------------------------------------
+            // 4. CHECK PAYMENT STATUS
+            // -----------------------------------------------------
+
+            if (storyPoetry.PaymentStatus == "Paid")
+            {
+                throw new InvalidOperationException(
+                    "Payment for this Story/Poetry has already been completed.");
+            }
+
+
+            // -----------------------------------------------------
+            // 5. CHECK PAYMENT ENABLED TIME
             // -----------------------------------------------------
 
             if (storyPoetry.PaymentEnabledAt.HasValue &&
@@ -109,11 +131,16 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 4. Check Existing Paid Payment
+            // 6. GET EXISTING PAYMENTS
             // -----------------------------------------------------
 
             var payments =
                 await _paymentRepository.GetAllAsync();
+
+
+            // -----------------------------------------------------
+            // 7. CHECK EXISTING PAID PAYMENT
+            // -----------------------------------------------------
 
             var existingPaidPayment =
                 payments.FirstOrDefault(
@@ -124,13 +151,31 @@ namespace BookStore.Server.Services
 
             if (existingPaidPayment != null)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Payment for this Story/Poetry has already been completed.");
             }
 
 
             // -----------------------------------------------------
-            // 5. Get Active Payment Setting
+            // 8. CHECK EXISTING PENDING PAYMENT
+            // -----------------------------------------------------
+
+            var existingPendingPayment =
+                payments.FirstOrDefault(
+                    p =>
+                        p.StoryPoetryId ==
+                        request.StoryPoetryId &&
+                        p.Status == "Pending");
+
+            if (existingPendingPayment != null)
+            {
+                throw new InvalidOperationException(
+                    "A payment order is already pending for this Story/Poetry submission.");
+            }
+
+
+            // -----------------------------------------------------
+            // 9. GET ACTIVE PAYMENT SETTING
             // -----------------------------------------------------
 
             var paymentSetting =
@@ -139,35 +184,121 @@ namespace BookStore.Server.Services
 
             if (paymentSetting == null)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Active StoryPoetry payment setting not found.");
             }
 
 
             // -----------------------------------------------------
-            // 6. Get Payment Amount
+            // 10. GET BASE AMOUNT
+            // -----------------------------------------------------
+
+            decimal baseAmount =
+                paymentSetting.Amount;
+
+            if (baseAmount <= 0)
+            {
+                throw new InvalidOperationException(
+                    "Invalid StoryPoetry base payment amount.");
+            }
+
+
+            // -----------------------------------------------------
+            // 11. GET EXTRA COPY PRICE
+            // -----------------------------------------------------
+
+            decimal extraCopyPrice =
+                storyPoetry.ExtraCopyPrice;
+
+            if (extraCopyPrice < 0)
+            {
+                throw new InvalidOperationException(
+                    "Invalid extra copy price.");
+            }
+
+
+            // -----------------------------------------------------
+            // 12. CALCULATE EXTRA COPY AMOUNT
+            // -----------------------------------------------------
+
+            decimal extraCopyAmount =
+                request.ExtraCopies *
+                extraCopyPrice;
+
+
+            // -----------------------------------------------------
+            // 13. CALCULATE TOTAL PAYMENT AMOUNT
             // -----------------------------------------------------
 
             decimal totalAmount =
-                paymentSetting.Amount;
+                baseAmount +
+                extraCopyAmount;
 
             if (totalAmount <= 0)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Invalid StoryPoetry payment amount.");
             }
 
 
             // -----------------------------------------------------
-            // 7. Convert Rupees To Paise
+            // 14. CALCULATE TOTAL COPIES
             // -----------------------------------------------------
+
+            const int freeCopies = 2;
+
+            int totalCopies =
+                freeCopies +
+                request.ExtraCopies;
+
+
+            // =====================================================
+            // UPDATE STORY / POETRY PAYMENT + COPY DETAILS
+            // =====================================================
+
+            storyPoetry.BaseAmount =
+                baseAmount;
+
+            storyPoetry.ExtraCopies =
+                request.ExtraCopies;
+
+            // Free copies are always fixed at 2.
+            storyPoetry.FreeCopies =
+                freeCopies;
+
+            storyPoetry.ExtraCopyPrice =
+                extraCopyPrice;
+
+            storyPoetry.TotalCopies =
+                totalCopies;
+
+            storyPoetry.Amount =
+                totalAmount;
+
+            storyPoetry.UpdatedDate =
+                DateTime.UtcNow;
+
+
+            // -----------------------------------------------------
+            // 15. CONVERT RUPEES TO PAISE
+            // -----------------------------------------------------
+
+            decimal amountInPaiseDecimal =
+                totalAmount * 100;
+
+            if (amountInPaiseDecimal >
+                int.MaxValue)
+            {
+                throw new InvalidOperationException(
+                    "Payment amount is too large.");
+            }
 
             int amountInPaise =
-                (int)(totalAmount * 100);
+                (int)amountInPaiseDecimal;
 
 
             // -----------------------------------------------------
-            // 8. Create Razorpay Client
+            // 16. CREATE RAZORPAY CLIENT
             // -----------------------------------------------------
 
             Razorpay.Api.RazorpayClient client =
@@ -177,7 +308,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 9. Razorpay Order Options
+            // 17. RAZORPAY ORDER OPTIONS
             // -----------------------------------------------------
 
             Dictionary<string, object> options =
@@ -199,7 +330,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 10. Create Razorpay Order
+            // 18. CREATE RAZORPAY ORDER
             // -----------------------------------------------------
 
             Razorpay.Api.Order order =
@@ -207,7 +338,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 11. Create Payment Record
+            // 19. CREATE PAYMENT RECORD
             // -----------------------------------------------------
 
             var payment =
@@ -243,7 +374,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 12. Save Payment
+            // 20. SAVE PAYMENT
             // -----------------------------------------------------
 
             var createdPayment =
@@ -252,7 +383,15 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 13. Return Response
+            // 21. SAVE STORY / POETRY
+            // -----------------------------------------------------
+
+            await _storyPoetryRepository
+                .UpdateAsync(storyPoetry);
+
+
+            // -----------------------------------------------------
+            // 22. RETURN RESPONSE
             // -----------------------------------------------------
 
             return MapToResponse(
@@ -270,7 +409,7 @@ namespace BookStore.Server.Services
                 int userId)
         {
             // -----------------------------------------------------
-            // 1. Get Local Payment
+            // 1. GET LOCAL PAYMENT
             // -----------------------------------------------------
 
             var payment =
@@ -285,18 +424,18 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 2. Make Sure This Is Story / Poetry / Special Payment
+            // 2. MAKE SURE THIS IS STORY / POETRY PAYMENT
             // -----------------------------------------------------
 
             if (payment.StoryPoetryId == null)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "This payment is not linked to a Story/Poetry submission.");
             }
 
 
             // -----------------------------------------------------
-            // 3. Check User
+            // 3. CHECK USER
             // -----------------------------------------------------
 
             if (payment.UserId != userId)
@@ -307,61 +446,61 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 4. Prevent Re-processing
+            // 4. PREVENT RE-PROCESSING
             // -----------------------------------------------------
 
             if (payment.Status == "Paid")
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "This payment has already been completed.");
             }
 
 
             // -----------------------------------------------------
-            // 5. Validate Razorpay Order ID
+            // 5. VALIDATE RAZORPAY ORDER ID
             // -----------------------------------------------------
 
             if (string.IsNullOrWhiteSpace(
                 request.RazorpayOrderId))
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Razorpay Order ID is required.");
             }
 
             if (payment.RazorpayOrderId !=
                 request.RazorpayOrderId)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Razorpay Order ID does not match.");
             }
 
 
             // -----------------------------------------------------
-            // 6. Validate Razorpay Payment ID
+            // 6. VALIDATE RAZORPAY PAYMENT ID
             // -----------------------------------------------------
 
             if (string.IsNullOrWhiteSpace(
                 request.RazorpayPaymentId))
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Razorpay Payment ID is required.");
             }
 
 
             // -----------------------------------------------------
-            // 7. Validate Razorpay Signature
+            // 7. VALIDATE RAZORPAY SIGNATURE
             // -----------------------------------------------------
 
             if (string.IsNullOrWhiteSpace(
                 request.RazorpaySignature))
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Razorpay Signature is required.");
             }
 
 
             // -----------------------------------------------------
-            // 8. Create Signature Payload
+            // 8. CREATE SIGNATURE PAYLOAD
             // -----------------------------------------------------
 
             string payload =
@@ -371,7 +510,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 9. Generate Expected Signature
+            // 9. GENERATE EXPECTED SIGNATURE
             // -----------------------------------------------------
 
             using var hmac =
@@ -391,7 +530,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 10. Secure Signature Comparison
+            // 10. SECURE SIGNATURE COMPARISON
             // -----------------------------------------------------
 
             bool signatureValid =
@@ -406,7 +545,7 @@ namespace BookStore.Server.Services
 
             if (!signatureValid)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Invalid Razorpay payment signature.");
             }
 
@@ -417,7 +556,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 11. Get Story / Poetry / Special
+            // 11. GET STORY / POETRY / SPECIAL
             // -----------------------------------------------------
 
             var storyPoetry =
@@ -427,13 +566,13 @@ namespace BookStore.Server.Services
 
             if (storyPoetry == null)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Story/Poetry submission not found.");
             }
 
 
             // -----------------------------------------------------
-            // 12. Check Ownership Again
+            // 12. CHECK OWNERSHIP AGAIN
             // -----------------------------------------------------
 
             if (storyPoetry.UserId != userId)
@@ -444,7 +583,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 13. Check 4-Hour Payment Restriction
+            // 13. CHECK PAYMENT ENABLED TIME
             // -----------------------------------------------------
 
             if (storyPoetry.PaymentEnabledAt.HasValue &&
@@ -456,7 +595,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 14. Get Payment Method From Razorpay
+            // 14. GET PAYMENT METHOD FROM RAZORPAY
             // -----------------------------------------------------
 
             string? paymentMethod =
@@ -465,7 +604,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 15. Update Payment
+            // 15. UPDATE PAYMENT
             // -----------------------------------------------------
 
             payment.RazorpayPaymentId =
@@ -485,7 +624,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 16. Update Story / Poetry Payment Status
+            // 16. UPDATE STORY / POETRY PAYMENT STATUS
             // -----------------------------------------------------
 
             storyPoetry.PaymentStatus =
@@ -496,7 +635,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 17. Save Updated Payment
+            // 17. SAVE UPDATED PAYMENT
             // -----------------------------------------------------
 
             var updatedPayment =
@@ -510,7 +649,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 18. Save Updated Story / Poetry
+            // 18. SAVE UPDATED STORY / POETRY
             // -----------------------------------------------------
 
             await _storyPoetryRepository
@@ -529,10 +668,6 @@ namespace BookStore.Server.Services
                 {
                     // -------------------------------------------------
                     // TYPE COMES DIRECTLY FROM DATABASE
-                    //
-                    // Story
-                    // Poetry
-                    // Special
                     // -------------------------------------------------
 
                     string submissionType =
@@ -540,28 +675,33 @@ namespace BookStore.Server.Services
 
 
                     // -------------------------------------------------
-                    // Generate PDF Receipt
+                    // GENERATE PDF RECEIPT
                     // -------------------------------------------------
 
                     byte[] pdfBytes =
                         _paymentReceiptService
                             .GenerateStoryPoetryPaymentReceipt(
-                                storyPoetry.StoryPoetryId,
-                                storyPoetry.User.Name,
-                                storyPoetry.User.Email,
-                                submissionType,
-                                storyPoetry.Title,
-                                storyPoetry.ContributorNameMalayalam,
-                                storyPoetry.ContributorEmail,
-                                storyPoetry.ContributorPhone,
-                                payment.Amount,
-                                paymentMethod,
-                                request.RazorpayPaymentId,
+                                 storyPoetry.StoryPoetryId,
+    storyPoetry.User.Name,
+    storyPoetry.User.Email,
+    submissionType,
+    storyPoetry.Title,
+    storyPoetry.ContributorNameMalayalam,
+    storyPoetry.ContributorEmail,
+    storyPoetry.ContributorPhone,
+    storyPoetry.FreeCopies,
+    storyPoetry.ExtraCopies,
+    storyPoetry.ExtraCopyPrice,
+    storyPoetry.TotalCopies,
+    storyPoetry.BaseAmount,
+    payment.Amount,
+    paymentMethod,
+    request.RazorpayPaymentId,
                                 DateTime.UtcNow);
 
 
                     // -------------------------------------------------
-                    // Professional Email
+                    // PROFESSIONAL EMAIL
                     // -------------------------------------------------
 
                     string emailBody = $@"
@@ -600,10 +740,64 @@ namespace BookStore.Server.Services
 
             <tr>
                 <td style='padding: 8px;'>
+                    <strong>Particular</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.ParticularNameSnapshot}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
                     <strong>Title</strong>
                 </td>
                 <td style='padding: 8px;'>
                     {storyPoetry.Title}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Free Copies</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.FreeCopies}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Extra Copies</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.ExtraCopies}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Total Copies</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    {storyPoetry.TotalCopies}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Base Amount</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    ₹{storyPoetry.BaseAmount:F2}
+                </td>
+            </tr>
+
+            <tr>
+                <td style='padding: 8px;'>
+                    <strong>Extra Copy Price</strong>
+                </td>
+                <td style='padding: 8px;'>
+                    ₹{storyPoetry.ExtraCopyPrice:F2}
                 </td>
             </tr>
 
@@ -670,7 +864,7 @@ namespace BookStore.Server.Services
 
 
                     // -------------------------------------------------
-                    // Send Email With PDF Attachment
+                    // SEND EMAIL WITH PDF ATTACHMENT
                     // -------------------------------------------------
 
                     await _emailService.SendEmailAsync(
@@ -691,7 +885,7 @@ namespace BookStore.Server.Services
 
 
             // -----------------------------------------------------
-            // 20. Return Response
+            // 20. RETURN RESPONSE
             // -----------------------------------------------------
 
             return MapToResponse(
