@@ -98,3 +98,84 @@ export const resendOtp = async (registrationToken) => {
 
   return data
 }
+
+
+
+// =========================================================
+// FORGOT PASSWORD
+// =========================================================
+
+export const forgotPassword = async (email) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/Account/forgot-password`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email
+      })
+    }
+  )
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to send password reset OTP.')
+  }
+
+  return data
+}
+
+
+// =========================================================
+// VERIFY PASSWORD RESET OTP
+// =========================================================
+
+export const verifyPasswordResetOtp = async (verifyData) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/Account/verify-password-reset-otp`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(verifyData)
+    }
+  )
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Invalid or expired OTP.')
+  }
+
+  return data
+}
+
+
+// =========================================================
+// RESET PASSWORD
+// =========================================================
+
+export const resetPassword = async (resetData) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/Account/reset-password`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(resetData)
+    }
+  )
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to reset password.')
+  }
+
+  return data
+}

@@ -25,9 +25,6 @@ import {
 
 // =========================================================
 // INPUT FIELD
-// IMPORTANT:
-// This component is OUTSIDE Profile so it won't remount
-// every time formData changes.
 // =========================================================
 
 const InputField = ({
@@ -42,8 +39,8 @@ const InputField = ({
   onChange,
 }) => {
   return (
-    <div>
-      <label className="block text-xs font-bold text-gray-700 mb-2">
+    <div className="min-w-0">
+      <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1.5 sm:mb-2 truncate">
         {label}
 
         {required && (
@@ -52,7 +49,7 @@ const InputField = ({
       </label>
 
       <div className="relative">
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
+        <Icon className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-stone-400 pointer-events-none" />
 
         <input
           type={type}
@@ -62,7 +59,7 @@ const InputField = ({
           placeholder={placeholder}
           required={required}
           maxLength={maxLength}
-          className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800 focus:ring-1 focus:ring-emerald-800/20 transition"
+          className="w-full bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl py-2.5 sm:py-3 pl-8 sm:pl-10 pr-2.5 sm:pr-4 text-xs sm:text-sm text-gray-800 focus:outline-none focus:border-emerald-800 focus:ring-1 focus:ring-emerald-800/20 transition"
         />
       </div>
     </div>
@@ -83,13 +80,13 @@ const TextareaField = ({
   onChange,
 }) => {
   return (
-    <div className="sm:col-span-2">
-      <label className="block text-xs font-bold text-gray-700 mb-2">
+    <div className="col-span-2 sm:col-span-2">
+      <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1.5 sm:mb-2">
         {label}
       </label>
 
       <div className="relative">
-        <Icon className="absolute left-3 top-3.5 h-4 w-4 text-stone-400 pointer-events-none" />
+        <Icon className="absolute left-2.5 sm:left-3 top-3 sm:top-3.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-stone-400 pointer-events-none" />
 
         <textarea
           name={name}
@@ -98,7 +95,7 @@ const TextareaField = ({
           placeholder={placeholder}
           maxLength={maxLength}
           rows={3}
-          className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 focus:outline-none focus:border-emerald-800 focus:ring-1 focus:ring-emerald-800/20 resize-none transition"
+          className="w-full bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl py-2.5 sm:py-3 pl-8 sm:pl-10 pr-2.5 sm:pr-4 text-xs sm:text-sm text-gray-800 focus:outline-none focus:border-emerald-800 focus:ring-1 focus:ring-emerald-800/20 resize-none transition"
         />
       </div>
     </div>
@@ -117,19 +114,19 @@ const InfoCard = ({
 }) => {
   return (
     <div
-      className={`bg-stone-50 border border-stone-200 rounded-2xl p-4 ${
-        fullWidth ? "sm:col-span-2" : ""
+      className={`bg-stone-50 border border-stone-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 ${
+        fullWidth ? "col-span-2 sm:col-span-2" : ""
       }`}
     >
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className="h-4 w-4 text-emerald-800 shrink-0" />
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+        <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-800 shrink-0" />
 
-        <span className="text-xs font-semibold text-stone-500">
+        <span className="text-[10px] sm:text-xs font-semibold text-stone-500 truncate">
           {label}
         </span>
       </div>
 
-      <p className="text-sm font-bold text-gray-900 break-words whitespace-pre-wrap">
+      <p className="text-xs sm:text-sm font-bold text-gray-900 break-words whitespace-pre-wrap">
         {value || "Not provided"}
       </p>
     </div>
@@ -154,7 +151,6 @@ export default function Profile() {
 
   // =========================================================
   // FORM DATA
-  // Matches GetProfileResponse from backend
   // =========================================================
 
   const [formData, setFormData] = useState({
@@ -381,69 +377,92 @@ export default function Profile() {
       <>
         <Navbar />
 
-        <main className="min-h-screen bg-stone-100/60 px-4 py-8 sm:px-6 lg:px-8">
+        <main className="min-h-screen bg-stone-100/60 px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
           <div className="max-w-5xl mx-auto">
-            <div className="bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden">
 
-              {/* Header Skeleton */}
+            <div className="bg-white border border-stone-200 rounded-2xl sm:rounded-3xl shadow-sm overflow-hidden">
 
-              <div className="bg-[#1b3b2b] px-5 sm:px-8 py-8">
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+              {/* =================================================
+                  HEADER SKELETON
+              ================================================= */}
 
-                  <div className="w-20 h-20 rounded-full bg-white/20 animate-pulse shrink-0" />
+              <div className="bg-[#1b3b2b] px-4 sm:px-8 py-5 sm:py-8">
 
-                  <div className="flex-1 w-full text-center sm:text-left">
-                    <div className="h-6 w-40 bg-white/20 rounded-lg animate-pulse mx-auto sm:mx-0" />
+                <div className="flex flex-row items-center gap-4 sm:gap-5">
 
-                    <div className="h-4 w-52 bg-white/15 rounded-lg animate-pulse mt-3 mx-auto sm:mx-0" />
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/20 animate-pulse shrink-0" />
+
+                  <div className="flex-1 min-w-0">
+
+                    <div className="h-5 sm:h-6 w-32 sm:w-40 bg-white/20 rounded-lg animate-pulse" />
+
+                    <div className="h-3 sm:h-4 w-40 sm:w-52 bg-white/15 rounded-lg animate-pulse mt-2 sm:mt-3" />
+
                   </div>
 
                 </div>
+
               </div>
 
-              {/* Content Skeleton */}
+              {/* =================================================
+                  CONTENT SKELETON
+              ================================================= */}
 
-              <div className="p-5 sm:p-8">
+              <div className="p-4 sm:p-8">
 
-                <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-2 sm:gap-3 mb-5 sm:mb-6">
+
                   <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+
                     <Loader2 className="h-4 w-4 text-emerald-800 animate-spin" />
+
                   </div>
 
                   <div>
-                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
 
-                    <div className="h-3 w-44 bg-gray-100 rounded animate-pulse mt-2" />
+                    <div className="h-4 w-28 sm:w-32 bg-gray-200 rounded animate-pulse" />
+
+                    <div className="h-3 w-36 sm:w-44 bg-gray-100 rounded animate-pulse mt-2" />
+
                   </div>
+
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
+
                   {[1, 2, 3, 4, 5, 6].map(
                     (item) => (
                       <div
                         key={item}
-                        className="border border-gray-100 bg-gray-50 rounded-2xl p-4"
+                        className="border border-gray-100 bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4"
                       >
-                        <div className="h-3 w-20 bg-gray-200 rounded animate-pulse mb-3" />
+                        <div className="h-3 w-16 sm:w-20 bg-gray-200 rounded animate-pulse mb-2 sm:mb-3" />
 
                         <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse" />
                       </div>
                     )
                   )}
+
                 </div>
 
-                <div className="flex justify-center mt-8">
+                <div className="flex justify-center mt-6 sm:mt-8">
+
                   <div className="flex items-center gap-2 text-gray-500">
+
                     <Loader2 className="h-5 w-5 text-emerald-800 animate-spin" />
 
-                    <span className="text-sm font-medium">
+                    <span className="text-xs sm:text-sm font-medium">
                       Loading profile...
                     </span>
+
                   </div>
+
                 </div>
 
               </div>
+
             </div>
+
           </div>
         </main>
 
@@ -462,10 +481,13 @@ export default function Profile() {
         <Navbar />
 
         <main className="min-h-screen flex items-center justify-center bg-stone-100/60 px-4">
+
           <div className="text-center max-w-md">
 
             <div className="w-16 h-16 mx-auto rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+
               <User className="w-8 h-8 text-red-500" />
+
             </div>
 
             <h2 className="text-xl font-bold text-gray-900 mb-2">
@@ -477,6 +499,7 @@ export default function Profile() {
             </p>
 
           </div>
+
         </main>
 
         <Footer />
@@ -492,33 +515,41 @@ export default function Profile() {
     <>
       <Navbar />
 
-      <main className="min-h-screen bg-stone-100/60 py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-stone-100/60 py-4 sm:py-10 px-3 sm:px-6 lg:px-8">
+
         <div className="max-w-5xl mx-auto">
 
           {/* =================================================
               PAGE HEADER
           ================================================= */}
 
-          <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="mb-4 sm:mb-8 flex flex-row items-center justify-between gap-3">
 
-            <div>
+            <div className="min-w-0">
+
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
                 My Profile
               </h1>
 
-              <p className="text-sm text-stone-500 mt-1">
+              <p className="text-xs sm:text-sm text-stone-500 mt-1">
                 Manage your personal information
               </p>
+
             </div>
 
             {!editMode && (
               <button
                 onClick={handleEdit}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1b3b2b] hover:bg-emerald-950 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+                className="w-auto shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 bg-[#1b3b2b] hover:bg-emerald-950 text-white px-3.5 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 
-                <span>Edit Profile</span>
+                <span>
+                  Edit
+                  <span className="hidden sm:inline">
+                    {" "}Profile
+                  </span>
+                </span>
               </button>
             )}
 
@@ -529,7 +560,7 @@ export default function Profile() {
           ================================================= */}
 
           {success && (
-            <div className="mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-sm font-medium">
+            <div className="mb-4 sm:mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-medium">
               {success}
             </div>
           )}
@@ -539,7 +570,7 @@ export default function Profile() {
           ================================================= */}
 
           {error && profile && (
-            <div className="mb-5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
+            <div className="mb-4 sm:mb-5 bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-medium">
               {error}
             </div>
           )}
@@ -548,42 +579,48 @@ export default function Profile() {
               PROFILE CARD
           ================================================= */}
 
-          <div className="bg-white border border-stone-200/80 rounded-3xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl shadow-sm overflow-hidden">
 
             {/* =================================================
                 PROFILE HEADER
             ================================================= */}
 
-            <div className="bg-[#1b3b2b] px-5 sm:px-8 py-7 sm:py-8">
+            <div className="bg-[#1b3b2b] px-4 sm:px-8 py-5 sm:py-8">
 
-              <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5">
+              <div className="flex flex-row sm:flex-row items-center gap-4 sm:gap-5">
 
-                {/* PROFILE IMAGE */}
+                {/* =================================================
+                    PROFILE IMAGE
+                ================================================= */}
 
-                <div className="relative h-20 w-20 shrink-0">
+                <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0">
 
                   {profile.profileImageUrl ? (
                     <img
                       src={profile.profileImageUrl}
                       alt="Profile"
-                      className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-md"
+                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-4 border-white shadow-md"
                     />
                   ) : (
-                    <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-md">
-                      <User className="h-10 w-10 text-emerald-900" />
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-white flex items-center justify-center shadow-md">
+
+                      <User className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-900" />
+
                     </div>
                   )}
 
-                  {/* CAMERA BUTTON */}
+                  {/* =================================================
+                      CAMERA BUTTON
+                  ================================================= */}
 
                   <label
                     htmlFor="profile-image-upload"
-                    className="absolute bottom-0 right-0 h-7 w-7 bg-white text-emerald-900 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-emerald-50 transition"
+                    className="absolute bottom-0 right-0 h-6 w-6 sm:h-7 sm:w-7 bg-white text-emerald-900 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-emerald-50 transition"
                   >
                     {uploadingImage ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                     ) : (
-                      <Camera className="h-4 w-4" />
+                      <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     )}
                   </label>
 
@@ -598,15 +635,17 @@ export default function Profile() {
 
                 </div>
 
-                {/* USER NAME */}
+                {/* =================================================
+                    USER NAME
+                ================================================= */}
 
-                <div className="text-center sm:text-left min-w-0">
+                <div className="text-left min-w-0">
 
-                  <h2 className="text-xl sm:text-2xl font-bold text-white break-words">
+                  <h2 className="text-lg sm:text-2xl font-bold text-white break-words">
                     {profile.name || "User"}
                   </h2>
 
-                  <p className="text-sm text-emerald-100 mt-1 break-all">
+                  <p className="text-xs sm:text-sm text-emerald-100 mt-1 break-all">
                     {profile.email}
                   </p>
 
@@ -620,7 +659,7 @@ export default function Profile() {
                 CONTENT
             ================================================= */}
 
-            <div className="p-5 sm:p-8">
+            <div className="p-4 sm:p-8">
 
               {editMode ? (
 
@@ -630,7 +669,7 @@ export default function Profile() {
 
                 <form
                   onSubmit={handleSubmit}
-                  className="space-y-10"
+                  className="space-y-7 sm:space-y-10"
                 >
 
                   {/* =================================================
@@ -639,19 +678,23 @@ export default function Profile() {
 
                   <section>
 
-                    <div className="mb-5">
-                      <h3 className="text-lg font-bold text-gray-900">
+                    <div className="mb-3 sm:mb-5">
+
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900">
                         Personal Information
                       </h3>
 
-                      <p className="text-xs text-stone-500 mt-1">
+                      <p className="text-[10px] sm:text-xs text-stone-500 mt-1">
                         Update your basic account information.
                       </p>
+
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-5">
 
-                      {/* NAME */}
+                      {/* =================================================
+                          NAME
+                      ================================================= */}
 
                       <InputField
                         label="Full Name"
@@ -664,37 +707,18 @@ export default function Profile() {
                         onChange={handleChange}
                       />
 
-                      {/* EMAIL */}
+                      
 
-                      <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-2">
-                          Email Address
-                        </label>
-
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
-
-                          <input
-                            type="email"
-                            value={profile.email || ""}
-                            disabled
-                            className="w-full bg-stone-100 border border-stone-200 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-500 cursor-not-allowed"
-                          />
-                        </div>
-
-                        <p className="text-[11px] text-stone-400 mt-1">
-                          Email cannot be changed.
-                        </p>
-                      </div>
-
-                      {/* PHONE */}
+                      {/* =================================================
+                          PHONE
+                      ================================================= */}
 
                       <InputField
                         label="Phone Number"
                         name="phone"
                         value={formData.phone}
                         icon={Phone}
-                        placeholder="Enter 10-digit phone number"
+                        placeholder="10-digit number"
                         required
                         maxLength={10}
                         type="tel"
@@ -702,6 +726,35 @@ export default function Profile() {
                       />
 
                     </div>
+
+                    {/* =================================================
+                          EMAIL
+                      ================================================= */}
+
+                      <div className="min-w-0 mt-3">
+
+                        <label className="block text-[11px] sm:text-xs font-bold text-gray-700 mb-1.5 sm:mb-2 truncate">
+                          Email Address
+                        </label>
+
+                        <div className="relative">
+
+                          <Mail className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-stone-400 pointer-events-none" />
+
+                          <input
+                            type="email"
+                            value={profile.email || ""}
+                            disabled
+                            className="w-full bg-stone-100 border border-stone-200 rounded-lg sm:rounded-xl py-2.5 sm:py-3 pl-8 sm:pl-10 pr-2.5 sm:pr-4 text-xs sm:text-sm text-gray-500 cursor-not-allowed"
+                          />
+
+                        </div>
+
+                        <p className="text-[9px] sm:text-[11px] text-stone-400 mt-1 leading-tight">
+                          Email cannot be changed.
+                        </p>
+
+                      </div>
 
                   </section>
 
@@ -711,19 +764,23 @@ export default function Profile() {
 
                   <section>
 
-                    <div className="mb-5">
-                      <h3 className="text-lg font-bold text-gray-900">
+                    <div className="mb-3 sm:mb-5">
+
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900">
                         Address Information
                       </h3>
 
-                      <p className="text-xs text-stone-500 mt-1">
+                      <p className="text-[10px] sm:text-xs text-stone-500 mt-1">
                         Add your location and contact address.
                       </p>
+
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-5">
 
-                      {/* ADDRESS */}
+                      {/* =================================================
+                          ADDRESS
+                      ================================================= */}
 
                       <TextareaField
                         label="Address"
@@ -735,50 +792,58 @@ export default function Profile() {
                         onChange={handleChange}
                       />
 
-                      {/* CITY */}
+                      {/* =================================================
+                          CITY
+                      ================================================= */}
 
                       <InputField
                         label="City"
                         name="city"
                         value={formData.city}
                         icon={Building2}
-                        placeholder="Enter your city"
+                        placeholder="Enter city"
                         maxLength={100}
                         onChange={handleChange}
                       />
 
-                      {/* DISTRICT */}
+                      {/* =================================================
+                          DISTRICT
+                      ================================================= */}
 
                       <InputField
                         label="District"
                         name="district"
                         value={formData.district}
                         icon={MapPin}
-                        placeholder="Enter your district"
+                        placeholder="Enter district"
                         maxLength={100}
                         onChange={handleChange}
                       />
 
-                      {/* STATE */}
+                      {/* =================================================
+                          STATE
+                      ================================================= */}
 
                       <InputField
                         label="State"
                         name="state"
                         value={formData.state}
                         icon={MapPin}
-                        placeholder="Enter your state"
+                        placeholder="Enter state"
                         maxLength={100}
                         onChange={handleChange}
                       />
 
-                      {/* PINCODE */}
+                      {/* =================================================
+                          PINCODE
+                      ================================================= */}
 
                       <InputField
                         label="Pincode"
                         name="pincode"
                         value={formData.pincode}
                         icon={Hash}
-                        placeholder="Enter your pincode"
+                        placeholder="Pincode"
                         maxLength={10}
                         type="text"
                         onChange={handleChange}
@@ -794,31 +859,37 @@ export default function Profile() {
 
                   <section>
 
-                    <div className="mb-5">
+                    <div className="mb-3 sm:mb-5">
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2.5 sm:gap-3">
 
-                        <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                          <Languages className="h-5 w-5 text-emerald-900" />
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+
+                          <Languages className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-900" />
+
                         </div>
 
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900">
+                        <div className="min-w-0">
+
+                          <h3 className="text-base sm:text-lg font-bold text-gray-900">
                             Malayalam Details
                           </h3>
 
-                          <p className="text-xs text-stone-500 mt-1">
+                          <p className="text-[10px] sm:text-xs text-stone-500 mt-1">
                             Add your information in Malayalam.
                           </p>
+
                         </div>
 
                       </div>
 
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-5">
 
-                      {/* MALAYALAM NAME */}
+                      {/* =================================================
+                          MALAYALAM NAME
+                      ================================================= */}
 
                       <InputField
                         label="Name in Malayalam"
@@ -830,7 +901,9 @@ export default function Profile() {
                         onChange={handleChange}
                       />
 
-                      {/* MALAYALAM CITY */}
+                      {/* =================================================
+                          MALAYALAM CITY
+                      ================================================= */}
 
                       <InputField
                         label="City in Malayalam"
@@ -842,7 +915,9 @@ export default function Profile() {
                         onChange={handleChange}
                       />
 
-                      {/* MALAYALAM DISTRICT */}
+                      {/* =================================================
+                          MALAYALAM DISTRICT
+                      ================================================= */}
 
                       <InputField
                         label="District in Malayalam"
@@ -854,7 +929,9 @@ export default function Profile() {
                         onChange={handleChange}
                       />
 
-                      {/* MALAYALAM STATE */}
+                      {/* =================================================
+                          MALAYALAM STATE
+                      ================================================= */}
 
                       <InputField
                         label="State in Malayalam"
@@ -866,7 +943,9 @@ export default function Profile() {
                         onChange={handleChange}
                       />
 
-                      {/* MALAYALAM ADDRESS */}
+                      {/* =================================================
+                          MALAYALAM ADDRESS
+                      ================================================= */}
 
                       <TextareaField
                         label="Address in Malayalam"
@@ -886,13 +965,13 @@ export default function Profile() {
                       ACTION BUTTONS
                   ================================================= */}
 
-                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-5 border-t border-stone-100">
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 sm:pt-5 border-t border-stone-100">
 
                     <button
                       type="button"
                       onClick={handleCancel}
                       disabled={saving}
-                      className="w-full sm:w-auto flex items-center justify-center gap-2 border border-stone-200 hover:bg-stone-50 text-gray-700 px-5 py-3 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 border border-stone-200 hover:bg-stone-50 text-gray-700 px-5 py-2.5 sm:py-3 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
                     >
                       <X className="h-4 w-4 shrink-0" />
 
@@ -904,7 +983,7 @@ export default function Profile() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1b3b2b] hover:bg-emerald-950 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1b3b2b] hover:bg-emerald-950 text-white px-5 py-2.5 sm:py-3 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
                     >
                       {saving ? (
                         <>
@@ -935,7 +1014,7 @@ export default function Profile() {
                 // VIEW MODE
                 // =================================================
 
-                <div className="space-y-10">
+                <div className="space-y-7 sm:space-y-10">
 
                   {/* =================================================
                       PERSONAL INFORMATION
@@ -943,11 +1022,11 @@ export default function Profile() {
 
                   <section>
 
-                    <h3 className="text-lg font-bold text-gray-900 mb-5">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-5">
                       Personal Information
                     </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-5">
 
                       <InfoCard
                         icon={User}
@@ -955,17 +1034,21 @@ export default function Profile() {
                         value={profile.name}
                       />
 
-                      <InfoCard
-                        icon={Mail}
-                        label="Email Address"
-                        value={profile.email}
-                      />
+                     
 
                       <InfoCard
                         icon={Phone}
                         label="Phone Number"
                         value={profile.phone}
                       />
+
+                       <div className="col-span-2 sm:col-span-1">
+                         <InfoCard
+                          icon={Mail}
+                          label="Email Address"
+                          value={profile.email}
+                        />
+                       </div>
 
                     </div>
 
@@ -977,11 +1060,11 @@ export default function Profile() {
 
                   <section>
 
-                    <h3 className="text-lg font-bold text-gray-900 mb-5">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-5">
                       Address Information
                     </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-5">
 
                       <InfoCard
                         icon={MapPin}
@@ -1024,25 +1107,29 @@ export default function Profile() {
 
                   <section>
 
-                    <div className="flex items-center gap-3 mb-5">
+                    <div className="flex items-center gap-2.5 sm:gap-3 mb-3 sm:mb-5">
 
-                      <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                        <Languages className="h-5 w-5 text-emerald-900" />
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+
+                        <Languages className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-900" />
+
                       </div>
 
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900">
+                      <div className="min-w-0">
+
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900">
                           Malayalam Details
                         </h3>
 
-                        <p className="text-xs text-stone-500">
+                        <p className="text-[10px] sm:text-xs text-stone-500">
                           Your profile information in Malayalam.
                         </p>
+
                       </div>
 
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-5">
 
                       <InfoCard
                         icon={User}

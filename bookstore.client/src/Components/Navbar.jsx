@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Package,
   ClipboardList,
+  Feather,
 } from "lucide-react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { getProfile } from "../services/profileService";
@@ -128,7 +129,7 @@ export default function Navbar() {
   const navLinks = [
     { name: "Home", path: "/", end: true },
     { name: "Books", path: "/all/books" },
-    { name: "Poetry & Stories", path: "/book/upload" },
+    { name: "Writings", path: "/book/upload" },
     { name: "Events", path: "/events" },
     { name: "About Us", path: "/about" },
   ];
@@ -317,6 +318,22 @@ export default function Navbar() {
                             </p>
                           </div>
                         </Link>
+
+                        <Link
+                          to="/your/uploads"
+                          onClick={handleMobileNavigation}
+                          className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
+                            <Feather className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">My Writings</p>
+                            <p className="text-xs text-gray-400">
+                              View your Submissions
+                            </p>
+                          </div>
+                        </Link>
                       </div>
 
                       <div className="border-t border-gray-100 p-2">
@@ -392,26 +409,26 @@ export default function Navbar() {
           />
 
           <div className="absolute left-0 top-0 bottom-0 w-[82%] max-w-sm bg-white shadow-2xl overflow-y-auto">
-            <div className="bg-[#1b3b2b] text-white px-5 py-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/10 rounded-full p-2">
-                  <BookOpen className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-bold text-lg">THE OLD LIBRARY</p>
-                  <p className="text-xs text-white/70">Malayalam Books</p>
-                </div>
-              </div>
+            <div className="bg-[skyblue] px-5 py-4 flex items-center justify-between">
+  {/* Logo */}
+  <div className="flex rounded-2 w-100 items-center">
+    <img
+      src={logo}
+      alt="The Old Library"
+      className="w-100 h-24 object-contain img-fluid"
+    />
+  </div>
 
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-white hover:bg-white/10 rounded-full p-2"
-                aria-label="Close menu"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+  {/* Close Button */}
+  <button
+    type="button"
+    onClick={() => setMobileMenuOpen(false)}
+    className="text-white hover:bg-white/10 rounded-full p-2"
+    aria-label="Close menu"
+  >
+    <X className="h-6 w-6" />
+  </button>
+</div>
 
             <div className="px-5 py-4 bg-gray-50 border-b">
               {isLoggedIn ? (
@@ -529,6 +546,18 @@ export default function Navbar() {
                     <div className="flex items-center gap-3">
                       <ClipboardList className="h-5 w-5 text-gray-500" />
                       <span>My Registrations</span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </Link>
+
+                  <Link
+                    to="/your/uploads"
+                    onClick={handleMobileNavigation}
+                    className="flex items-center justify-between px-5 py-4 border-b border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Feather className="h-5 w-5 text-gray-500" />
+                      <span>My Writings</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-gray-400" />
                   </Link>

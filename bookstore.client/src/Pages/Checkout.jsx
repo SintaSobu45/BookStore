@@ -129,13 +129,32 @@ export default function Checkout() {
   // =====================================================
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+  const { name, value } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  // Phone Number: Numeric only, max 10 digits
+  if (name === "customerPhone") {
+    const digitsOnly = value.replace(/\D/g, "");
+    if (digitsOnly.length <= 10) {
+      setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
+    }
+    return;
+  }
+
+  // Pincode: Numeric only, max 6 digits
+  if (name === "pincode") {
+    const digitsOnly = value.replace(/\D/g, "");
+    if (digitsOnly.length <= 6) {
+      setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
+    }
+    return;
+  }
+
+  // All other input fields
+  setFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
 
   // =====================================================
   // CREATE ORDER + PAYMENT
@@ -330,134 +349,126 @@ export default function Checkout() {
   };
 
   return (
-    <>
-      <Navbar />
+  <>
+    <Navbar />
 
-      <div className="min-h-screen bg-white pb-16">
-        {/* =====================================================
-            HERO BANNER
-        ===================================================== */}
+    <div className="min-h-screen bg-stone-50/50 sm:bg-white pb-20 sm:pb-16">
+      {/* =====================================================
+          HERO BANNER
+      ===================================================== */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
+        <div className="bg-[#1b3b2b] border border-emerald-800/40 rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-12 flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-sm">
+          <div className="absolute -right-12 -bottom-12 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
-          <div className="bg-[#1b3b2b] border border-emerald-800/40 rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-12 flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-sm">
-            <div className="absolute -right-12 -bottom-12 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="w-full md:max-w-xl z-10 mb-2 md:mb-0">
+            {/* Breadcrumb */}
+            <div className="flex items-center space-x-1.5 sm:space-x-2 text-[11px] sm:text-sm text-emerald-200/80 font-medium mb-2 sm:mb-4 overflow-x-auto whitespace-nowrap">
+              <Link
+                to="/"
+                className="hover:text-white flex items-center transition-colors"
+              >
+                <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 shrink-0" />
+                Home
+              </Link>
 
-            <div className="max-w-xl z-10 mb-6 md:mb-0">
-              {/* Breadcrumb */}
+              <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-400/60 shrink-0" />
 
-              <div className="flex items-center space-x-2 text-xs sm:text-sm text-emerald-200/80 font-medium mb-3 sm:mb-4">
-                <Link
-                  to="/"
-                  className="hover:text-white flex items-center transition-colors"
-                >
-                  <Home className="h-4 w-4 mr-1" />
-                  Home
-                </Link>
+              <Link
+                to="/cart"
+                className="text-emerald-200 hover:text-white font-semibold shrink-0"
+              >
+                Cart
+              </Link>
 
-                <ChevronRight className="h-3.5 w-3.5 text-emerald-400/60" />
+              <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-400/60 shrink-0" />
 
-                <Link
-                  to="/cart"
-                  className="text-emerald-200 hover:text-white font-semibold"
-                >
-                  Cart
-                </Link>
-
-                <ChevronRight className="h-3.5 w-3.5 text-emerald-400/60" />
-
-                <span className="text-white font-semibold">Checkout</span>
-              </div>
-
-              <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-2 sm:mb-3">
-                Checkout
-              </h1>
-
-              <p className="text-emerald-100/90 text-xs sm:text-base leading-relaxed max-w-md font-medium">
-                Complete your order securely by providing your delivery details
-                below.
-              </p>
+              <span className="text-white font-semibold shrink-0">Checkout</span>
             </div>
 
-            {/* Hero Image */}
+            <h1 className="text-xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-1 sm:mb-3">
+              Checkout
+            </h1>
 
-            <div className="relative z-10 w-full md:w-[40%] flex justify-center">
-              <div className="relative group w-full">
-                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-emerald-700 rounded-2xl blur opacity-20 group-hover:opacity-35 transition duration-300" />
+            <p className="text-emerald-100/90 text-xs sm:text-base leading-relaxed max-w-md font-medium">
+              Complete your order securely by providing your delivery details below.
+            </p>
+          </div>
 
-                <img
-                  src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdT1zFuL7ncvR-w4Tn1bRNuf1UGfcAw77wbNfnaocjWUsnVxLaq0tHNcw&s=10"
-                  alt="The Old Library"
-                  className="relative rounded-xl sm:rounded-2xl object-cover w-full h-[130px] sm:h-[180px] md:h-[220px] shadow-md border border-white/10"
-                />
-              </div>
+          {/* Hero Image */}
+          <div className="relative z-10 w-full md:w-[40%] hidden sm:flex justify-center mt-4 md:mt-0">
+            <div className="relative group w-full">
+              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-emerald-700 rounded-2xl blur opacity-20 group-hover:opacity-35 transition duration-300" />
+
+              <img
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdT1zFuL7ncvR-w4Tn1bRNuf1UGfcAw77wbNfnaocjWUsnVxLaq0tHNcw&s=10"
+                alt="The Old Library"
+                className="relative rounded-xl sm:rounded-2xl object-cover w-full h-[130px] sm:h-[180px] md:h-[220px] shadow-md border border-white/10"
+              />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* =====================================================
-            MAIN CHECKOUT
-        ===================================================== */}
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* =====================================================
+          MAIN CHECKOUT
+      ===================================================== */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8">
+          {/* =================================================
+              LEFT COLUMN (Form Details - Compact 2-Col Grid)
+          ================================================= */}
+          <div className="lg:col-span-7 space-y-4 sm:space-y-8">
             {/* =================================================
-                LEFT COLUMN
+                1. SHIPPING ADDRESS
             ================================================= */}
+            <div className="bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-8 shadow-sm space-y-3 sm:space-y-6">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <span className="bg-[#1b3b2b] text-white text-xs sm:text-sm font-bold h-5 w-5 sm:h-7 sm:w-7 rounded-full flex items-center justify-center shadow-sm shrink-0">
+                  1
+                </span>
 
-            <div className="lg:col-span-7 space-y-8">
-              {/* =================================================
-                  SHIPPING
-              ================================================= */}
+                <h3 className="text-sm sm:text-lg font-bold text-gray-900">
+                  Shipping Address
+                </h3>
+              </div>
 
-              <div className="bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-sm space-y-5 sm:space-y-6">
-                <div className="flex items-center space-x-3">
-                  <span className="bg-[#1b3b2b] text-white text-sm font-bold h-7 w-7 rounded-full flex items-center justify-center shadow-sm">
-                    1
-                  </span>
+              {/* Compact 2-Column Grid for Maximum Space Utilization */}
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+                {/* Full Name */}
+                <div className="col-span-1">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 mb-0.5 sm:mb-1">
+                    Full Name
+                  </label>
 
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Shipping Address
-                  </h3>
+                  <input
+                    type="text"
+                    name="customerName"
+                    value={formData.customerName}
+                    onChange={handleChange}
+                    placeholder="Full name"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl px-2.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all"
+                  />
                 </div>
 
-                {/* Name + Phone */}
+                {/* Phone Number */}
+                <div className="col-span-1">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 mb-0.5 sm:mb-1">
+                    Phone Number
+                  </label>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                      Full Name
-                    </label>
-
-                    <input
-                      type="text"
-                      name="customerName"
-                      value={formData.customerName}
-                      onChange={handleChange}
-                      placeholder="Enter your full name"
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-700"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                      Phone Number
-                    </label>
-
-                    <input
-                      type="text"
-                      name="customerPhone"
-                      value={formData.customerPhone}
-                      onChange={handleChange}
-                      placeholder="Enter your phone number"
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-700"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    name="customerPhone"
+                    value={formData.customerPhone}
+                    onChange={handleChange}
+                    placeholder="Phone number"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl px-2.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all"
+                  />
                 </div>
 
-                {/* Email */}
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                {/* Email Address */}
+                <div className="col-span-1">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 mb-0.5 sm:mb-1">
                     Email Address
                   </label>
 
@@ -466,32 +477,46 @@ export default function Checkout() {
                     name="customerEmail"
                     value={formData.customerEmail}
                     onChange={handleChange}
-                    placeholder="Enter your email address"
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-700"
+                    placeholder="Email address"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl px-2.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all"
                   />
                 </div>
 
-                {/* Address */}
+                {/* Pincode */}
+                <div className="col-span-1">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 mb-0.5 sm:mb-1">
+                    Pincode
+                  </label>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <input
+                    type="text"
+                    name="pincode"
+                    value={formData.pincode}
+                    onChange={handleChange}
+                    placeholder="Pincode"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl px-2.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all"
+                  />
+                </div>
+
+                {/* Address (Full Width across both columns) */}
+                <div className="col-span-2">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 mb-0.5 sm:mb-1">
                     Address
                   </label>
 
                   <textarea
-                    rows="3"
+                    rows="2"
                     name="shippingAddress"
                     value={formData.shippingAddress}
                     onChange={handleChange}
                     placeholder="House no., Street, Area"
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-sm focus:outline-none focus:border-emerald-700 resize-none"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 resize-none transition-all"
                   />
                 </div>
 
                 {/* City */}
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <div className="col-span-1">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 mb-0.5 sm:mb-1">
                     City
                   </label>
 
@@ -500,480 +525,400 @@ export default function Checkout() {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    placeholder="Enter your city"
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-700"
+                    placeholder="City"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl px-2.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all"
                   />
                 </div>
 
-                {/* State + Pincode */}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                      State
-                    </label>
-
-                    <input
-                      type="text"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleChange}
-                      placeholder="Enter your state"
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-700"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                      Pincode
-                    </label>
-
-                    <input
-                      type="text"
-                      name="pincode"
-                      value={formData.pincode}
-                      onChange={handleChange}
-                      placeholder="Enter pincode"
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-700"
-                    />
-                  </div>
-                </div>
-
-                {/* Save Address */}
-
-                <div className="flex items-center space-x-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="save"
-                    checked={saveAddress}
-                    onChange={(e) => setSaveAddress(e.target.checked)}
-                    className="accent-[#1b3b2b] h-4 w-4 rounded"
-                  />
-
-                  <label
-                    htmlFor="save"
-                    className="text-xs font-medium text-gray-600 cursor-pointer"
-                  >
-                    Use this address for future orders
+                {/* State */}
+                <div className="col-span-1">
+                  <label className="block text-[10px] sm:text-xs font-bold text-gray-700 mb-0.5 sm:mb-1">
+                    State
                   </label>
+
+                  <input
+                    type="text"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    placeholder="State"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-lg sm:rounded-xl px-2.5 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all"
+                  />
                 </div>
               </div>
 
-              {/* =================================================
-                  PAYMENT
-              ================================================= */}
+              {/* Save Address Checkbox */}
+              <div className="flex items-center space-x-2 pt-0.5">
+                <input
+                  type="checkbox"
+                  id="save"
+                  checked={saveAddress}
+                  onChange={(e) => setSaveAddress(e.target.checked)}
+                  className="accent-[#1b3b2b] h-3.5 w-3.5 sm:h-4 sm:w-4 rounded cursor-pointer shrink-0"
+                />
 
-              <div className="bg-white border border-stone-200/80 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-                <div className="flex items-center space-x-3">
-                  <span className="bg-[#1b3b2b] text-white text-sm font-bold h-7 w-7 rounded-full flex items-center justify-center shadow-sm">
-                    2
-                  </span>
-
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Payment Method
-                  </h3>
-                </div>
-
-                {/* Razorpay */}
-
-                <div className="border-2 border-[#1b3b2b] bg-emerald-50/30 rounded-2xl p-5 sm:p-6">
-                  <div className="flex items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked
-                        readOnly
-                        className="accent-[#1b3b2b] mt-1 sm:mt-0"
-                      />
-
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-gray-900 text-sm sm:text-base">
-                            Razorpay
-                          </h4>
-
-                          <span className="bg-emerald-900 text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            SECURE
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-gray-500 mt-1">
-                          Pay securely using UPI, Credit/Debit Cards, Net
-                          Banking and more.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="hidden sm:flex items-center gap-2">
-                      <CreditCard className="h-6 w-6 text-emerald-800" />
-
-                      <ShieldCheck className="h-6 w-6 text-emerald-800" />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-emerald-900/10">
-                    <span className="text-[10px] font-semibold text-gray-400 mr-1">
-                      Supported:
-                    </span>
-
-                    {["UPI", "Cards", "Net Banking", "Wallets"].map(
-                      (method) => (
-                        <span
-                          key={method}
-                          className="bg-white border border-stone-200 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold text-gray-600 shadow-sm"
-                        >
-                          {method}
-                        </span>
-                      ),
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-5 text-xs font-semibold text-emerald-800">
-                    <Lock className="h-4 w-4 shrink-0" />
-
-                    <span>
-                      Your final amount is securely calculated by the server
-                      before payment.
-                    </span>
-                  </div>
-                </div>
-
-                {/* CTA */}
-
-                <button
-                  type="button"
-                  onClick={handleCreateOrder}
-                  disabled={
-                    placingOrder || loadingCart || cartItems.length === 0
-                  }
-                  className="w-full bg-[#1b3b2b] hover:bg-emerald-950 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-2xl shadow-md flex items-center justify-center space-x-2 transition-colors cursor-pointer text-base"
+                <label
+                  htmlFor="save"
+                  className="text-[11px] sm:text-xs font-medium text-gray-600 cursor-pointer select-none"
                 >
-                  {placingOrder ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-
-                      <span>Processing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="h-5 w-5" />
-
-                      <span>Proceed to Secure Payment</span>
-                    </>
-                  )}
-                </button>
+                  Use this address for future orders
+                </label>
               </div>
             </div>
 
             {/* =================================================
-                RIGHT COLUMN
+                2. PAYMENT METHOD
             ================================================= */}
+            <div className="bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-8 shadow-sm space-y-3 sm:space-y-6">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <span className="bg-[#1b3b2b] text-white text-xs sm:text-sm font-bold h-5 w-5 sm:h-7 sm:w-7 rounded-full flex items-center justify-center shadow-sm shrink-0">
+                  2
+                </span>
 
-            <div className="lg:col-span-5 space-y-6">
-              {/* =================================================
-                  ORDER SUMMARY
-              ================================================= */}
+                <h3 className="text-sm sm:text-lg font-bold text-gray-900">
+                  Payment Method
+                </h3>
+              </div>
 
-              <div className="bg-white border border-stone-200/80 rounded-3xl p-6 shadow-sm space-y-6 lg:sticky lg:top-24">
-                <div className="flex items-center justify-between border-b border-stone-100 pb-4">
-                  <h3 className="font-bold text-gray-900 text-base">
-                    Order Summary
-                  </h3>
+              {/* Razorpay Option Card */}
+              <div className="border-2 border-[#1b3b2b] bg-emerald-50/30 rounded-xl sm:rounded-2xl p-3.5 sm:p-6">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked
+                      readOnly
+                      className="accent-[#1b3b2b] mt-1 shrink-0"
+                    />
 
-                  <span className="text-xs font-semibold text-gray-500">
-                    {totalItems} {totalItems === 1 ? "Item" : "Items"} in Cart
-                  </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-gray-900 text-xs sm:text-base">
+                          Razorpay
+                        </h4>
+
+                        <span className="bg-emerald-900 text-white text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
+                          SECURE
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 leading-relaxed">
+                        Pay securely using UPI, Credit/Debit Cards, Net Banking and more.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="hidden sm:flex items-center gap-2 shrink-0">
+                    <CreditCard className="h-6 w-6 text-emerald-800" />
+                    <ShieldCheck className="h-6 w-6 text-emerald-800" />
+                  </div>
                 </div>
 
-                {/* CART ITEMS */}
+                {/* Supported Methods Tags */}
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-3 pt-3 border-t border-emerald-900/10">
+                  <span className="text-[10px] font-semibold text-gray-400 mr-0.5 w-full sm:w-auto mb-0.5 sm:mb-0">
+                    Supported:
+                  </span>
 
-                <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
-                  {loadingCart ? (
-                    <div className="py-10 flex flex-col items-center justify-center text-gray-500">
-                      <Loader2 className="h-6 w-6 animate-spin text-emerald-800 mb-2" />
+                  {["UPI", "Cards", "Net Banking", "Wallets"].map((method) => (
+                    <span
+                      key={method}
+                      className="bg-white border border-stone-200 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg text-[9px] sm:text-xs font-bold text-gray-600 shadow-sm"
+                    >
+                      {method}
+                    </span>
+                  ))}
+                </div>
 
-                      <p className="text-xs">Loading your cart...</p>
-                    </div>
-                  ) : cartError ? (
-                    <div className="py-8 text-center">
-                      <p className="text-sm text-red-500">{cartError}</p>
-                    </div>
-                  ) : cartItems.length === 0 ? (
-                    <div className="py-10 text-center">
-                      <Package className="h-8 w-8 text-stone-300 mx-auto mb-2" />
+                {/* Security Note */}
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-3 text-[10px] sm:text-xs font-semibold text-emerald-800">
+                  <Lock className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
 
-                      <p className="text-sm font-semibold text-gray-700">
-                        Your cart is empty
-                      </p>
+                  <span>
+                    Your final amount is securely calculated by the server before payment.
+                  </span>
+                </div>
+              </div>
 
-                      <Link
-                        to="/all/books"
-                        className="inline-block mt-3 text-xs font-bold text-emerald-800 hover:text-emerald-950"
-                      >
-                        Continue Shopping
-                      </Link>
-                    </div>
-                  ) : (
-                    cartItems.map((item) => (
-                      <div
-                        key={item.cartItemId}
-                        className="flex items-center gap-3 border-b border-stone-100 pb-4 last:border-0"
-                      >
-                        {/* IMAGE */}
+              {/* Submit CTA */}
+              <button
+                type="button"
+                onClick={handleCreateOrder}
+                disabled={
+                  placingOrder || loadingCart || cartItems.length === 0
+                }
+                className="w-full bg-[#1b3b2b] hover:bg-emerald-950 active:scale-[0.99] disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 sm:py-4 px-6 rounded-xl sm:rounded-2xl shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer text-xs sm:text-base"
+              >
+                {placingOrder ? (
+                  <>
+                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
+                    <span>Proceed to Secure Payment</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
 
-                        <div className="h-16 w-12 rounded-lg overflow-hidden bg-stone-100 shrink-0 border border-stone-100">
-                          {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.bookTitle}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center">
-                              <Package className="h-5 w-5 text-stone-300" />
-                            </div>
-                          )}
-                        </div>
+          {/* =================================================
+              RIGHT COLUMN (Order Summary & Benefits)
+          ================================================= */}
+          <div className="lg:col-span-5 space-y-4 sm:space-y-6">
+            {/* ORDER SUMMARY CARD */}
+            <div className="bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6 lg:sticky lg:top-24">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-3 sm:pb-4">
+                <h3 className="font-bold text-gray-900 text-xs sm:text-base">
+                  Order Summary
+                </h3>
 
-                        {/* DETAILS */}
+                <span className="text-[11px] sm:text-xs font-semibold text-gray-500">
+                  {totalItems} {totalItems === 1 ? "Item" : "Items"} in Cart
+                </span>
+              </div>
 
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 text-xs sm:text-sm truncate">
-                            {item.bookTitle}
-                          </h4>
-
-                          <p className="text-[11px] text-gray-500 mt-1">
-                            Qty: {item.quantity}
-                          </p>
-
-                          <div className="flex items-center gap-2 mt-1">
-                            {Number(item.discountPercentage) > 0 && (
-                              <span className="text-[11px] text-gray-400 line-through">
-                                ₹{Number(item.price || 0).toFixed(2)}
-                              </span>
-                            )}
-
-                            <span className="text-xs font-semibold text-emerald-800">
-                              ₹{Number(item.discountedPrice || 0).toFixed(2)}
-                            </span>
+              {/* Cart Items Scroll Area */}
+              <div className="space-y-3.5 sm:space-y-4 max-h-64 sm:max-h-80 overflow-y-auto pr-1">
+                {loadingCart ? (
+                  <div className="py-8 flex flex-col items-center justify-center text-gray-500">
+                    <Loader2 className="h-6 w-6 animate-spin text-emerald-800 mb-2" />
+                    <p className="text-xs">Loading your cart...</p>
+                  </div>
+                ) : cartError ? (
+                  <div className="py-6 text-center">
+                    <p className="text-xs sm:text-sm text-red-500">{cartError}</p>
+                  </div>
+                ) : cartItems.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <Package className="h-8 w-8 text-stone-300 mx-auto mb-2" />
+                    <p className="text-xs sm:text-sm font-semibold text-gray-700">
+                      Your cart is empty
+                    </p>
+                    <Link
+                      to="/all/books"
+                      className="inline-block mt-3 text-xs font-bold text-emerald-800 hover:text-emerald-950"
+                    >
+                      Continue Shopping
+                    </Link>
+                  </div>
+                ) : (
+                  cartItems.map((item) => (
+                    <div
+                      key={item.cartItemId}
+                      className="flex items-center gap-3 border-b border-stone-100 pb-3 last:border-0"
+                    >
+                      {/* Image */}
+                      <div className="h-12 w-9 sm:h-16 sm:w-12 rounded-lg overflow-hidden bg-stone-100 shrink-0 border border-stone-100">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.bookTitle}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center">
+                            <Package className="h-4 w-4 text-stone-300" />
                           </div>
-                        </div>
+                        )}
+                      </div>
 
-                        {/* ITEM TOTAL */}
+                      {/* Details */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 text-xs sm:text-sm truncate">
+                          {item.bookTitle}
+                        </h4>
 
-                        <div className="text-right shrink-0">
-                          <span className="font-bold text-gray-900 text-xs">
-                            ₹{Number(item.itemTotal || 0).toFixed(2)}
+                        <p className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">
+                          Qty: {item.quantity}
+                        </p>
+
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {Number(item.discountPercentage) > 0 && (
+                            <span className="text-[10px] sm:text-[11px] text-gray-400 line-through">
+                              ₹{Number(item.price || 0).toFixed(2)}
+                            </span>
+                          )}
+
+                          <span className="text-xs font-semibold text-emerald-800">
+                            ₹{Number(item.discountedPrice || 0).toFixed(2)}
                           </span>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
 
-                {/* =================================================
-                    COST SUMMARY
-                ================================================= */}
-
-                {!loadingCart && cartItems.length > 0 && (
-                  <div className="space-y-3 pt-4 text-xs text-gray-600 border-t border-stone-100">
-                    {/* ORIGINAL PRICE */}
-
-                    <div className="flex justify-between">
-                      <span>
-                        Original Price ({totalItems}{" "}
-                        {totalItems === 1 ? "item" : "items"})
-                      </span>
-
-                      <span className="font-semibold text-gray-900">
-                        ₹{originalTotal.toFixed(2)}
-                      </span>
-                    </div>
-
-                    {/* DISCOUNT */}
-
-                    {discount > 0 && (
-                      <div className="flex justify-between text-emerald-800">
-                        <span>Discount</span>
-
-                        <span className="font-semibold">
-                          - ₹{discount.toFixed(2)}
+                      {/* Item Total */}
+                      <div className="text-right shrink-0">
+                        <span className="font-bold text-gray-900 text-xs sm:text-sm">
+                          ₹{Number(item.itemTotal || 0).toFixed(2)}
                         </span>
                       </div>
-                    )}
-
-                    {/* SUBTOTAL */}
-
-                    <div className="flex justify-between">
-                      <span>Subtotal</span>
-
-                      <span className="font-semibold text-gray-900">
-                        ₹{subtotal.toFixed(2)}
-                      </span>
                     </div>
-
-                    {/* COURIER FEE */}
-
-                    <div className="flex justify-between">
-                      <span>Courier Fee</span>
-
-                      <span className="font-semibold text-gray-900">
-                        ₹{courierFee.toFixed(2)}
-                      </span>
-                    </div>
-
-                    {/* TOTAL */}
-
-                    <div className="flex justify-between items-center pt-4 mt-2 border-t border-stone-200">
-                      <span className="text-sm font-bold text-gray-900">
-                        Total Amount
-                      </span>
-
-                      <span className="text-lg font-extrabold text-emerald-900">
-                        ₹{totalAmount.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
+                  ))
                 )}
+              </div>
 
-                {/* SECURE */}
+              {/* Cost Summary Breakdown */}
+              {!loadingCart && cartItems.length > 0 && (
+                <div className="space-y-2 sm:space-y-3 pt-3 text-xs text-gray-600 border-t border-stone-100">
+                  <div className="flex justify-between text-[11px] sm:text-xs">
+                    <span>
+                      Original Price ({totalItems}{" "}
+                      {totalItems === 1 ? "item" : "items"})
+                    </span>
+                    <span className="font-semibold text-gray-900">
+                      ₹{originalTotal.toFixed(2)}
+                    </span>
+                  </div>
 
-                <div className="bg-stone-50 border border-stone-200/60 rounded-2xl p-4 flex items-start space-x-3">
-                  <ShieldCheck className="h-5 w-5 text-emerald-800 shrink-0 mt-0.5" />
+                  {discount > 0 && (
+                    <div className="flex justify-between text-[11px] sm:text-xs text-emerald-800">
+                      <span>Discount</span>
+                      <span className="font-semibold">
+                        - ₹{discount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
 
+                  <div className="flex justify-between text-[11px] sm:text-xs">
+                    <span>Subtotal</span>
+                    <span className="font-semibold text-gray-900">
+                      ₹{subtotal.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-[11px] sm:text-xs">
+                    <span>Courier Fee</span>
+                    <span className="font-semibold text-gray-900">
+                      ₹{courierFee.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2.5 mt-1 border-t border-stone-200">
+                    <span className="text-xs sm:text-sm font-bold text-gray-900">
+                      Total Amount
+                    </span>
+                    <span className="text-sm sm:text-lg font-extrabold text-emerald-900">
+                      ₹{totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Safe & Secure Notice */}
+              <div className="bg-stone-50 border border-stone-200/60 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex items-start space-x-2 sm:space-x-3">
+                <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-800 shrink-0 mt-0.5" />
+
+                <div>
+                  <h4 className="font-bold text-gray-900 text-[11px] sm:text-xs">Safe & Secure</h4>
+                  <p className="text-[10px] sm:text-[11px] text-gray-500 leading-relaxed">
+                    Your personal data and payment information are securely protected.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* WHY SHOP WITH US */}
+            <div className="bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-3.5 sm:space-y-4">
+              <h3 className="font-bold text-gray-900 text-xs sm:text-sm">
+                Why Shop With Us?
+              </h3>
+
+              <div className="space-y-3 text-xs">
+                <div className="flex items-start space-x-2.5">
+                  <Truck className="h-4 w-4 text-emerald-800 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-bold text-gray-900 text-xs">
-                      Safe & Secure
-                    </h4>
+                    <p className="font-bold text-gray-900">Reliable Delivery</p>
+                    <p className="text-gray-500 text-[11px]">
+                      Courier charges based on order quantity
+                    </p>
+                  </div>
+                </div>
 
-                    <p className="text-[11px] text-gray-500 leading-relaxed">
-                      Your personal data and payment information are securely
-                      protected.
+                <div className="flex items-start space-x-2.5">
+                  <RefreshCw className="h-4 w-4 text-emerald-800 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-gray-900">Easy Returns</p>
+                    <p className="text-gray-500 text-[11px]">7 days return policy</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-2.5">
+                  <ShieldCheck className="h-4 w-4 text-emerald-800 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-gray-900">Secure Payment</p>
+                    <p className="text-gray-500 text-[11px]">
+                      Razorpay protected checkout
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-2.5">
+                  <Award className="h-4 w-4 text-emerald-800 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-gray-900">Best Price</p>
+                    <p className="text-gray-500 text-[11px]">
+                      Discounts are applied automatically
                     </p>
                   </div>
                 </div>
               </div>
-
-              {/* =================================================
-                  WHY SHOP
-              ================================================= */}
-
-              <div className="bg-white border border-stone-200/80 rounded-3xl p-6 shadow-sm space-y-4">
-                <h3 className="font-bold text-gray-900 text-sm mb-3">
-                  Why Shop With Us?
-                </h3>
-
-                <div className="space-y-3 text-xs">
-                  <div className="flex items-start space-x-3">
-                    <Truck className="h-4 w-4 text-emerald-800 shrink-0 mt-0.5" />
-
-                    <div>
-                      <p className="font-bold text-gray-900">
-                        Reliable Delivery
-                      </p>
-
-                      <p className="text-gray-500">
-                        Courier charges based on order quantity
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3">
-                    <RefreshCw className="h-4 w-4 text-emerald-800 shrink-0 mt-0.5" />
-
-                    <div>
-                      <p className="font-bold text-gray-900">Easy Returns</p>
-
-                      <p className="text-gray-500">7 days return policy</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3">
-                    <ShieldCheck className="h-4 w-4 text-emerald-800 shrink-0 mt-0.5" />
-
-                    <div>
-                      <p className="font-bold text-gray-900">Secure Payment</p>
-
-                      <p className="text-gray-500">
-                        Razorpay protected checkout
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3">
-                    <Award className="h-4 w-4 text-emerald-800 shrink-0 mt-0.5" />
-
-                    <div>
-                      <p className="font-bold text-gray-900">Best Price</p>
-
-                      <p className="text-gray-500">
-                        Discounts are applied automatically
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* =====================================================
-            TRUST STRIP
-        ===================================================== */}
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
-          <div className="bg-stone-50 border border-stone-200/80 rounded-3xl p-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div className="flex flex-col items-center space-y-1">
-              <Package className="h-5 w-5 text-emerald-800 mb-1" />
-
-              <h4 className="font-bold text-gray-900 text-xs">
-                100% Original Books
-              </h4>
-
-              <p className="text-[11px] text-gray-500">
-                Sourced directly from publishers
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center space-y-1">
-              <Truck className="h-5 w-5 text-emerald-800 mb-1" />
-
-              <h4 className="font-bold text-gray-900 text-xs">
-                Reliable Delivery
-              </h4>
-
-              <p className="text-[11px] text-gray-500">
-                Safe delivery across India
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center space-y-1">
-              <RefreshCw className="h-5 w-5 text-emerald-800 mb-1" />
-
-              <h4 className="font-bold text-gray-900 text-xs">Easy Returns</h4>
-
-              <p className="text-[11px] text-gray-500">
-                Hassle-free returns within 7 days
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center space-y-1">
-              <ShieldCheck className="h-5 w-5 text-emerald-800 mb-1" />
-
-              <h4 className="font-bold text-gray-900 text-xs">
-                Secure Checkout
-              </h4>
-
-              <p className="text-[11px] text-gray-500">
-                Razorpay secure payment
-              </p>
             </div>
           </div>
         </div>
       </div>
 
-      <Footer />
-    </>
-  );
+      {/* =====================================================
+          TRUST STRIP
+      ===================================================== */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-4 sm:mt-12">
+        <div className="bg-white sm:bg-stone-50 border border-stone-200/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 text-center">
+          <div className="flex flex-col items-center space-y-1">
+            <Package className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-800 mb-0.5 sm:mb-1" />
+            <h4 className="font-bold text-gray-900 text-[11px] sm:text-xs">
+              100% Original
+            </h4>
+            <p className="text-[10px] sm:text-[11px] text-gray-500">
+              Direct from publishers
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center space-y-1">
+            <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-800 mb-0.5 sm:mb-1" />
+            <h4 className="font-bold text-gray-900 text-[11px] sm:text-xs">
+              Reliable Delivery
+            </h4>
+            <p className="text-[10px] sm:text-[11px] text-gray-500">
+              Safe delivery in India
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center space-y-1">
+            <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-800 mb-0.5 sm:mb-1" />
+            <h4 className="font-bold text-gray-900 text-[11px] sm:text-xs">
+              Easy Returns
+            </h4>
+            <p className="text-[10px] sm:text-[11px] text-gray-500">
+              7 days policy
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center space-y-1">
+            <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-800 mb-0.5 sm:mb-1" />
+            <h4 className="font-bold text-gray-900 text-[11px] sm:text-xs">
+              Secure Checkout
+            </h4>
+            <p className="text-[10px] sm:text-[11px] text-gray-500">
+              Razorpay protected
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <Footer />
+  </>
+);
 }

@@ -1,36 +1,34 @@
 import React, { useEffect, useMemo, useState } from "react";
+
 import {
   Home,
   ChevronRight,
   Leaf,
   BookOpen,
   Sparkles,
-  Save,
   ArrowRight,
   Lock,
   User,
   Mail,
   Phone,
   Loader2,
-  CheckCircle,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { addStoryPoetry } from "../services/storyPoetryService";
-
-import {
-  createStoryPoetryPayment,
-  verifyStoryPoetryPayment,
-} from "../services/paymentService";
-
 import { getProfile } from "../services/profileService";
+
+import { getPageWarningByPage } from "../services/pageWarningService";
 
 export default function UploadPoetry() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // =========================================================
   // AUTH
@@ -43,10 +41,20 @@ export default function UploadPoetry() {
   // =========================================================
 
   const [contentType, setContentType] = useState("Poetry");
-
   const [title, setTitle] = useState("");
-
   const [content, setContent] = useState("");
+
+  //show priview
+  const [showPreview, setShowPreview] = useState(false);
+
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  //important notice
+
+  const [pageWarning, setPageWarning] = useState(null);
+
+  //prefill unused data
+  const DRAFT_STORAGE_KEY = "storyPoetryFormData";
 
   // =========================================================
   // CONTRIBUTOR DETAILS
@@ -60,7 +68,6 @@ export default function UploadPoetry() {
   const [contributorCityMalayalam, setContributorCityMalayalam] = useState("");
 
   const [contributorEmail, setContributorEmail] = useState("");
-
   const [contributorPhone, setContributorPhone] = useState("");
 
   // =========================================================
@@ -68,7 +75,6 @@ export default function UploadPoetry() {
   // =========================================================
 
   const [contributorProfileImage, setContributorProfileImage] = useState(null);
-
   const [profileImagePreview, setProfileImagePreview] = useState("");
 
   // =========================================================
@@ -76,58 +82,28 @@ export default function UploadPoetry() {
   // =========================================================
 
   const [loading, setLoading] = useState(false);
-
-  const [paymentLoading, setPaymentLoading] = useState(false);
-
   const [error, setError] = useState("");
-
   const [success, setSuccess] = useState("");
-
   const [fieldErrors, setFieldErrors] = useState({});
 
   // =========================================================
-  // PAYMENT SUCCESS
+  // SUCCESS TOAST
   // =========================================================
 
-  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [successToast, setSuccessToast] = useState("");
 
   // =========================================================
   // CONTENT LIMIT CONFIGURATION
   // =========================================================
-  //
-  // IMPORTANT:
-  //
-  // We DO NOT modify or truncate pasted content.
-  //
-  // We only calculate how many visual/logical lines the
-  // content represents for validation.
-  //
-  // Poetry:
-  // 1 side × 30 lines = 30 lines
-  //
-  // Story:
-  // 4 sides × 30 lines = 120 lines
-  //
-  // Special:
-  // Unlimited pages, but each side follows the same
-  // 30-line / 35-character layout concept.
-  // =========================================================
 
   const LINES_PER_SIDE = 30;
-
-  const MAX_CHARACTERS_PER_LINE = 35;
+  const MAX_CHARACTERS_PER_LINE = 45;
 
   const STORY_MAX_LINES = LINES_PER_SIDE * 4;
-
   const POETRY_MAX_LINES = LINES_PER_SIDE;
 
   // =========================================================
   // COUNT MALAYALAM GRAPHEME CLUSTERS
-  // =========================================================
-  //
-  // Malayalam characters can contain combining marks.
-  // Intl.Segmenter counts them more accurately as visible
-  // grapheme clusters than simply using text.length.
   // =========================================================
 
   const countCharacters = (text) => {
@@ -147,20 +123,6 @@ export default function UploadPoetry() {
   // =========================================================
   // CALCULATE VISUAL LINES
   // =========================================================
-  //
-  // This function NEVER changes the user's content.
-  //
-  // Example:
-  //
-  // User pastes:
-  //
-  // "ഒരു ചെറിയ ഗ്രാമത്തിന്റെ മധ്യത്തിൽ, ആകാശത്തോളം..."
-  //
-  // We calculate how many 35-character visual lines it
-  // represents, but the original paragraph remains untouched.
-  //
-  // Explicit newlines are preserved as line breaks.
-  // =========================================================
 
   const calculateVisualLineCount = (text) => {
     if (!text) return 0;
@@ -170,7 +132,6 @@ export default function UploadPoetry() {
     let visualLineCount = 0;
 
     explicitLines.forEach((line) => {
-      // An empty line still occupies one visual line.
       if (line.length === 0) {
         visualLineCount += 1;
         return;
@@ -205,7 +166,6 @@ export default function UploadPoetry() {
       return POETRY_MAX_LINES;
     }
 
-    // Special = unlimited
     return Infinity;
   }, [contentType]);
 
@@ -241,19 +201,8 @@ export default function UploadPoetry() {
   const isMalayalamText = (text) => {
     if (!text.trim()) return true;
 
-    /*
-     * Allows:
-     * - Malayalam characters
-     * - punctuation
-     * - numbers
-     * - symbols
-     * - whitespace
-     *
-     * Does not allow English alphabet characters.
-     */
-    const malayalamRegex = /^[\p{Script=Malayalam}\p{P}\p{N}\p{S}\s]+$/u;
-
-    return malayalamRegex.test(text);
+    // Just check that the content contains Malayalam characters
+    return /\p{Script=Malayalam}/u.test(text);
   };
 
   const validateMalayalamField = (value, fieldName) => {
@@ -285,17 +234,6 @@ export default function UploadPoetry() {
   // =========================================================
   // HANDLE CONTENT
   // =========================================================
-  //
-  // IMPORTANT:
-  //
-  // DO NOT slice.
-  // DO NOT truncate.
-  // DO NOT automatically split the user's text.
-  // DO NOT prevent paste.
-  //
-  // The complete value is stored exactly as the user entered it.
-  // The limit is checked separately.
-  // =========================================================
 
   const handleContentChange = (e) => {
     const value = e.target.value;
@@ -326,36 +264,22 @@ export default function UploadPoetry() {
     setError("");
     setSuccess("");
 
-    // -------------------------------------------------------
     // FILE TYPE
-    // -------------------------------------------------------
-
     if (!file.type.startsWith("image/")) {
       setError("Please select a valid image file.");
-
       e.target.value = "";
-
       return;
     }
 
-    // -------------------------------------------------------
     // FILE SIZE
-    // -------------------------------------------------------
-
     if (file.size > 5 * 1024 * 1024) {
       setError("Profile image must be less than 5 MB.");
-
       e.target.value = "";
-
       return;
     }
 
-    // -------------------------------------------------------
     // SET IMAGE
-    // -------------------------------------------------------
-
     setContributorProfileImage(file);
-
     setProfileImagePreview(URL.createObjectURL(file));
 
     setFieldErrors((prev) => ({
@@ -365,191 +289,15 @@ export default function UploadPoetry() {
   };
 
   // =========================================================
-  // OPEN RAZORPAY CHECKOUT
+  // SHOW SUCCESS TOAST
   // =========================================================
 
-  const openRazorpayCheckout = async (paymentData) => {
-    return new Promise((resolve, reject) => {
-      // -------------------------------------------------------
-      // CHECK RAZORPAY SCRIPT
-      // -------------------------------------------------------
+  const showSuccessToast = (type) => {
+    setSuccessToast(`${type} submitted successfully!`);
 
-      if (!window.Razorpay) {
-        reject(
-          new Error(
-            "Razorpay Checkout is not loaded. Please refresh the page and try again.",
-          ),
-        );
-
-        return;
-      }
-
-      // -------------------------------------------------------
-      // RAZORPAY KEY
-      // -------------------------------------------------------
-
-      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
-
-      if (!razorpayKey) {
-        reject(new Error("Razorpay Key ID is not configured."));
-
-        return;
-      }
-
-      // -------------------------------------------------------
-      // PAYMENT DATA
-      // -------------------------------------------------------
-
-      const payment = paymentData?.data || paymentData;
-
-      if (!payment) {
-        reject(new Error("Invalid payment response from server."));
-
-        return;
-      }
-
-      const razorpayOrderId =
-        payment.razorpayOrderId || payment.RazorpayOrderId;
-
-      const amount = payment.amount || payment.Amount;
-
-      const paymentId = payment.paymentId || payment.PaymentId;
-
-      if (!razorpayOrderId) {
-        reject(new Error("Razorpay Order ID was not received."));
-
-        return;
-      }
-
-      if (!amount) {
-        reject(new Error("Payment amount was not received."));
-
-        return;
-      }
-
-      if (!paymentId) {
-        reject(new Error("Payment ID was not received."));
-
-        return;
-      }
-
-      // -------------------------------------------------------
-      // RAZORPAY OPTIONS
-      // -------------------------------------------------------
-
-      const options = {
-        key: razorpayKey,
-
-        amount: Math.round(Number(amount) * 100),
-
-        currency: "INR",
-
-        name: "The Old Library",
-
-        description: `${contentType} Submission Payment`,
-
-        order_id: razorpayOrderId,
-
-        handler: async function (response) {
-          try {
-            setPaymentLoading(true);
-
-            setError("");
-
-            // -------------------------------------------------
-            // VERIFY PAYMENT
-            // -------------------------------------------------
-
-            const verificationResponse = await verifyStoryPoetryPayment({
-              paymentId: paymentId,
-
-              razorpayOrderId: response.razorpay_order_id,
-
-              razorpayPaymentId: response.razorpay_payment_id,
-
-              razorpaySignature: response.razorpay_signature,
-            });
-
-            console.log("Story/Poetry payment verified:", verificationResponse);
-
-            // -------------------------------------------------
-            // PAYMENT SUCCESS
-            // -------------------------------------------------
-
-            setPaymentCompleted(true);
-
-            resolve(verificationResponse);
-          } catch (error) {
-            console.error("Story/Poetry payment verification failed:", error);
-
-            setError(error.message || "Payment verification failed.");
-
-            reject(error);
-          } finally {
-            setPaymentLoading(false);
-          }
-        },
-
-        // -----------------------------------------------------
-        // PREFILL
-        // -----------------------------------------------------
-
-        prefill: {
-          name: contributorNameMalayalam,
-
-          email: contributorEmail,
-
-          contact: contributorPhone,
-        },
-
-        // -----------------------------------------------------
-        // THEME
-        // -----------------------------------------------------
-
-        theme: {
-          color: "#1b3b2b",
-        },
-
-        // -----------------------------------------------------
-        // MODAL
-        // -----------------------------------------------------
-
-        modal: {
-          ondismiss: function () {
-            setPaymentLoading(false);
-            resolve(null);
-          },
-        },
-      };
-
-      // -------------------------------------------------------
-      // CREATE RAZORPAY INSTANCE
-      // -------------------------------------------------------
-
-      const razorpay = new window.Razorpay(options);
-
-      // -------------------------------------------------------
-      // PAYMENT FAILED
-      // -------------------------------------------------------
-
-      razorpay.on("payment.failed", function (response) {
-        console.error("Razorpay payment failed:", response);
-
-        const description = response?.error?.description;
-
-        setPaymentLoading(false);
-
-        setError(description || "Payment failed. Please try again.");
-
-        reject(new Error(description || "Payment failed."));
-      });
-
-      // -------------------------------------------------------
-      // OPEN CHECKOUT
-      // -------------------------------------------------------
-
-      razorpay.open();
-    });
+    setTimeout(() => {
+      navigate("/your/uploads");
+    }, 1800);
   };
 
   // =========================================================
@@ -558,10 +306,7 @@ export default function UploadPoetry() {
 
   const handleSubmit = async () => {
     setError("");
-
     setSuccess("");
-
-    setPaymentCompleted(false);
 
     const errors = {};
 
@@ -684,7 +429,6 @@ export default function UploadPoetry() {
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-
       return;
     }
 
@@ -696,7 +440,6 @@ export default function UploadPoetry() {
 
     if (!isLoggedIn) {
       setError("Please login to submit your contribution.");
-
       return;
     }
 
@@ -708,7 +451,6 @@ export default function UploadPoetry() {
 
     if (!emailRegex.test(contributorEmail.trim())) {
       setError("Please enter a valid email address.");
-
       return;
     }
 
@@ -719,21 +461,15 @@ export default function UploadPoetry() {
     try {
       setLoading(true);
 
-      // -----------------------------------------------------
+      // =====================================================
       // FORM DATA
-      // -----------------------------------------------------
+      // =====================================================
 
       const storyPoetryData = {
         title: title.trim(),
-
         type: contentType,
 
-        /*
-         * IMPORTANT:
-         *
-         * Send the original content exactly as entered.
-         * We do not split or truncate it.
-         */
+        // Send original content exactly as entered.
         content: content.trim(),
 
         contributorNameMalayalam: contributorNameMalayalam.trim(),
@@ -751,17 +487,17 @@ export default function UploadPoetry() {
 
       console.log("Submitting Story/Poetry:", storyPoetryData);
 
-      // -----------------------------------------------------
-      // 1. CREATE STORY / POETRY
-      // -----------------------------------------------------
+      // =====================================================
+      // CREATE STORY / POETRY
+      // =====================================================
 
       const submissionResponse = await addStoryPoetry(storyPoetryData);
 
       console.log("Story/Poetry submission response:", submissionResponse);
 
-      // -----------------------------------------------------
+      // =====================================================
       // GET CREATED STORYPOETRY ID
-      // -----------------------------------------------------
+      // =====================================================
 
       const submission = submissionResponse?.data || submissionResponse;
 
@@ -776,60 +512,49 @@ export default function UploadPoetry() {
 
       console.log("Created StoryPoetryId:", storyPoetryId);
 
-      // -----------------------------------------------------
-      // 2. CREATE RAZORPAY ORDER
-      // -----------------------------------------------------
-
-      setPaymentLoading(true);
-
-      const paymentResponse = await createStoryPoetryPayment(storyPoetryId);
-
-      console.log("Story/Poetry payment order:", paymentResponse);
-
-      // -----------------------------------------------------
-      // STOP SUBMISSION LOADING
-      // -----------------------------------------------------
+      // =====================================================
+      // SUBMISSION SUCCESS
+      // =====================================================
 
       setLoading(false);
 
-      // -----------------------------------------------------
-      // 3. OPEN RAZORPAY CHECKOUT
-      // -----------------------------------------------------
+      const contributionName =
+        contentType === "Poetry"
+          ? "Poetry"
+          : contentType === "Story"
+            ? "Story"
+            : "Special contribution";
 
-      const verificationResult = await openRazorpayCheckout(paymentResponse);
+      // =====================================================
+      // SHOW MODERN TOAST
+      // =====================================================
 
-      console.log(
-        "Final Story/Poetry payment verification:",
-        verificationResult,
-      );
+      showSuccessToast(contributionName);
 
-      // -----------------------------------------------------
-      // PAYMENT VERIFIED SUCCESSFULLY
-      // -----------------------------------------------------
+      //clear all fields
+      showSuccessToast(contributionName);
 
-      if (verificationResult) {
-        const contributionName =
-          contentType === "Poetry"
-            ? "Poetry"
-            : contentType === "Story"
-              ? "Story"
-              : "Special contribution";
+      // Clear form after successful submission
+      setTitle("");
+      setContent("");
 
-        localStorage.setItem(
-          "storyPoetrySuccessMessage",
-          `${contributionName} submitted successfully!`,
-        );
+      setContributorNameMalayalam("");
+      setContributorDistrictMalayalam("");
+      setContributorCityMalayalam("");
+      setContributorEmail("");
+      setContributorPhone("");
 
-        navigate("/");
-      }
+      setContributorProfileImage(null);
+      setProfileImagePreview("");
+
+      setContentType("Poetry");
+      setFieldErrors({});
     } catch (error) {
-      console.error("Story/Poetry submission/payment failed:", error);
+      console.error("Story/Poetry submission failed:", error);
 
       setError(error.message || "Failed to submit Story/Poetry.");
 
       setLoading(false);
-
-      setPaymentLoading(false);
     }
   };
 
@@ -840,25 +565,17 @@ export default function UploadPoetry() {
   const handleSaveDraft = () => {
     if (!isLoggedIn) {
       setError("Please login to save a draft.");
-
       return;
     }
 
     const draft = {
       title,
-
       type: contentType,
-
       content,
-
       contributorNameMalayalam,
-
       contributorDistrictMalayalam,
-
       contributorCityMalayalam,
-
       contributorEmail,
-
       contributorPhone,
     };
 
@@ -872,7 +589,11 @@ export default function UploadPoetry() {
   // =========================================================
 
   const handleLogin = () => {
-    navigate("/register");
+    navigate("/login", {
+      state: {
+        from: "/book/upload",
+      },
+    });
   };
 
   // =========================================================
@@ -882,34 +603,109 @@ export default function UploadPoetry() {
   const typeOptions = [
     {
       value: "Poetry",
-
       title: "Poetry",
-
       description: "Poems, verses, and creative expressions",
-
       icon: Leaf,
     },
-
     {
       value: "Story",
-
       title: "Story",
-
       description: "Short stories, articles, and write-ups",
-
       icon: BookOpen,
     },
-
     {
       value: "Special",
-
       title: "Special",
-
       description: "Special contributions and featured content",
-
       icon: Sparkles,
     },
   ];
+
+  // important notice
+
+  useEffect(() => {
+    const loadPageWarning = async () => {
+      try {
+        const warning = await getPageWarningByPage("StoryPoetry");
+
+        setPageWarning(warning);
+      } catch (error) {
+        console.error("Failed to load page warning:", error);
+      }
+    };
+
+    loadPageWarning();
+  }, []);
+
+  // =========================================================
+  // RESTORE DRAFT ON PAGE LOAD
+  // =========================================================
+
+  useEffect(() => {
+    const savedData = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+
+    if (savedData) {
+      try {
+        const draft = JSON.parse(savedData);
+
+        setContentType(draft.contentType || "Poetry");
+        setTitle(draft.title || "");
+        setContent(draft.content || "");
+
+        setContributorNameMalayalam(draft.contributorNameMalayalam || "");
+
+        setContributorDistrictMalayalam(
+          draft.contributorDistrictMalayalam || "",
+        );
+
+        setContributorCityMalayalam(draft.contributorCityMalayalam || "");
+
+        setContributorEmail(draft.contributorEmail || "");
+
+        setContributorPhone(draft.contributorPhone || "");
+      } catch (error) {
+        console.error("Failed to restore Story/Poetry draft:", error);
+
+        sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+      }
+    }
+
+    // Important: restoration is finished
+    setDraftRestored(true);
+  }, []);
+
+  // =========================================================
+  // SAVE FORM DATA AFTER DRAFT HAS BEEN RESTORED
+  // =========================================================
+
+  useEffect(() => {
+    if (!draftRestored) {
+      return;
+    }
+
+    const draftData = {
+      contentType,
+      title,
+      content,
+      contributorNameMalayalam,
+      contributorDistrictMalayalam,
+      contributorCityMalayalam,
+      contributorEmail,
+      contributorPhone,
+    };
+
+    sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+  }, [
+    draftRestored,
+    contentType,
+    title,
+    content,
+    contributorNameMalayalam,
+    contributorDistrictMalayalam,
+    contributorCityMalayalam,
+    contributorEmail,
+    contributorPhone,
+  ]);
 
   // =========================================================
   // LOAD PROFILE
@@ -923,7 +719,6 @@ export default function UploadPoetry() {
         console.log("Logged-in user profile:", profile);
 
         setContributorEmail(profile.email || "");
-
         setContributorPhone(profile.phone || "");
       } catch (error) {
         console.error("Failed to load profile:", error);
@@ -955,13 +750,42 @@ export default function UploadPoetry() {
       <Navbar />
 
       {/* =====================================================
-          PAGE
-      ===================================================== */}
+        SUCCESS TOAST
+    ===================================================== */}
+
+      {successToast && (
+        <div className="fixed top-5 right-5 z-[9999] w-[calc(100%-2rem)] max-w-sm">
+          <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-white px-4 py-4 shadow-2xl">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+              <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-extrabold text-gray-900">
+                {successToast}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSuccessToast("")}
+              className="shrink-0 rounded-lg p-1.5 text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+        PAGE
+    ===================================================== */}
 
       <div className="min-h-screen bg-stone-50/60 pb-16">
         {/* ===================================================
-            HERO
-        =================================================== */}
+          HERO
+      =================================================== */}
 
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
           <div className="bg-[#1b3b2b] border border-emerald-100/80 rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-sm">
@@ -1012,65 +836,127 @@ export default function UploadPoetry() {
           </div>
         </div>
 
-        {/* ===================================================
-            MAIN
-        =================================================== */}
+        {/* =====================================================
+          SUBMISSION NOTICE
+      ===================================================== */}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* =================================================
-              MESSAGES
-          ================================================= */}
+        {/* =====================================================
+    SUBMISSION NOTICE
+===================================================== */}
+
+        <div className="mx-3 sm:mx-4 md:mx-6 mb-4 sm:mb-6 overflow-hidden rounded-xl border border-red-200 bg-red-50">
+          {/* MOBILE */}
+          <div className="block sm:hidden px-3 py-3">
+            {/* IMPORTANT */}
+            <div className="mb-2">
+              <span className="inline-block rounded-lg bg-red-100 px-2.5 py-1.5 text-xs font-extrabold text-red-700">
+                IMPORTANT
+              </span>
+            </div>
+
+            {/* STATIC CONTENT */}
+            {pageWarning && (
+              <p className="w-full text-[11px] leading-relaxed font-semibold text-red-700">
+                {pageWarning.message}
+              </p>
+            )}
+          </div>
+
+          {/* DESKTOP */}
+          <div className="hidden sm:flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3">
+            {/* IMPORTANT */}
+            <div className="shrink-0">
+              <span className="inline-block rounded-lg bg-red-100 px-2.5 py-1.5 text-xs font-extrabold text-red-700">
+                IMPORTANT
+              </span>
+            </div>
+
+            {/* MOVING CONTENT CONTAINER */}
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <div className="relative w-full overflow-hidden">
+                {pageWarning && (
+                  <div
+                    className="whitespace-nowrap text-sm font-semibold text-red-700"
+                    style={{
+                      display: "inline-block",
+                      animation: "submissionNoticeMarquee 30s linear infinite",
+                      paddingLeft: "100%",
+                    }}
+                  >
+                    {pageWarning.message}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* DESKTOP MARQUEE ANIMATION */}
+          <style>
+            {`
+      @keyframes submissionNoticeMarquee {
+        0% {
+          transform: translateX(0);
+        }
+
+        100% {
+          transform: translateX(-100%);
+        }
+      }
+    `}
+          </style>
+        </div>
+
+        {/* ===================================================
+          MAIN
+      =================================================== */}
+
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          {/* MESSAGES */}
 
           {error && (
-            <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-semibold">
+            <div className="mb-4 sm:mb-5 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-semibold">
               {error}
             </div>
           )}
 
-          {success && (
-            <div className="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-semibold flex items-center gap-2">
-              {paymentCompleted && <CheckCircle className="w-5 h-5" />}
-
-              <span>{success}</span>
-            </div>
-          )}
-
           {/* =================================================
-              PAYMENT PROCESSING
-          ================================================= */}
-
-          {paymentLoading && (
-            <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm font-semibold flex items-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" />
-
-              <span>
-                Processing payment. Please complete the Razorpay checkout...
-              </span>
-            </div>
-          )}
-
-          {/* =================================================
-              FORM WRAPPER
-          ================================================= */}
+            FORM WRAPPER
+        ================================================= */}
 
           <div className="relative">
             {/* =================================================
-                FORM
-            ================================================= */}
+              FORM
+          ================================================= */}
 
             <div
               className={
                 !isLoggedIn ? "blur-[1px] pointer-events-none select-none" : ""
               }
             >
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                {/* =================================================
-                    COLUMN 1
-                    TYPE
-                ================================================= */}
+              {/* =================================================
+                IMPORTANT:
 
-                <div className="lg:col-span-3 bg-white border border-stone-200/80 rounded-3xl p-5 shadow-sm">
-                  <div className="mb-4">
+                MOBILE:
+                grid-cols-1
+                => Type
+                => Content
+                => Author
+
+                DESKTOP:
+                lg:grid-cols-12
+                => Type | Content | Author
+
+                NOTHING IS SWAPPED.
+            ================================================= */}
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5">
+                {/* =================================================
+                  COLUMN 1
+                  TYPE
+              ================================================= */}
+
+                <div className="lg:col-span-3 bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-sm">
+                  <div className="mb-3 sm:mb-4">
                     <h3 className="font-bold text-gray-900 text-sm">
                       1. Choose Type
                     </h3>
@@ -1080,10 +966,19 @@ export default function UploadPoetry() {
                     </p>
                   </div>
 
-                  <div className="space-y-3">
+                  {/* =================================================
+                    TYPE OPTIONS
+
+                    DESKTOP:
+                    Original vertical cards
+
+                    MOBILE:
+                    Compact horizontal cards
+                ================================================= */}
+
+                  <div className="space-y-2 sm:space-y-3">
                     {typeOptions.map((option) => {
                       const Icon = option.icon;
-
                       const selected = contentType === option.value;
 
                       return (
@@ -1097,30 +992,51 @@ export default function UploadPoetry() {
                               content: "",
                             }));
                           }}
-                          className={`border-2 rounded-2xl p-3.5 cursor-pointer transition-all ${
+                          className={`
+                          border-2
+                          rounded-xl
+                          sm:rounded-2xl
+                          p-2.5
+                          sm:p-3.5
+                          cursor-pointer
+                          transition-all
+
+                          ${
                             selected
                               ? "border-[#1b3b2b] bg-emerald-50/30"
                               : "border-stone-200 hover:border-stone-300"
-                          }`}
+                          }
+                        `}
                         >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start space-x-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center min-w-0 space-x-2.5 sm:space-x-3">
                               <div
-                                className={`p-2 rounded-xl ${
+                                className={`
+                                p-2
+                                sm:p-2
+                                rounded-lg
+                                sm:rounded-xl
+                                shrink-0
+
+                                ${
                                   selected
                                     ? "bg-[#1b3b2b] text-white"
                                     : "bg-emerald-100 text-emerald-900"
-                                }`}
+                                }
+                              `}
                               >
                                 <Icon className="h-4 w-4" />
                               </div>
 
-                              <div>
-                                <h4 className="font-bold text-gray-900 text-xs">
+                              <div className="min-w-0">
+                                <h4 className="font-bold text-gray-900 text-xs sm:text-xs">
                                   {option.title}
                                 </h4>
 
-                                <p className="text-[10px] text-stone-500 mt-0.5 leading-relaxed">
+                                {/* Hide long descriptions on mobile
+                                  to save vertical space */}
+
+                                <p className="hidden sm:block text-[10px] text-stone-500 mt-0.5 leading-relaxed">
                                   {option.description}
                                 </p>
                               </div>
@@ -1131,7 +1047,7 @@ export default function UploadPoetry() {
                               name="contentType"
                               checked={selected}
                               onChange={() => setContentType(option.value)}
-                              className="accent-[#1b3b2b] mt-1"
+                              className="accent-[#1b3b2b] shrink-0 ml-2"
                             />
                           </div>
                         </div>
@@ -1139,9 +1055,11 @@ export default function UploadPoetry() {
                     })}
                   </div>
 
-                  {/* LIMIT INFORMATION */}
+                  {/* =================================================
+                    LIMIT INFORMATION
+                ================================================= */}
 
-                  <div className="mt-5 bg-stone-50 rounded-2xl p-4 border border-stone-200">
+                  {/* <div className="mt-3 sm:mt-5 bg-stone-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-stone-200">
                     <p className="text-[10px] text-stone-600 leading-relaxed">
                       {contentType === "Story" ? (
                         <>
@@ -1151,7 +1069,6 @@ export default function UploadPoetry() {
                           <br />
                           30 visual lines per side
                           <br />
-                          35 characters per visual line
                         </>
                       ) : contentType === "Poetry" ? (
                         <>
@@ -1161,7 +1078,6 @@ export default function UploadPoetry() {
                           <br />
                           30 visual lines
                           <br />
-                          35 characters per visual line
                         </>
                       ) : (
                         <>
@@ -1171,349 +1087,42 @@ export default function UploadPoetry() {
                           <br />
                           30 visual lines per side
                           <br />
-                          35 characters per visual line
                         </>
                       )}
                     </p>
-                  </div>
-
-                  <div className="mt-3 bg-stone-50 rounded-2xl p-4 border border-stone-200">
-                    <p className="text-[10px] text-stone-500 leading-relaxed">
-                      Your submission will be reviewed by our administrators
-                      before it is published.
-                    </p>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* =================================================
-                    COLUMN 2
-                    CONTRIBUTOR
-                ================================================= */}
+                  COLUMN 2
+                  CONTENT
 
-                <div className="lg:col-span-4 bg-white border border-stone-200/80 rounded-3xl p-5 shadow-sm">
-                  <div className="mb-4">
-                    <h3 className="font-bold text-gray-900 text-sm">
-                      2. Author Details
-                    </h3>
+                  MOBILE:
+                  Full width below Choose Type
 
-                    <p className="text-[11px] text-stone-500">
-                      Enter your personal information in (malayalam)
-                    </p>
-                  </div>
+                  DESKTOP:
+                  SAME position as before
+              ================================================= */}
 
-                  <div className="space-y-3.5">
-                    {/* NAME */}
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
-                        പേര്
-                        <span className="text-red-500"> *</span>
-                      </label>
-
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-
-                        <input
-                          type="text"
-                          value={contributorNameMalayalam}
-                          onChange={(e) => {
-                            const value = e.target.value;
-
-                            setContributorNameMalayalam(value);
-
-                            validateMalayalamField(
-                              value,
-                              "contributorNameMalayalam",
-                            );
-                          }}
-                          placeholder="Enter your name"
-                          maxLength={200}
-                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
-                            fieldErrors.contributorNameMalayalam
-                              ? "border-red-500"
-                              : "border-stone-200"
-                          }`}
-                        />
-                      </div>
-
-                      {fieldErrors.contributorNameMalayalam && (
-                        <p className="text-[10px] text-red-500 font-medium mt-1">
-                          {fieldErrors.contributorNameMalayalam}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* ADDRESS */}
-
-                    {/* <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
-                        വിലാസം
-                        <span className="text-red-500"> *</span>
-                      </label>
-
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-3 h-4 w-4 text-stone-400" />
-
-                        <textarea
-                          value={contributorAddressMalayalam}
-                          onChange={(e) => {
-                            const value = e.target.value;
-
-                            setContributorAddressMalayalam(value);
-
-                            validateMalayalamField(
-                              value,
-                              "contributorAddressMalayalam",
-                            );
-                          }}
-                          placeholder="Enter your address"
-                          maxLength={500}
-                          rows="2"
-                          className={`w-full bg-stone-50/75 h-32 border rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 resize-none ${
-                            fieldErrors.contributorAddressMalayalam
-                              ? "border-red-500"
-                              : "border-stone-200"
-                          }`}
-                        />
-                      </div>
-
-                      {fieldErrors.contributorAddressMalayalam && (
-                        <p className="text-[10px] text-red-500 font-medium mt-1">
-                          {fieldErrors.contributorAddressMalayalam}
-                        </p>
-                      )}
-                    </div> */}
-
-                    {/* DISTRICT + CITY */}
-
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* DISTRICT */}
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
-                          ജില്ല
-                          <span className="text-red-500"> *</span>
-                        </label>
-
-                        <input
-                          type="text"
-                          value={contributorDistrictMalayalam}
-                          onChange={(e) => {
-                            const value = e.target.value;
-
-                            setContributorDistrictMalayalam(value);
-
-                            validateMalayalamField(
-                              value,
-                              "contributorDistrictMalayalam",
-                            );
-                          }}
-                          placeholder="District"
-                          maxLength={100}
-                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 px-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
-                            fieldErrors.contributorDistrictMalayalam
-                              ? "border-red-500"
-                              : "border-stone-200"
-                          }`}
-                        />
-
-                        {fieldErrors.contributorDistrictMalayalam && (
-                          <p className="text-[10px] text-red-500 font-medium mt-1">
-                            {fieldErrors.contributorDistrictMalayalam}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* CITY */}
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
-                          നഗരം
-                          <span className="text-red-500"> *</span>
-                        </label>
-
-                        <input
-                          type="text"
-                          value={contributorCityMalayalam}
-                          onChange={(e) => {
-                            const value = e.target.value;
-
-                            setContributorCityMalayalam(value);
-
-                            validateMalayalamField(
-                              value,
-                              "contributorCityMalayalam",
-                            );
-                          }}
-                          placeholder="City"
-                          maxLength={100}
-                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 px-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
-                            fieldErrors.contributorCityMalayalam
-                              ? "border-red-500"
-                              : "border-stone-200"
-                          }`}
-                        />
-
-                        {fieldErrors.contributorCityMalayalam && (
-                          <p className="text-[10px] text-red-500 font-medium mt-1">
-                            {fieldErrors.contributorCityMalayalam}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* EMAIL */}
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
-                        Email
-                        <span className="text-red-500"> *</span>
-                      </label>
-
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-
-                        <input
-                          type="email"
-                          value={contributorEmail}
-                          onChange={(e) => {
-                            setContributorEmail(e.target.value);
-
-                            if (fieldErrors.contributorEmail) {
-                              setFieldErrors((prev) => ({
-                                ...prev,
-                                contributorEmail: "",
-                              }));
-                            }
-                          }}
-                          placeholder="Enter your email"
-                          maxLength={150}
-                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
-                            fieldErrors.contributorEmail
-                              ? "border-red-500"
-                              : "border-stone-200"
-                          }`}
-                        />
-                      </div>
-
-                      {fieldErrors.contributorEmail && (
-                        <p className="text-[10px] text-red-500 font-medium mt-1">
-                          {fieldErrors.contributorEmail}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* PHONE */}
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
-                        Phone Number
-                        <span className="text-red-500"> *</span>
-                      </label>
-
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-
-                        <input
-                          type="text"
-                          value={contributorPhone}
-                          onChange={(e) => {
-                            const value = e.target.value
-                              .replace(/\D/g, "")
-                              .slice(0, 10);
-
-                            setContributorPhone(value);
-
-                            if (fieldErrors.contributorPhone) {
-                              setFieldErrors((prev) => ({
-                                ...prev,
-                                contributorPhone: "",
-                              }));
-                            }
-                          }}
-                          placeholder="10 digit phone number"
-                          maxLength={10}
-                          className={`w-full bg-stone-50/75 border rounded-xl py-2.5 pl-9 pr-3 text-xs text-gray-800 focus:outline-none focus:border-emerald-800 ${
-                            fieldErrors.contributorPhone
-                              ? "border-red-500"
-                              : "border-stone-200"
-                          }`}
-                        />
-                      </div>
-
-                      {fieldErrors.contributorPhone && (
-                        <p className="text-[10px] text-red-500 font-medium mt-1">
-                          {fieldErrors.contributorPhone}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* PROFILE IMAGE */}
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
-                        പ്രൊഫൈൽ ചിത്രം
-                        <span className="text-red-500"> *</span>
-                      </label>
-
-                      <div className="flex items-center gap-3">
-                        {profileImagePreview && (
-                          <img
-                            src={profileImagePreview}
-                            alt="Profile preview"
-                            className="w-12 h-12 rounded-xl object-cover border border-stone-200"
-                          />
-                        )}
-
-                        <label className="flex-1 cursor-pointer">
-                          <div
-                            className={`border border-dashed rounded-xl px-3 py-2.5 transition-colors ${
-                              fieldErrors.contributorProfileImage
-                                ? "border-red-400 bg-red-50"
-                                : "border-stone-300 hover:bg-stone-50"
-                            }`}
-                          >
-                            <p className="text-[10px] font-semibold text-gray-700 truncate">
-                              {contributorProfileImage
-                                ? contributorProfileImage.name
-                                : "Choose profile image"}
-                            </p>
-
-                            <p className="text-[9px] text-stone-400 mt-0.5">
-                              JPG, PNG • Max 5 MB
-                            </p>
-                          </div>
-
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-
-                      {/* Image requirement */}
-                      <p className="text-[9px] text-red-600 mt-1.5 font-medium">
-                          ⚠ Please upload a clear, high-quality profile image with a plain/no background.
-                      </p>
-
-                      {fieldErrors.contributorProfileImage && (
-                        <p className="text-[10px] text-red-500 mt-1 font-medium">
-                          {fieldErrors.contributorProfileImage}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* =================================================
-                    COLUMN 3
-                    CONTENT
-                ================================================= */}
-
-                <div className="lg:col-span-5 bg-white border border-stone-200/80 rounded-3xl p-5 shadow-sm flex flex-col">
+                <div
+                  className="
+                  lg:col-span-5
+                  w-full
+                  min-w-0
+                  bg-white
+                  border
+                  border-stone-200/80
+                  rounded-2xl
+                  sm:rounded-3xl
+                  p-3
+                  sm:p-5
+                  shadow-sm
+                  flex
+                  flex-col
+                "
+                >
                   <div className="flex-1">
-                    <div className="mb-4">
+                    <div className="mb-3 sm:mb-4">
                       <h3 className="font-bold text-gray-900 text-sm">
                         3. Write Your {contentType}
                       </h3>
@@ -1523,9 +1132,11 @@ export default function UploadPoetry() {
                       </p>
                     </div>
 
-                    {/* TITLE */}
+                    {/* =================================================
+                      TITLE
+                  ================================================= */}
 
-                    <div className="mb-4">
+                    <div className="mb-3 sm:mb-4">
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
                         Title (മലയാളം)
                         <span className="text-red-500"> *</span>
@@ -1550,20 +1161,36 @@ export default function UploadPoetry() {
                         }}
                         maxLength={200}
                         lang="ml"
-                        className={`w-full bg-stone-50/75 border rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:outline-none ${
+                        className={`
+                        w-full
+                        bg-stone-50/75
+                        border
+                        rounded-xl
+                        px-3.5
+                        py-2.5
+                        text-sm
+                        text-gray-800
+                        focus:outline-none
+
+                        ${
                           fieldErrors.title
                             ? "border-red-400 focus:border-red-500"
                             : "border-stone-200 focus:border-emerald-800"
-                        }`}
+                        }
+                      `}
                       />
 
                       <div className="flex items-center justify-between mt-1">
                         <p
-                          className={`text-[9px] ${
+                          className={`
+                          text-[9px]
+
+                          ${
                             fieldErrors.title
                               ? "text-red-500"
                               : "text-stone-400"
-                          }`}
+                          }
+                        `}
                         >
                           {fieldErrors.title ||
                             `${title.length}/200 characters`}
@@ -1577,18 +1204,29 @@ export default function UploadPoetry() {
                       </div>
                     </div>
 
-                    {/* CONTENT */}
+                    {/* =================================================
+                      CONTENT
+                  ================================================= */}
 
                     <div>
                       <div
-                        className={`border rounded-2xl overflow-hidden bg-stone-50/30 transition-colors ${
+                        className={`
+                        border
+                        rounded-xl
+                        sm:rounded-2xl
+                        overflow-hidden
+                        bg-stone-50/30
+                        transition-colors
+
+                        ${
                           fieldErrors.content || isContentOverLimit
                             ? "border-red-400"
                             : "border-stone-200"
-                        }`}
+                        }
+                      `}
                       >
                         <textarea
-                          rows="14"
+                          rows={14}
                           placeholder={
                             contentType === "Poetry"
                               ? "മലയാളത്തിൽ നിങ്ങളുടെ കവിത ഇവിടെ എഴുതുക..."
@@ -1598,34 +1236,51 @@ export default function UploadPoetry() {
                           }
                           value={content}
                           onChange={(e) => {
-                            const value = e.target.value;
-
                             handleContentChange(e);
 
-                            validateMalayalamField(value, "content");
-                          }}
-                          onPaste={() => {
-                            /*
-                             * IMPORTANT:
-                             *
-                             * We intentionally do not preventDefault().
-                             * The browser is allowed to paste the complete
-                             * story/poem.
-                             */
+                            validateMalayalamField(e.target.value, "content");
                           }}
                           lang="ml"
                           spellCheck={false}
-                          className="w-full p-4 bg-transparent text-sm text-gray-800 focus:outline-none resize-none leading-relaxed"
+                          className="
+                          w-full
+                          min-w-0
+                          p-3
+                          sm:p-4
+                          bg-transparent
+                          text-[10px]
+                          sm:text-sm
+                          text-gray-800
+                          focus:outline-none
+                          resize-none
+                          leading-relaxed
+                          whitespace-pre-wrap
+                          break-words
+                          overflow-x-hidden
+                          overflow-y-auto
+                        "
                         />
 
                         {/* CONTENT COUNTER */}
 
                         <div
-                          className={`border-t px-4 py-2 text-[10px] font-medium flex items-center justify-between ${
+                          className={`
+                          border-t
+                          px-3
+                          sm:px-4
+                          py-2
+                          text-[10px]
+                          font-medium
+                          flex
+                          items-center
+                          justify-between
+
+                          ${
                             isContentOverLimit
                               ? "bg-red-50 border-red-200 text-red-600"
                               : "bg-stone-50 border-stone-200 text-stone-500"
-                          }`}
+                          }
+                        `}
                         >
                           <span>Words: {wordCount}</span>
 
@@ -1642,13 +1297,7 @@ export default function UploadPoetry() {
                       )}
                     </div>
 
-                    {/* =================================================
-                        CONTENT LIMIT INFORMATION
-                    ================================================= */}
-
-                    {/* =================================================
-                        CONTENT ERROR / WARNING
-                    ================================================= */}
+                    {/* CONTENT ERROR / WARNING */}
 
                     {isContentOverLimit && (
                       <div className="mt-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
@@ -1666,9 +1315,7 @@ export default function UploadPoetry() {
                       </div>
                     )}
 
-                    {/* =================================================
-                        LIMIT REACHED
-                    ================================================= */}
+                    {/* LIMIT REACHED */}
 
                     {!isContentOverLimit &&
                       contentLineCount > 0 &&
@@ -1702,74 +1349,480 @@ export default function UploadPoetry() {
                     )}
                   </div>
 
-                  {/* ACTIONS */}
+                  <div className="mt-2 sm:mt-3 bg-stone-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-stone-200">
+                    <p className="text-[10px] text-stone-500 leading-relaxed">
+                      Your submission will be reviewed by our administrators
+                      before it is published.
+                    </p>
+                  </div>
+                </div>
 
-                  <div className="flex items-center space-x-3 pt-4">
-                    {/* SAVE DRAFT */}
+                {/* =================================================
+                  COLUMN 3
+                  AUTHOR
 
-                    {/* <button
-                      type="button"
-                      onClick={handleSaveDraft}
-                      disabled={
-                        loading ||
-                        paymentLoading
-                      }
-                      className="flex-1 bg-white border border-stone-300 hover:bg-stone-50 text-gray-800 font-bold py-3 px-4 rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-2 text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                  MOBILE:
+                  Comes AFTER Content
 
-                      <Save className="h-4 w-4 text-stone-600" />
+                  DESKTOP:
+                  REMAINS ON RIGHT
+              ================================================= */}
 
-                      <span>
-                        Save Draft
-                      </span>
+                <div className="lg:col-span-4 bg-white border border-stone-200/80 rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-sm">
+                  <div className="mb-3 sm:mb-4">
+                    <h3 className="font-bold text-gray-900 text-sm">
+                      2. Author Details
+                    </h3>
 
-                    </button> */}
+                    <p className="text-[11px] text-stone-500">
+                      Enter your personal information in (malayalam)
+                    </p>
+                  </div>
 
-                    {/* SUBMIT + PAYMENT */}
+                  <div className="space-y-3 sm:space-y-3.5">
+                    {/* =================================================
+                      NAME
+                  ================================================= */}
 
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={
-                        loading ||
-                        paymentLoading ||
-                        isContentOverLimit ||
-                        paymentCompleted
-                      }
-                      className="flex-1 bg-[#1b3b2b] hover:bg-emerald-950 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors flex items-center justify-center space-x-2 text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                        പേര്
+                        <span className="text-red-500"> *</span>
+                      </label>
 
-                          <span>Submitting...</span>
-                        </>
-                      ) : paymentLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
 
-                          <span>Processing Payment...</span>
-                        </>
-                      ) : paymentCompleted ? (
-                        <>
-                          <CheckCircle className="h-4 w-4" />
+                        <input
+                          type="text"
+                          value={contributorNameMalayalam}
+                          onChange={(e) => {
+                            const value = e.target.value;
 
-                          <span>Payment Completed</span>
-                        </>
-                      ) : isContentOverLimit ? (
-                        <span>
-                          {contentType === "Story"
-                            ? "4 Sides Maximum"
-                            : "1 Side Maximum"}
-                        </span>
-                      ) : (
-                        <>
-                          <span>Submit & Pay</span>
+                            setContributorNameMalayalam(value);
 
-                          <ArrowRight className="h-4 w-4" />
-                        </>
+                            validateMalayalamField(
+                              value,
+                              "contributorNameMalayalam",
+                            );
+                          }}
+                          placeholder="Enter your name"
+                          maxLength={200}
+                          className={`
+                          w-full
+                          bg-stone-50/75
+                          border
+                          rounded-xl
+                          py-2.5
+                          pl-9
+                          pr-3
+                          text-xs
+                          text-gray-800
+                          focus:outline-none
+                          focus:border-emerald-800
+
+                          ${
+                            fieldErrors.contributorNameMalayalam
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }
+                        `}
+                        />
+                      </div>
+
+                      {fieldErrors.contributorNameMalayalam && (
+                        <p className="text-[10px] text-red-500 font-medium mt-1">
+                          {fieldErrors.contributorNameMalayalam}
+                        </p>
                       )}
-                    </button>
+                    </div>
+
+                    {/* =================================================
+                      DISTRICT + CITY
+
+                      DESKTOP:
+                      SIDE BY SIDE
+
+                      MOBILE:
+                      ALSO SIDE BY SIDE
+                      => SAVES SPACE
+                  ================================================= */}
+
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                      {/* DISTRICT */}
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                          ജില്ല
+                          <span className="text-red-500"> *</span>
+                        </label>
+
+                        <input
+                          type="text"
+                          value={contributorDistrictMalayalam}
+                          onChange={(e) => {
+                            const value = e.target.value;
+
+                            setContributorDistrictMalayalam(value);
+
+                            validateMalayalamField(
+                              value,
+                              "contributorDistrictMalayalam",
+                            );
+                          }}
+                          placeholder="District"
+                          maxLength={100}
+                          className={`
+                          w-full
+                          bg-stone-50/75
+                          border
+                          rounded-xl
+                          py-2.5
+                          px-3
+                          text-xs
+                          text-gray-800
+                          focus:outline-none
+                          focus:border-emerald-800
+
+                          ${
+                            fieldErrors.contributorDistrictMalayalam
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }
+                        `}
+                        />
+
+                        {fieldErrors.contributorDistrictMalayalam && (
+                          <p className="text-[10px] text-red-500 font-medium mt-1">
+                            {fieldErrors.contributorDistrictMalayalam}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* CITY */}
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                          നഗരം
+                          <span className="text-red-500"> *</span>
+                        </label>
+
+                        <input
+                          type="text"
+                          value={contributorCityMalayalam}
+                          onChange={(e) => {
+                            const value = e.target.value;
+
+                            setContributorCityMalayalam(value);
+
+                            validateMalayalamField(
+                              value,
+                              "contributorCityMalayalam",
+                            );
+                          }}
+                          placeholder="City"
+                          maxLength={100}
+                          className={`
+                          w-full
+                          bg-stone-50/75
+                          border
+                          rounded-xl
+                          py-2.5
+                          px-3
+                          text-xs
+                          text-gray-800
+                          focus:outline-none
+                          focus:border-emerald-800
+
+                          ${
+                            fieldErrors.contributorCityMalayalam
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }
+                        `}
+                        />
+
+                        {fieldErrors.contributorCityMalayalam && (
+                          <p className="text-[10px] text-red-500 font-medium mt-1">
+                            {fieldErrors.contributorCityMalayalam}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* =================================================
+                      EMAIL
+                  ================================================= */}
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                        Email
+                        <span className="text-red-500"> *</span>
+                      </label>
+
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+
+                        <input
+                          type="email"
+                          value={contributorEmail}
+                          onChange={(e) => {
+                            setContributorEmail(e.target.value);
+
+                            if (fieldErrors.contributorEmail) {
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                contributorEmail: "",
+                              }));
+                            }
+                          }}
+                          placeholder="Enter your email"
+                          maxLength={150}
+                          className={`
+                          w-full
+                          bg-stone-50/75
+                          border
+                          rounded-xl
+                          py-2.5
+                          pl-9
+                          pr-3
+                          text-xs
+                          text-gray-800
+                          focus:outline-none
+                          focus:border-emerald-800
+
+                          ${
+                            fieldErrors.contributorEmail
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }
+                        `}
+                        />
+                      </div>
+
+                      {fieldErrors.contributorEmail && (
+                        <p className="text-[10px] text-red-500 font-medium mt-1">
+                          {fieldErrors.contributorEmail}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* =================================================
+                      PHONE
+                  ================================================= */}
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                        Phone Number
+                        <span className="text-red-500"> *</span>
+                      </label>
+
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+
+                        <input
+                          type="text"
+                          value={contributorPhone}
+                          onChange={(e) => {
+                            const value = e.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 10);
+
+                            setContributorPhone(value);
+
+                            if (fieldErrors.contributorPhone) {
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                contributorPhone: "",
+                              }));
+                            }
+                          }}
+                          placeholder="10 digit phone number"
+                          maxLength={10}
+                          className={`
+                          w-full
+                          bg-stone-50/75
+                          border
+                          rounded-xl
+                          py-2.5
+                          pl-9
+                          pr-3
+                          text-xs
+                          text-gray-800
+                          focus:outline-none
+                          focus:border-emerald-800
+
+                          ${
+                            fieldErrors.contributorPhone
+                              ? "border-red-500"
+                              : "border-stone-200"
+                          }
+                        `}
+                        />
+                      </div>
+
+                      {fieldErrors.contributorPhone && (
+                        <p className="text-[10px] text-red-500 font-medium mt-1">
+                          {fieldErrors.contributorPhone}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* =================================================
+                      PROFILE IMAGE
+                  ================================================= */}
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                        പ്രൊഫൈൽ ചിത്രം
+                        <span className="text-red-500"> *</span>
+                      </label>
+
+                      <div className="flex items-center gap-3">
+                        {profileImagePreview && (
+                          <img
+                            src={profileImagePreview}
+                            alt="Profile preview"
+                            className="w-12 h-12 rounded-xl object-cover border border-stone-200"
+                          />
+                        )}
+
+                        <label className="flex-1 cursor-pointer">
+                          <div
+                            className={`
+                            border
+                            border-dashed
+                            rounded-xl
+                            px-3
+                            py-2.5
+                            transition-colors
+
+                            ${
+                              fieldErrors.contributorProfileImage
+                                ? "border-red-400 bg-red-50"
+                                : "border-stone-300 hover:bg-stone-50"
+                            }
+                          `}
+                          >
+                            <p className="text-[10px] font-semibold text-gray-700 truncate">
+                              {contributorProfileImage
+                                ? contributorProfileImage.name
+                                : "Choose profile image"}
+                            </p>
+
+                            <p className="text-[9px] text-stone-400 mt-0.5">
+                              JPG, PNG • Max 5 MB
+                            </p>
+                          </div>
+
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      <p className="text-[9px] text-red-600 mt-1.5 font-medium">
+                        ⚠ Please upload a clear, high-quality profile image with
+                        a plain/no background.
+                      </p>
+
+                      {fieldErrors.contributorProfileImage && (
+                        <p className="text-[10px] text-red-500 mt-1 font-medium">
+                          {fieldErrors.contributorProfileImage}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* =================================================
+                      ACTIONS
+                  ================================================= */}
+
+                    <div className="flex items-center gap-2.5 sm:gap-3 pt-3 sm:pt-4">
+                      {/* PREVIEW */}
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPreview(true)}
+                        disabled={!title.trim() && !content.trim()}
+                        className="
+                        flex-1
+                        border
+                        border-[#1b3b2b]
+                        text-[#1b3b2b]
+                        hover:bg-emerald-50
+                        font-bold
+                        py-2.5
+                        sm:py-3
+                        px-3
+                        sm:px-4
+                        rounded-xl
+                        transition-colors
+                        flex
+                        items-center
+                        justify-center
+                        gap-2
+                        text-xs
+                        cursor-pointer
+                        disabled:opacity-50
+                        disabled:cursor-not-allowed
+                      "
+                      >
+                        <BookOpen className="h-4 w-4" />
+
+                        <span>Preview</span>
+                      </button>
+
+                      {/* SUBMIT */}
+
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={loading || isContentOverLimit}
+                        className="
+                        flex-1
+                        bg-[#1b3b2b]
+                        hover:bg-emerald-950
+                        text-white
+                        font-bold
+                        py-2.5
+                        sm:py-3
+                        px-3
+                        sm:px-4
+                        rounded-xl
+                        shadow-md
+                        transition-colors
+                        flex
+                        items-center
+                        justify-center
+                        gap-2
+                        text-xs
+                        cursor-pointer
+                        disabled:opacity-50
+                        disabled:cursor-not-allowed
+                      "
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Submitting...</span>
+                          </>
+                        ) : isContentOverLimit ? (
+                          <span>
+                            {contentType === "Story"
+                              ? "4 Sides Maximum"
+                              : "1 Side Maximum"}
+                          </span>
+                        ) : (
+                          <>
+                            <span>Submit</span>
+                            <ArrowRight className="h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1781,7 +1834,7 @@ export default function UploadPoetry() {
 
             {!isLoggedIn && (
               <div className="absolute inset-0 z-20 flex items-center justify-center">
-                <div className="bg-white/95 backdrop-blur-md border border-stone-200 shadow-2xl rounded-3xl px-8 py-9 text-center max-w-sm w-full mx-4">
+                <div className="bg-white/95  border border-stone-200 shadow-2xl rounded-3xl px-8 py-9 text-center max-w-sm w-full mx-4">
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 flex items-center justify-center mb-5">
                     <Lock className="w-7 h-7 text-[#1b3b2b]" />
                   </div>
@@ -1799,18 +1852,18 @@ export default function UploadPoetry() {
                     onClick={handleLogin}
                     className="mt-6 w-full bg-[#1b3b2b] hover:bg-emerald-950 text-white font-bold py-3 px-5 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>Register to Continue</span>
+                    <span>Login</span>
 
                     <ArrowRight className="h-4 w-4" />
                   </button>
 
                   <p className="text-xs text-stone-400 mt-4">
-                    Already a user?{" "}
+                    New user?{" "}
                     <button
-                      onClick={() => navigate("/login")}
+                      onClick={() => navigate("/register")}
                       className="text-[#1b3b2b] font-bold hover:underline cursor-pointer"
                     >
-                      login here
+                      Register here
                     </button>
                   </p>
                 </div>
@@ -1821,38 +1874,103 @@ export default function UploadPoetry() {
       </div>
 
       {/* =====================================================
-    PAYMENT SUCCESS NOTICE
-===================================================== */}
+        POETRY / CONTENT PREVIEW
+    ===================================================== */}
 
-      <div className="mx-4 md:mx-6 mb-6 overflow-hidden rounded-xl border border-red-200 bg-red-50">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="shrink-0 rounded-lg bg-red-100 px-2.5 py-1.5">
-            <span className="text-xs font-extrabold text-red-700">
-              IMPORTANT
-            </span>
-          </div>
+      {showPreview && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6">
+          <div className="relative w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden">
+            {/* HEADER */}
 
-          <div className="min-w-0 flex-1 overflow-hidden">
-            <div className="whitespace-nowrap">
-              <marquee
-                className="
-            inline-flex
-            animate
-            text-sm
-            font-semibold
-            text-red-700
-          "
-                scrollamount="8"
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-stone-200">
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                  Preview
+                </h2>
+
+                <p className="text-[9px] sm:text-xs text-stone-500 mt-0.5">
+                  This is how your {contentType.toLowerCase()} will appear.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowPreview(false)}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-stone-100 hover:bg-stone-200 flex items-center justify-center transition cursor-pointer"
               >
-                നിങ്ങൾ തിരഞ്ഞെടുക്കപ്പെട്ടാൽ, കുറച്ച് സമയത്തിനുശേഷം ഒരു ഇമെയിൽ
-                ലഭിക്കുന്നതാണ്. ആ ഇമെയിലിൽ നൽകിയിരിക്കുന്ന നിർദ്ദേശങ്ങൾ
-                അനുസരിച്ച് നിങ്ങൾക്ക് പേയ്‌മെന്റ് നടത്താവുന്നതാണ്. ദയവായി
-                നിങ്ങളുടെ ഇമെയിലും സ്പാം/ജങ്ക് ഫോൾഡറും പരിശോധിക്കുക.
-              </marquee>
+                <X className="w-4 h-4 sm:w-5 sm:h-5 text-stone-600" />
+              </button>
+            </div>
+
+            {/* PREVIEW BODY */}
+
+            <div className="max-h-[calc(95vh-65px)] sm:max-h-[calc(90vh-80px)] overflow-y-auto">
+              {/* TITLE */}
+
+              <div className="px-4 sm:px-8 pt-5 sm:pt-8">
+                <h1 className="text-lg sm:text-3xl font-extrabold text-[#1b3b2b] break-words">
+                  {title || "Untitled"}
+                </h1>
+
+                <div className="mt-2 h-1 w-10 sm:w-16 bg-[#1b3b2b] rounded-full" />
+              </div>
+
+              {/* CONTENT */}
+
+              <div className="px-3 sm:px-8 py-5 sm:py-8">
+                <div
+                  className="
+                  w-full
+                  overflow-hidden
+                  rounded-2xl
+                  bg-stone-50
+                  border
+                  border-stone-200
+                  p-3
+                  sm:p-6
+                "
+                >
+                  <div
+                    className="
+                    w-full
+                    whitespace-pre-wrap
+                    break-words
+                    text-[11px]
+                    sm:text-lg
+                    text-gray-800
+                    leading-[1.7]
+                    sm:leading-[2]
+                    font-medium
+                  "
+                  >
+                    {content || "No content written yet."}
+                  </div>
+                </div>
+              </div>
+
+              {/* AUTHOR */}
+
+              <div className="px-4 sm:px-8 pb-5 sm:pb-8">
+                <div className="border-t border-stone-200 pt-3 sm:pt-4">
+                  <p className="text-[11px] sm:text-sm font-bold text-gray-800">
+                    {contributorNameMalayalam || "Contributor"}
+                  </p>
+
+                  <p className="text-[9px] sm:text-xs text-stone-500 mt-1">
+                    {contributorCityMalayalam}
+
+                    {contributorCityMalayalam && contributorDistrictMalayalam
+                      ? ", "
+                      : ""}
+
+                    {contributorDistrictMalayalam}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <Footer />
     </>

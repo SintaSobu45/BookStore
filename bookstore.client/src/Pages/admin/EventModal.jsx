@@ -348,11 +348,12 @@ function EventModal({ show, onClose, eventData, refresh }) {
           {/* EVENT IMAGE */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Event Image
+              Event Image <span>(approx (1200 × 1200))</span>
             </label>
 
             <p className="text-xs text-gray-500 mb-2">
-              Upload the image shown on the event card and event details.
+              Upload the image for the event card and event details. <br />
+              <span className="text-info ">* Works best if image has no background</span>
             </p>
 
             <input
@@ -383,7 +384,7 @@ function EventModal({ show, onClose, eventData, refresh }) {
           {/* BANNER IMAGE */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Banner Image
+              Banner Image <span>(approx(2560 × 590))</span>
             </label>
 
             <p className="text-xs text-gray-500 mb-2">
