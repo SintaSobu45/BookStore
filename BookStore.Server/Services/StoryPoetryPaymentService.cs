@@ -892,6 +892,121 @@ namespace BookStore.Server.Services
                 updatedPayment);
         }
 
+        // =========================================================
+        // CANCEL RAZORPAY PAYMENT
+        // =========================================================
+
+        public async Task<PaymentResponseDto?>
+            CancelPaymentAsync(
+                int paymentId,
+                int userId)
+        {
+            // -----------------------------------------------------
+            // 1. GET PAYMENT
+            // -----------------------------------------------------
+
+            var payment =
+                await _paymentRepository
+                    .GetByIdAsync(paymentId);
+
+            if (payment == null)
+            {
+                return null;
+            }
+
+
+            // -----------------------------------------------------
+            // 2. MAKE SURE THIS IS STORY / POETRY PAYMENT
+            // -----------------------------------------------------
+
+            if (payment.StoryPoetryId == null)
+            {
+                throw new InvalidOperationException(
+                    "This payment is not linked to a Story/Poetry submission.");
+            }
+
+
+            // -----------------------------------------------------
+            // 3. CHECK USER OWNERSHIP
+            // -----------------------------------------------------
+
+            if (payment.UserId != userId)
+            {
+                throw new UnauthorizedAccessException(
+                    "You can only cancel your own payment.");
+            }
+
+
+            // -----------------------------------------------------
+            // 4. GET STORY / POETRY / SPECIAL SUBMISSION
+            // -----------------------------------------------------
+
+            var storyPoetry =
+                await _storyPoetryRepository
+                    .GetByIdAsync(
+                        payment.StoryPoetryId.Value);
+
+            if (storyPoetry == null)
+            {
+                throw new InvalidOperationException(
+                    "Story/Poetry submission not found.");
+            }
+
+
+            // -----------------------------------------------------
+            // 5. VERIFY PAYMENT TYPE
+            // -----------------------------------------------------
+
+            if (storyPoetry.Type != "Story" &&
+                storyPoetry.Type != "Poetry" &&
+                storyPoetry.Type != "Special")
+            {
+                throw new InvalidOperationException(
+                    "This payment cannot be cancelled through Story/Poetry payment.");
+            }
+
+
+            // -----------------------------------------------------
+            // 6. ONLY PENDING PAYMENTS CAN BE CANCELLED
+            // -----------------------------------------------------
+
+            if (payment.Status != "Pending")
+            {
+                throw new InvalidOperationException(
+                    $"Only Pending payments can be cancelled. Current status: {payment.Status}.");
+            }
+
+
+            // -----------------------------------------------------
+            // 7. CHANGE STATUS
+            // -----------------------------------------------------
+
+            payment.Status =
+                "Cancelled";
+
+
+            // -----------------------------------------------------
+            // 8. SAVE PAYMENT
+            // -----------------------------------------------------
+
+            var updatedPayment =
+                await _paymentRepository
+                    .UpdateAsync(payment);
+
+            if (updatedPayment == null)
+            {
+                return null;
+            }
+
+
+            // -----------------------------------------------------
+            // 9. RETURN UPDATED PAYMENT
+            // -----------------------------------------------------
+
+            return MapToResponse(
+                updatedPayment);
+        }
+
 
         // =========================================================
         // GET PAYMENT METHOD FROM RAZORPAY

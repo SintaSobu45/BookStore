@@ -207,5 +207,91 @@ namespace BookStore.Server.Controllers
                 });
             }
         }
+
+        // =========================================================
+        // CANCEL STORY / POETRY PAYMENT
+        // =========================================================
+
+        // POST:
+        // api/StoryPoetryPayment/cancel/{paymentId}
+
+        [HttpPost("cancel/{paymentId}")]
+        public async Task<IActionResult> CancelPayment(
+            int paymentId)
+        {
+            try
+            {
+                // -------------------------------------------------
+                // GET USER ID FROM JWT
+                // -------------------------------------------------
+
+                int userId = GetUserId();
+
+
+                // -------------------------------------------------
+                // CANCEL PAYMENT
+                // -------------------------------------------------
+
+                var payment =
+                    await _paymentService
+                        .CancelPaymentAsync(
+                            paymentId,
+                            userId);
+
+
+                // -------------------------------------------------
+                // PAYMENT NOT FOUND
+                // -------------------------------------------------
+
+                if (payment == null)
+                {
+                    return NotFound(new
+                    {
+                        message = "Payment not found."
+                    });
+                }
+
+
+                // -------------------------------------------------
+                // SUCCESS
+                // -------------------------------------------------
+
+                return Ok(new
+                {
+                    message =
+                        "Story/Poetry payment cancelled successfully.",
+
+                    data = payment
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
     }
 }
