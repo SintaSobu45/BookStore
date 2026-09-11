@@ -254,6 +254,8 @@ namespace BookStore.Server.Services
 
                 Content = request.Content,
 
+
+
                 // -------------------------------------------------
                 // PARTICULAR / CATEGORY
                 // -------------------------------------------------
@@ -354,6 +356,12 @@ namespace BookStore.Server.Services
                 await _storyPoetryRepository
                     .AddAsync(storyPoetry);
 
+            created.SubmissionNumber =
+    $"SP-{created.CreatedDate:yyyy-MM-dd}-{created.StoryPoetryId:D5}";
+
+            await _storyPoetryRepository
+                .UpdateAsync(created);
+
 
             // =====================================================
             // SEND SUBMISSION RECEIVED EMAILS
@@ -440,7 +448,7 @@ namespace BookStore.Server.Services
                                     </td>
 
                                     <td style='padding:12px 16px; color:#333333; font-size:14px; font-weight:bold;'>
-                                        {storyPoetry.StoryPoetryId}
+                                        {created.SubmissionNumber}
                                     </td>
                                 </tr>
 
@@ -616,7 +624,7 @@ namespace BookStore.Server.Services
                                     </td>
 
                                     <td style='padding:12px 16px; color:#333333; font-size:14px; font-weight:bold;'>
-                                        {created.StoryPoetryId}
+                                        {created.SubmissionNumber}
                                     </td>
                                 </tr>
 
@@ -939,6 +947,8 @@ namespace BookStore.Server.Services
 
                 Content =
                     storyPoetry.Content,
+
+                SubmissionNumber = storyPoetry.SubmissionNumber,
 
 
                 // -------------------------------------------------

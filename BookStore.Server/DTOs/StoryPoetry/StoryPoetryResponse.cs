@@ -95,6 +95,9 @@
 
         public bool PaymentNotificationSent { get; set; }
 
+        //submission id
+        public string SubmissionNumber { get; set; } = string.Empty;
+
 
         // =========================================================
         // DATES
