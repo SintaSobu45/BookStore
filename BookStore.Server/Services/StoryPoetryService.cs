@@ -11,7 +11,8 @@ namespace BookStore.Server.Services
         private readonly FtpImageService _ftpImageService;
         private readonly EmailService _emailService;
         private readonly AccountRepository _accountRepository;
-        private readonly StoryPoetryParticularService _particularService;       
+        private readonly StoryPoetryParticularService _particularService;
+        private readonly PaymentSettingsService _paymentSettingsService;
 
         public StoryPoetryService(
             StoryPoetryRepository storyPoetryRepository,
@@ -19,7 +20,8 @@ namespace BookStore.Server.Services
             FtpImageService ftpImageService,
             EmailService emailService,
             AccountRepository accountRepository,
-            StoryPoetryParticularService particularService)
+            StoryPoetryParticularService particularService,
+            PaymentSettingsService paymentSettingsService)
         {
             _storyPoetryRepository = storyPoetryRepository;
             _profileRepository = profileRepository;
@@ -27,6 +29,7 @@ namespace BookStore.Server.Services
             _emailService = emailService;
             _accountRepository = accountRepository;
             _particularService = particularService;
+            _paymentSettingsService = paymentSettingsService;
         }
 
 
@@ -106,6 +109,26 @@ namespace BookStore.Server.Services
                 throw new InvalidOperationException(
                     "You have already submitted this particular.");
             }
+
+
+            // =====================================================
+            // GET ACTIVE PAYMENT SETTING
+            // =====================================================
+
+            var paymentSetting =
+                await _paymentSettingsService
+                    .GetActiveAsync(request.Type);
+
+            if (paymentSetting == null)
+            {
+                throw new InvalidOperationException(
+                    "Active StoryPoetry payment setting not found.");
+            }
+
+            decimal baseAmount = paymentSetting.Amount;
+
+
+
 
             // -----------------------------------------------------
             // IMAGE IS REQUIRED
@@ -305,9 +328,9 @@ namespace BookStore.Server.Services
                 // COPY / PAYMENT SNAPSHOT
                 // =================================================
 
-                // Base price will be calculated during payment
-                // using PaymentSettings based on Type.
-                BaseAmount = 0,
+                // Base upload fee is captured when the submission
+                // is created using the active PaymentSettings.
+                BaseAmount = baseAmount,
 
                 // User has not requested extra copies during upload.
                 ExtraCopies = 0,
@@ -320,8 +343,9 @@ namespace BookStore.Server.Services
 
                 TotalCopies = 2,
 
-                // No payment has been made at submission time.
-                Amount = 0,
+                // Initial amount is the base upload fee.
+                // Extra copy amount will be added during payment.
+                Amount = baseAmount,
 
 
                 // =================================================
