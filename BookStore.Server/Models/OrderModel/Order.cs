@@ -8,6 +8,9 @@ namespace BookStore.Server.Models.OrderModel
         [Key]
         public int OrderId { get; set; }
 
+        [StringLength(50)]
+        public string OrderNumber { get; set; } = string.Empty;
+
         // =========================================================
         // USER
         // =========================================================

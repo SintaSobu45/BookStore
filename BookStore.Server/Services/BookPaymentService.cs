@@ -682,10 +682,10 @@ namespace BookStore.Server.Services
 
             <tr>
                 <td style='padding: 8px;'>
-                    <strong>Order ID</strong>
+                   <strong>Order Number</strong>
                 </td>
                 <td style='padding: 8px;'>
-                    {order.OrderId}
+                    {order.OrderNumber}
                 </td>
             </tr>
 
