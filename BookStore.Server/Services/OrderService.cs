@@ -392,9 +392,19 @@ namespace BookStore.Server.Services
                 await _orderRepository
                     .AddAsync(order);
 
+            // =====================================================
+            // 12. GENERATE ORDER NUMBER
+            // =====================================================
+
+            createdOrder.OrderNumber =
+    $"BOOK-{createdOrder.OrderDate:yyyy-MM-dd}-{createdOrder.OrderId:D5}";
+
+            await _orderRepository
+                .UpdateAsync(createdOrder);
+
 
             // =====================================================
-            // 12. RETURN
+            // 13. RETURN
             // =====================================================
 
             return (
@@ -483,6 +493,8 @@ namespace BookStore.Server.Services
             return new OrderResponse
             {
                 OrderId = order.OrderId,
+
+                OrderNumber = order.OrderNumber,
 
                 UserId = order.UserId,
 

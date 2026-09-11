@@ -146,7 +146,7 @@ namespace BookStore.Server.Services
 
                                             left.Item()
                                                 .Text(
-                                                    $"Order ID: {order.OrderId}")
+    $"Order Number: {order.OrderNumber}")
                                                 .FontSize(9);
 
                                             left.Item()
