@@ -62,6 +62,8 @@ namespace BookStore.Server.Data
         //new
         public DbSet<StoryPoetryParticular> StoryPoetryParticular { get; set; }
 
+        //logo
+        public DbSet<Logo> Logos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -199,6 +201,13 @@ namespace BookStore.Server.Data
                 .WithMany(u => u.StoryPoetries)
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            //story particular
+            modelBuilder.Entity<StoryPoetry>()
+    .HasOne(s => s.StoryPoetryParticular)
+    .WithMany(p => p.StoryPoetries)
+    .HasForeignKey(s => s.StoryPoetryParticularId)
+    .OnDelete(DeleteBehavior.Restrict);
 
 
             // =========================================================
