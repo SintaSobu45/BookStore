@@ -118,6 +118,8 @@ namespace BookStore.Server.Repositories
 
                     StoryPoetryId = s.StoryPoetryId,
                     UserId = s.UserId,
+                    SubmissionNumber = s.SubmissionNumber,
+
 
                     // -------------------------------------------------
                     // STORY / POETRY DETAILS
@@ -244,6 +246,7 @@ namespace BookStore.Server.Repositories
 
                     StoryPoetryId = s.StoryPoetryId,
                     UserId = s.UserId,
+                    SubmissionNumber = s.SubmissionNumber,
 
                     // -------------------------------------------------
                     // STORY / POETRY DETAILS
