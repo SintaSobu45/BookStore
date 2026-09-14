@@ -101,6 +101,9 @@
         //barcode
         public string? Barcode { get; set; }
 
+        //sporderstatus
+        public string? SpOrderStatus { get; set; }
+
 
         // =========================================================
         // DATES
