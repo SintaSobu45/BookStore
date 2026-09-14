@@ -259,5 +259,27 @@ namespace BookStore.Server.Controllers
 
             return null;
         }
+
+        [HttpPatch("{id:int}/barcode")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateBarcode(
+    int id,
+    [FromBody] UpdateOrderBarcodeRequest request)
+        {
+            var result =
+                await _orderService.UpdateBarcodeAsync(
+                    id,
+                    request.Barcode);
+
+            if (result == null)
+            {
+                return NotFound(new
+                {
+                    message = "Order not found."
+                });
+            }
+
+            return Ok(result);
+        }
     }
 }

@@ -498,6 +498,11 @@ namespace BookStore.Server.Services
 
                 UserId = order.UserId,
 
+                //barcode
+                Barcode = order.Barcode,
+
+
+
                 GuestCartId = order.GuestCartId,
 
                 GuestOrderId = order.GuestOrderId,
@@ -547,6 +552,61 @@ namespace BookStore.Server.Services
                     .ToList()
             };
         }
+
+
+
+
+
+        // =========================================================
+        // UPDATE ORDER BARCODE
+        // =========================================================
+
+        public async Task<OrderResponse?> UpdateBarcodeAsync(
+            int orderId,
+            string barcode)
+        {
+            // -----------------------------------------------------
+            // GET ORDER
+            // -----------------------------------------------------
+
+            var order =
+                await _orderRepository
+                    .GetByIdAsync(orderId);
+
+            if (order == null)
+            {
+                return null;
+            }
+
+            // -----------------------------------------------------
+            // VALIDATE BARCODE
+            // -----------------------------------------------------
+
+            if (string.IsNullOrWhiteSpace(barcode))
+            {
+                throw new ArgumentException(
+                    "Barcode is required.");
+            }
+
+            // -----------------------------------------------------
+            // SAVE BARCODE
+            // -----------------------------------------------------
+
+            order.Barcode =
+                barcode.Trim();
+
+            await _orderRepository
+                .UpdateAsync(order);
+
+            // -----------------------------------------------------
+            // RETURN UPDATED ORDER
+            // -----------------------------------------------------
+
+            return await GetOrderByIdAsync(orderId);
+        }
+
+
+
 
 
         // =========================================================

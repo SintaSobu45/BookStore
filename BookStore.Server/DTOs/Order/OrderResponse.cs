@@ -38,6 +38,9 @@
 
         public DateTime OrderDate { get; set; }
 
+        //barcode
+        public string? Barcode { get; set; }
+
         public List<OrderItemResponse> Items { get; set; }
             = new List<OrderItemResponse>();
     }

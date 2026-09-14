@@ -11,6 +11,9 @@ namespace BookStore.Server.Models.OrderModel
         [StringLength(50)]
         public string OrderNumber { get; set; } = string.Empty;
 
+        [StringLength(100)]
+        public string? Barcode { get; set; }
+
         // =========================================================
         // USER
         // =========================================================
