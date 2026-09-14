@@ -107,7 +107,7 @@ namespace BookStore.Server.Services
             if (alreadySubmitted)
             {
                 throw new InvalidOperationException(
-                    "You have already submitted this particular.");
+                    "You have already submitted to this category.");
             }
 
 
@@ -939,6 +939,65 @@ namespace BookStore.Server.Services
         }
 
 
+
+        // =========================================================
+        // UPDATE BARCODE
+        // =========================================================
+
+        public async Task<StoryPoetryResponse?> UpdateBarcodeAsync(
+            int id,
+            string barcode)
+        {
+            // -----------------------------------------------------
+            // GET SUBMISSION
+            // -----------------------------------------------------
+
+            var storyPoetry =
+                await _storyPoetryRepository
+                    .GetByIdAsync(id);
+
+            if (storyPoetry == null)
+            {
+                return null;
+            }
+
+
+            // -----------------------------------------------------
+            // VALIDATE BARCODE
+            // -----------------------------------------------------
+
+            if (string.IsNullOrWhiteSpace(barcode))
+            {
+                throw new ArgumentException(
+                    "Barcode is required.");
+            }
+
+
+            // -----------------------------------------------------
+            // SAVE BARCODE
+            // -----------------------------------------------------
+
+            storyPoetry.Barcode =
+                barcode.Trim();
+
+
+            await _storyPoetryRepository
+                .UpdateAsync(storyPoetry);
+
+
+            // -----------------------------------------------------
+            // RETURN UPDATED RECORD
+            // -----------------------------------------------------
+
+            return await GetByIdAsync(id);
+        }
+
+
+
+
+
+
+
         // =========================================================
         // MAP ENTITY TO RESPONSE DTO
         // =========================================================
@@ -973,6 +1032,8 @@ namespace BookStore.Server.Services
                     storyPoetry.Content,
 
                 SubmissionNumber = storyPoetry.SubmissionNumber,
+
+                Barcode = storyPoetry.Barcode,
 
 
                 // -------------------------------------------------
