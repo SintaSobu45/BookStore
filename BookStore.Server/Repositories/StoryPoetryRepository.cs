@@ -120,6 +120,9 @@ namespace BookStore.Server.Repositories
                     UserId = s.UserId,
                     SubmissionNumber = s.SubmissionNumber,
 
+                    // BARCODE
+                    Barcode = s.Barcode,
+
 
                     // -------------------------------------------------
                     // STORY / POETRY DETAILS
@@ -211,6 +214,8 @@ namespace BookStore.Server.Repositories
 
                     PaymentNotificationSent =
                         s.PaymentNotificationSent,
+
+                    SpOrderStatus = s.SpOrderStatus,
 
                     // -------------------------------------------------
                     // DATES
@@ -248,6 +253,10 @@ namespace BookStore.Server.Repositories
                     UserId = s.UserId,
                     SubmissionNumber = s.SubmissionNumber,
 
+
+                    // BARCODE
+                    Barcode = s.Barcode,
+
                     // -------------------------------------------------
                     // STORY / POETRY DETAILS
                     // -------------------------------------------------
@@ -338,6 +347,8 @@ namespace BookStore.Server.Repositories
 
                     PaymentNotificationSent =
                         s.PaymentNotificationSent,
+
+                    SpOrderStatus = s.SpOrderStatus,
 
                     // -------------------------------------------------
                     // DATES

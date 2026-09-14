@@ -174,6 +174,22 @@ namespace BookStore.Server.Models
 
         // Payment becomes available 4 hours after submission
 
+
+        // =========================================================
+        // SP ORDER STATUS
+        // =========================================================
+
+        // null       -> Payment not completed yet
+        // Prebook    -> Payment completed, waiting for dispatch
+        // Dispatched -> Admin has dispatched the books
+
+        [StringLength(30)]
+        [RegularExpression(
+            "Prebook|Dispatched",
+            ErrorMessage = "SP Order Status must be Prebook or Dispatched."
+        )]
+        public string? SpOrderStatus { get; set; }
+
         public DateTime? PaymentEnabledAt { get; set; }
 
 

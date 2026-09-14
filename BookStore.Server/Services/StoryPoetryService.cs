@@ -993,6 +993,125 @@ namespace BookStore.Server.Services
         }
 
 
+        // =========================================================
+        // UPDATE SP ORDER STATUS
+        // =========================================================
+
+        public async Task<StoryPoetryResponse?> UpdateSpOrderStatusAsync(
+            int id,
+            string status)
+        {
+            // -----------------------------------------------------
+            // 1. GET STORY / POETRY / SPECIAL
+            // -----------------------------------------------------
+
+            var storyPoetry =
+                await _storyPoetryRepository
+                    .GetByIdAsync(id);
+
+            if (storyPoetry == null)
+            {
+                return null;
+            }
+
+
+            // -----------------------------------------------------
+            // 2. VALIDATE STATUS
+            // -----------------------------------------------------
+
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                throw new ArgumentException(
+                    "SP Order Status is required.");
+            }
+
+            status = status.Trim();
+
+
+            // -----------------------------------------------------
+            // 3. ONLY ALLOW PREBOOK OR DISPATCHED
+            // -----------------------------------------------------
+
+            if (!string.Equals(
+                    status,
+                    "Prebook",
+                    StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(
+                    status,
+                    "Dispatched",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(
+                    "SP Order Status must be Prebook or Dispatched.");
+            }
+
+
+            // -----------------------------------------------------
+            // 4. ONLY PAID SUBMISSIONS CAN BE DISPATCHED
+            // -----------------------------------------------------
+
+            if (string.Equals(
+                    status,
+                    "Dispatched",
+                    StringComparison.OrdinalIgnoreCase) &&
+                storyPoetry.PaymentStatus != "Paid")
+            {
+                throw new InvalidOperationException(
+                    "Only paid submissions can be dispatched.");
+            }
+
+
+            // -----------------------------------------------------
+            // 5. CANNOT GO BACK AFTER DISPATCH
+            // -----------------------------------------------------
+
+            if (storyPoetry.SpOrderStatus == "Dispatched" &&
+                string.Equals(
+                    status,
+                    "Prebook",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "A dispatched order cannot be changed back to Prebook.");
+            }
+
+
+            // -----------------------------------------------------
+            // 6. SET FINAL STATUS
+            // -----------------------------------------------------
+
+            storyPoetry.SpOrderStatus =
+                string.Equals(
+                    status,
+                    "Prebook",
+                    StringComparison.OrdinalIgnoreCase)
+                    ? "Prebook"
+                    : "Dispatched";
+
+
+            // -----------------------------------------------------
+            // 7. UPDATE DATE
+            // -----------------------------------------------------
+
+            storyPoetry.UpdatedDate =
+                DateTime.UtcNow;
+
+
+            // -----------------------------------------------------
+            // 8. SAVE
+            // -----------------------------------------------------
+
+            await _storyPoetryRepository
+                .UpdateAsync(storyPoetry);
+
+
+            // -----------------------------------------------------
+            // 9. RETURN UPDATED SUBMISSION
+            // -----------------------------------------------------
+
+            return await GetByIdAsync(id);
+        }
+
 
 
 
@@ -1079,10 +1198,13 @@ namespace BookStore.Server.Services
                 PaymentStatus =
                     storyPoetry.PaymentStatus,
 
+
                 PaymentEnabledAt =
                     storyPoetry.PaymentEnabledAt,
                 PaymentNotificationSent =
     storyPoetry.PaymentNotificationSent,
+
+                SpOrderStatus = storyPoetry.SpOrderStatus,
 
 
                 // -------------------------------------------------

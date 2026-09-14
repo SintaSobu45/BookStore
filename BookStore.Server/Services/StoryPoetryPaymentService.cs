@@ -630,6 +630,10 @@ namespace BookStore.Server.Services
             storyPoetry.PaymentStatus =
                 "Paid";
 
+
+            storyPoetry.SpOrderStatus =
+    "Prebook";
+
             storyPoetry.UpdatedDate =
                 DateTime.UtcNow;
 
@@ -1079,5 +1083,7 @@ namespace BookStore.Server.Services
                     payment.PaidDate
             };
         }
+
+
     }
 }

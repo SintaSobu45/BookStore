@@ -289,7 +289,7 @@ namespace BookStore.Server.Controllers
         // ADMIN - UPDATE BARCODE
         // =========================================================
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Editor")]
         [HttpPatch("{id}/barcode")]
         public async Task<IActionResult> UpdateBarcode(
             int id,
@@ -317,6 +317,56 @@ namespace BookStore.Server.Controllers
                     message =
                         "Barcode updated successfully.",
                     data = result
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+        // =========================================================
+        // UPDATE SP ORDER STATUS
+        // =========================================================
+
+        [Authorize(Roles = "Admin,Editor")]
+        [HttpPatch("{id}/order-status")]
+        public async Task<IActionResult> UpdateSpOrderStatus(
+            int id,
+            [FromBody] UpdateStoryPoetryOrderStatusRequest request)
+        {
+            try
+            {
+                var result =
+                    await _storyPoetryService
+                        .UpdateSpOrderStatusAsync(
+                            id,
+                            request.Status);
+
+                if (result == null)
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "Story/Poetry submission not found."
+                    });
+                }
+
+                return Ok(new
+                {
+                    message =
+                        "SP Order Status updated successfully.",
+                    data = result
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new
+                {
+                    message = ex.Message
                 });
             }
             catch (ArgumentException ex)
