@@ -98,6 +98,9 @@
         //submission id
         public string SubmissionNumber { get; set; } = string.Empty;
 
+        //barcode
+        public string? Barcode { get; set; }
+
 
         // =========================================================
         // DATES

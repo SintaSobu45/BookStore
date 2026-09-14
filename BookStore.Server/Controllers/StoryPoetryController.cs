@@ -72,6 +72,14 @@ namespace BookStore.Server.Controllers
                     message = ex.Message
                 });
             }
+
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new
+                {
+                    message = ex.Message
+                });
+            }
             catch (ArgumentException ex)
             {
                 return BadRequest(new
@@ -275,6 +283,49 @@ namespace BookStore.Server.Controllers
                     .GetAllAsync();
 
             return Ok(result);
+        }
+
+        // =========================================================
+        // ADMIN - UPDATE BARCODE
+        // =========================================================
+
+        [Authorize(Roles = "Admin")]
+        [HttpPatch("{id}/barcode")]
+        public async Task<IActionResult> UpdateBarcode(
+            int id,
+            [FromBody] UpdateStoryPoetryBarcodeRequest request)
+        {
+            try
+            {
+                var result =
+                    await _storyPoetryService
+                        .UpdateBarcodeAsync(
+                            id,
+                            request.Barcode);
+
+                if (result == null)
+                {
+                    return NotFound(new
+                    {
+                        message =
+                            "Story/Poetry submission not found."
+                    });
+                }
+
+                return Ok(new
+                {
+                    message =
+                        "Barcode updated successfully.",
+                    data = result
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
     }
 }

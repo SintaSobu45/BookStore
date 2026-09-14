@@ -187,6 +187,10 @@ namespace BookStore.Server.Models
         [StringLength(50)]
         public string SubmissionNumber { get; set; } = string.Empty;
 
+        //Barcode
+        [StringLength(100)]
+        public string? Barcode { get; set; }
+
 
         // =========================================================
         // DATES
