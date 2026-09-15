@@ -6,6 +6,14 @@ namespace BookStore.Server.Services
 {
     public class PaymentReceiptService
     {
+
+        private static DateTime ConvertToIndiaTime(DateTime utcDate)
+        {
+            return TimeZoneInfo.ConvertTimeFromUtc(
+                DateTime.SpecifyKind(utcDate, DateTimeKind.Utc),
+                TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"));
+        }
+
         // =========================================================
         // EVENT PAYMENT RECEIPT
         // =========================================================
@@ -24,6 +32,9 @@ namespace BookStore.Server.Services
             string paymentId,
             DateTime paymentDate)
         {
+
+            DateTime indiaPaymentDate = ConvertToIndiaTime(paymentDate);
+
             QuestPDF.Settings.License =
                 LicenseType.Community;
 
@@ -119,7 +130,7 @@ namespace BookStore.Server.Services
 
                                     info.Item()
                                         .Text(
-                                            $"Payment Date: {paymentDate:dd-MM-yyyy hh:mm tt}");
+                                            $"Payment Date: {indiaPaymentDate:dd-MM-yyyy hh:mm tt}");
 
                                     info.Item()
                                         .Text(
@@ -321,6 +332,9 @@ namespace BookStore.Server.Services
             string paymentId,
             DateTime paymentDate)
         {
+
+            DateTime indiaPaymentDate = ConvertToIndiaTime(paymentDate);
+
             QuestPDF.Settings.License =
                 LicenseType.Community;
 
@@ -438,9 +452,8 @@ namespace BookStore.Server.Services
                                             $"Payment ID: {paymentId}");
 
                                     info.Item()
-                                        .Text(
-                                            $"Payment Date: {paymentDate:dd-MM-yyyy hh:mm tt}");
-
+                                       .Text(
+    $"Payment Date: {indiaPaymentDate:dd-MM-yyyy hh:mm tt}");
                                     info.Item()
                                         .Text(
                                             "Payment Status: PAID")
@@ -575,7 +588,7 @@ namespace BookStore.Server.Services
 
                             column.Item()
                                 .Text(
-                                    $"Payment Date: {paymentDate:dd-MM-yyyy hh:mm tt}");
+                                     $"Payment Date: {indiaPaymentDate:dd-MM-yyyy hh:mm tt}");
 
                             column.Item()
                                 .Text(

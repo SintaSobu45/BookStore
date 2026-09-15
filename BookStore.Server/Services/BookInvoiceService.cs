@@ -7,6 +7,13 @@ namespace BookStore.Server.Services
 {
     public class BookInvoiceService
     {
+
+        private static DateTime ConvertToIndiaTime(DateTime utcDate)
+        {
+            return TimeZoneInfo.ConvertTimeFromUtc(
+                DateTime.SpecifyKind(utcDate, DateTimeKind.Utc),
+                TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"));
+        }
         public byte[] GenerateBookInvoice(
             Order order,
             string? paymentMethod,
@@ -15,6 +22,12 @@ namespace BookStore.Server.Services
         {
             QuestPDF.Settings.License =
                 LicenseType.Community;
+
+            DateTime indiaPaymentDate = ConvertToIndiaTime(paymentDate);
+
+
+            DateTime indiaOrderDate =
+                ConvertToIndiaTime(order.OrderDate);
 
             // =========================================================
             // INVOICE INFORMATION
@@ -168,13 +181,13 @@ namespace BookStore.Server.Services
                                             right.Item()
                                                 .AlignRight()
                                                 .Text(
-                                                    $"Order Date: {order.OrderDate:dd-MM-yyyy}")
+                                                     $"Order Date: {indiaOrderDate:dd-MM-yyyy}")
                                                 .FontSize(9);
 
                                             right.Item()
                                                 .AlignRight()
                                                 .Text(
-                                                    $"Payment Date: {paymentDate:dd-MM-yyyy}")
+                                                       $"Payment Date: {indiaPaymentDate:dd-MM-yyyy}")
                                                 .FontSize(9);
 
                                             right.Item()
