@@ -496,15 +496,7 @@ namespace BookStore.Server.Services
                                     </td>
                                 </tr>
 
-                                <tr>
-                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
-                                        Submitted On
-                                    </td>
-
-                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
-                                        {storyPoetry.CreatedDate:dd MMM yyyy, hh:mm tt}
-                                    </td>
-                                </tr>
+                                
 
                             </table>
 
@@ -702,15 +694,7 @@ namespace BookStore.Server.Services
                                     </td>
                                 </tr>
 
-                                <tr>
-                                    <td style='padding:12px 16px; color:#666666; font-size:14px;'>
-                                        Submitted On
-                                    </td>
-
-                                    <td style='padding:12px 16px; color:#333333; font-size:14px;'>
-                                        {createdDate:dd MMM yyyy, hh:mm tt}
-                                    </td>
-                                </tr>
+                              
 
                             </table>
 
