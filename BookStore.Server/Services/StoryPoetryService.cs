@@ -244,10 +244,7 @@ namespace BookStore.Server.Services
 
             // One timestamp is used for both CreatedDate
             // and PaymentEnabledAt calculation.
-            // Get current India Standard Time (IST)
-            var createdDate = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(
-                DateTime.UtcNow,
-                "India Standard Time");
+            var createdDate = DateTime.UtcNow;
 
             // Payment becomes available exactly 4 hours
             // after the submission is created.
@@ -885,9 +882,7 @@ namespace BookStore.Server.Services
                 request.Content;
 
             storyPoetry.UpdatedDate =
-    TimeZoneInfo.ConvertTimeBySystemTimeZoneId(
-        DateTime.UtcNow,
-        "India Standard Time");
+                DateTime.UtcNow;
 
 
             // -----------------------------------------------------
