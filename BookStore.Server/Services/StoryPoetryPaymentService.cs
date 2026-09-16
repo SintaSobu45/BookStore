@@ -245,11 +245,11 @@ namespace BookStore.Server.Services
             // 14. CALCULATE TOTAL COPIES
             // -----------------------------------------------------
 
-            const int freeCopies = 2;
+          
 
             int totalCopies =
-                freeCopies +
-                request.ExtraCopies;
+    storyPoetry.FreeCopies +
+    request.ExtraCopies;
 
 
             // =====================================================
@@ -262,9 +262,8 @@ namespace BookStore.Server.Services
             storyPoetry.ExtraCopies =
                 request.ExtraCopies;
 
-            // Free copies are always fixed at 2.
-            storyPoetry.FreeCopies =
-                freeCopies;
+         
+           
 
             storyPoetry.ExtraCopyPrice =
                 extraCopyPrice;

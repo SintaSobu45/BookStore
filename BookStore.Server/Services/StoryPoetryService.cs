@@ -13,6 +13,7 @@ namespace BookStore.Server.Services
         private readonly AccountRepository _accountRepository;
         private readonly StoryPoetryParticularService _particularService;
         private readonly PaymentSettingsService _paymentSettingsService;
+        private readonly StoryPoetryCopySettingService _storyPoetryCopySettingService;
 
         public StoryPoetryService(
             StoryPoetryRepository storyPoetryRepository,
@@ -21,7 +22,8 @@ namespace BookStore.Server.Services
             EmailService emailService,
             AccountRepository accountRepository,
             StoryPoetryParticularService particularService,
-            PaymentSettingsService paymentSettingsService)
+            PaymentSettingsService paymentSettingsService,
+            StoryPoetryCopySettingService storyPoetryCopySettingService)
         {
             _storyPoetryRepository = storyPoetryRepository;
             _profileRepository = profileRepository;
@@ -30,6 +32,7 @@ namespace BookStore.Server.Services
             _accountRepository = accountRepository;
             _particularService = particularService;
             _paymentSettingsService = paymentSettingsService;
+            _storyPoetryCopySettingService = storyPoetryCopySettingService;
         }
 
 
@@ -126,6 +129,23 @@ namespace BookStore.Server.Services
             }
 
             decimal baseAmount = paymentSetting.Amount;
+
+
+            // =====================================================
+            // GET CURRENT FREE COPY SETTING
+            // =====================================================
+
+            var copySetting =
+                await _storyPoetryCopySettingService
+                    .GetByTypeAsync(request.Type);
+
+            if (copySetting == null)
+            {
+                throw new InvalidOperationException(
+                    $"Free copy setting not configured for {request.Type}.");
+            }
+
+            int freeCopies = copySetting.FreeCopies;
 
 
 
@@ -339,9 +359,11 @@ namespace BookStore.Server.Services
                 ExtraCopyPrice =
     particular.ExtraCopyPrice,
 
-                FreeCopies = 2,
+                // Snapshot the current Admin free-copy setting.
+                FreeCopies = freeCopies,
 
-                TotalCopies = 2,
+                // Initially there are no extra copies.
+                TotalCopies = freeCopies,
 
                 // Initial amount is the base upload fee.
                 // Extra copy amount will be added during payment.

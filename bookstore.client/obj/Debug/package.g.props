@@ -12,6 +12,7 @@
     <PackageJsonDependenciesAxios Condition="$(PackageJsonDependenciesAxios) == ''">^1.18.1</PackageJsonDependenciesAxios>
     <PackageJsonDependenciesDocx Condition="$(PackageJsonDependenciesDocx) == ''">^9.7.1</PackageJsonDependenciesDocx>
     <PackageJsonDependenciesHtml2canvas Condition="$(PackageJsonDependenciesHtml2canvas) == ''">^1.4.1</PackageJsonDependenciesHtml2canvas>
+    <PackageJsonDependenciesHtml5Qrcode Condition="$(PackageJsonDependenciesHtml5Qrcode) == ''">^2.3.8</PackageJsonDependenciesHtml5Qrcode>
     <PackageJsonDependenciesJspdf Condition="$(PackageJsonDependenciesJspdf) == ''">^4.2.1</PackageJsonDependenciesJspdf>
     <PackageJsonDependenciesLucideReact Condition="$(PackageJsonDependenciesLucideReact) == ''">^1.28.0</PackageJsonDependenciesLucideReact>
     <PackageJsonDependenciesReact Condition="$(PackageJsonDependenciesReact) == ''">^19.2.8</PackageJsonDependenciesReact>
