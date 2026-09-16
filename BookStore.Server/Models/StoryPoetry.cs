@@ -138,8 +138,9 @@ namespace BookStore.Server.Models
         public int ExtraCopies { get; set; }
 
 
-        // Fixed free copies provided for every submission
-        // Business rule: 2 free copies
+        // Free copies configured by Admin at the time of submission.
+        // This value is stored as a snapshot so future Admin changes
+        // do not affect existing submissions.
         public int FreeCopies { get; set; }
 
 
@@ -149,7 +150,7 @@ namespace BookStore.Server.Models
         public decimal ExtraCopyPrice { get; set; }
 
 
-        // FreeCopies + ExtraCopies
+        // FreeCopies snapshot + ExtraCopies
 
         public int TotalCopies { get; set; }
 

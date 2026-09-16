@@ -65,6 +65,9 @@ namespace BookStore.Server.Data
         //logo
         public DbSet<Logo> Logos { get; set; }
 
+        //copies
+        public DbSet<StoryPoetryCopySetting> StoryPoetryCopySettings { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -312,6 +315,12 @@ namespace BookStore.Server.Data
             modelBuilder.Entity<Certificate>()
                 .HasIndex(c => c.StoryPoetryId)
                 .IsUnique();
+
+
+            //freecopy comstraint
+            modelBuilder.Entity<StoryPoetryCopySetting>()
+    .HasIndex(x => x.Type)
+    .IsUnique();
         }
     }
 }
