@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 
 import {
   BookOpen,
@@ -9,6 +10,7 @@ import {
   Download,
   ImageDown,
   FileDown,
+  Truck,
 } from "lucide-react";
 
 import {
@@ -21,7 +23,11 @@ import {
   AlignmentType,
 } from "docx";
 
-import { getAllStoryPoetry } from "../../services/storyPoetryService";
+import {
+  getAllStoryPoetry,
+  updateStoryPoetryBarcode,
+  updateStoryPoetryOrderStatus,
+} from "../../services/storyPoetryService";
 import { useNavigate } from "react-router-dom";
 
 import PageWarningManager from "./PageWarningManager";
@@ -30,9 +36,8 @@ import {
   getAllPageWarnings,
   createPageWarning,
   updatePageWarning,
-  deletePageWarning,
-  togglePageWarning,
 } from "../../services/pageWarningService";
+import CourierDetails from "./CourierDetails";
 
 export default function AdminStoryPoetry() {
   const navigate = useNavigate();
@@ -50,9 +55,14 @@ export default function AdminStoryPoetry() {
 
   // Type filter
   const [selectedType, setSelectedType] = useState("All");
+  // Particular filter
+  const [selectedParticular, setSelectedParticular] = useState("All");
 
   // Payment filter
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState("All");
+
+  //order status filter
+  const [selectedOrderStatus, setSelectedOrderStatus] = useState("All");
 
   // warning & modal
   const [warnings, setWarnings] = useState([]);
@@ -68,12 +78,12 @@ export default function AdminStoryPoetry() {
   });
 
   const [warningData, setWarningData] = useState({
-  pageName: "StoryPoetry",
-  message: "",
-  isActive: true,
-});
+    pageName: "StoryPoetry",
+    message: "",
+    isActive: true,
+  });
 
-const [warningId, setWarningId] = useState(null);
+  const [warningId, setWarningId] = useState(null);
 
   const [warningLoading, setWarningLoading] = useState(false);
 
@@ -85,6 +95,19 @@ const [warningId, setWarningId] = useState(null);
   // DOCX states
   const [generatingDocx, setGeneratingDocx] = useState(false);
   const [generatingSingleDocx, setGeneratingSingleDocx] = useState(null);
+  const [generatingCopyDetails, setGeneratingCopyDetails] = useState(false);
+
+  // barcode
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [barcodeEditingId, setBarcodeEditingId] = useState(null);
+  const [barcodeLoading, setBarcodeLoading] = useState(false);
+
+  //barcode scanner
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [scannerError, setScannerError] = useState("");
+
+  const barcodeScannerRef = useRef(null);
+  const barcodeReaderRef = useRef(null);
 
   //loda warnings
 
@@ -127,141 +150,59 @@ const [warningId, setWarningId] = useState(null);
     }
   };
 
-  
   const handleSaveWarning = async () => {
-  if (!warningData.message.trim()) {
-    Swal.fire({
-      toast: true,
-      position: "top-end",
-      icon: "warning",
-      title: "Please enter a warning message",
-      showConfirmButton: false,
-      timer: 2500,
-    });
+    if (!warningData.message.trim()) {
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "warning",
+        title: "Please enter a warning message",
+        showConfirmButton: false,
+        timer: 2500,
+      });
 
-    return;
-  }
+      return;
+    }
 
-  try {
-    if (warningId) {
-      await updatePageWarning(warningId, warningData);
+    try {
+      if (warningId) {
+        await updatePageWarning(warningId, warningData);
+
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "success",
+          title: "Warning updated successfully",
+          showConfirmButton: false,
+          timer: 2000,
+        });
+      } else {
+        await createPageWarning(warningData);
+
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "success",
+          title: "Warning added successfully",
+          showConfirmButton: false,
+          timer: 2000,
+        });
+      }
+
+      setShowWarningModal(false);
+    } catch (error) {
+      console.error(error);
 
       Swal.fire({
         toast: true,
         position: "top-end",
-        icon: "success",
-        title: "Warning updated successfully",
+        icon: "error",
+        title: "Failed to save warning",
         showConfirmButton: false,
-        timer: 2000,
-      });
-    } else {
-      await createPageWarning(warningData);
-
-      Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: "success",
-        title: "Warning added successfully",
-        showConfirmButton: false,
-        timer: 2000,
+        timer: 2500,
       });
     }
-
-    setShowWarningModal(false);
-  } catch (error) {
-    console.error(error);
-
-    Swal.fire({
-      toast: true,
-      position: "top-end",
-      icon: "error",
-      title: "Failed to save warning",
-      showConfirmButton: false,
-      timer: 2500,
-    });
-  }
-};
-
-//handle opening warning
-
-const handleOpenWarning = async () => {
-  try {
-    const warnings = await getAllPageWarnings();
-
-    const existingWarning = warnings.find(
-      (warning) => warning.pageName === "StoryPoetry"
-    );
-
-    if (existingWarning) {
-      setWarningId(existingWarning.pageWarningId);
-
-      setWarningData({
-        pageName: existingWarning.pageName,
-        message: existingWarning.message,
-        isActive: existingWarning.isActive,
-      });
-    } else {
-      setWarningId(null);
-
-      setWarningData({
-        pageName: "StoryPoetry",
-        message: "",
-        isActive: true,
-      });
-    }
-
-    setShowWarningModal(true);
-  } catch (error) {
-    console.error(error);
-
-    Swal.fire({
-      toast: true,
-      position: "top-end",
-      icon: "error",
-      title: "Failed to load warning",
-      showConfirmButton: false,
-      timer: 2500,
-    });
-  }
-};
-
-const handleDeleteWarning = async () => {
-  if (!warningId) return;
-
-  try {
-    await deletePageWarning(warningId);
-
-    setWarningId(null);
-
-    setWarningData({
-      pageName: "StoryPoetry",
-      message: "",
-      isActive: true,
-    });
-
-    setShowWarningModal(false);
-
-    Swal.fire({
-      toast: true,
-      position: "top-end",
-      icon: "success",
-      title: "Warning deleted successfully",
-      showConfirmButton: false,
-      timer: 2000,
-    });
-  } catch (error) {
-    console.error(error);
-
-    Swal.fire({
-      toast: true,
-      position: "top-end",
-      icon: "error",
-      title: "Failed to delete warning",
-      showConfirmButton: false,
-      timer: 2500,
-    });
-  }
-};
+  };
 
   // =========================================================
   // LOAD SUBMISSIONS
@@ -407,6 +348,26 @@ const handleDeleteWarning = async () => {
   };
 
   // =========================================================
+  // ORDER STATUS FILTER
+  // =========================================================
+
+  const matchesOrderStatusFilter = (item) => {
+    if (selectedOrderStatus === "All") {
+      return true;
+    }
+
+    return item?.spOrderStatus === selectedOrderStatus;
+  };
+
+  // =========================================================
+  // PARTICULAR NAME
+  // =========================================================
+
+  const getParticularName = (item) => {
+    return item?.particularName || item?.particularNameSnapshot || "-";
+  };
+
+  // =========================================================
   // TYPE FILTER
   // =========================================================
 
@@ -417,6 +378,35 @@ const handleDeleteWarning = async () => {
 
     return item?.type === selectedType;
   };
+
+  // =========================================================
+  // PARTICULAR FILTER
+  // =========================================================
+
+  const matchesParticularFilter = (item) => {
+    if (selectedParticular === "All") {
+      return true;
+    }
+
+    return getParticularName(item) === selectedParticular;
+  };
+
+  // =========================================================
+  // PARTICULAR OPTIONS
+  // =========================================================
+
+  const particularOptions = useMemo(() => {
+    const filteredByType =
+      selectedType === "All"
+        ? submissions
+        : submissions.filter((item) => item?.type === selectedType);
+
+    const particulars = filteredByType
+      .map((item) => getParticularName(item))
+      .filter((particular) => particular && particular !== "-");
+
+    return [...new Set(particulars)].sort((a, b) => a.localeCompare(b));
+  }, [submissions, selectedType]);
 
   // =========================================================
   // FILTERED SUBMISSIONS
@@ -430,24 +420,43 @@ const handleDeleteWarning = async () => {
       const matchesSearch =
         !search ||
         item?.title?.toLowerCase().includes(search) ||
-        item?.contributorNameMalayalam?.toLowerCase().includes(search);
+        item?.contributorNameMalayalam?.toLowerCase().includes(search) ||
+        getParticularName(item)?.toLowerCase().includes(search) ||
+        String(item?.submissionNumber || "")
+          .toLowerCase()
+          .includes(search);
 
       // Type
       const matchesType = matchesTypeFilter(item);
 
+      // Particular
+      const matchesParticular = matchesParticularFilter(item);
+
       // Payment
       const matchesPayment = matchesPaymentFilter(item);
+
+      //Order status
+      const matchesOrderStatus = matchesOrderStatusFilter(item);
 
       // Date
       const matchesDate = matchesDateFilter(item);
 
-      return matchesSearch && matchesType && matchesPayment && matchesDate;
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesParticular &&
+        matchesPayment &&
+        matchesOrderStatus &&
+        matchesDate
+      );
     });
   }, [
     submissions,
     searchTerm,
     selectedType,
+    selectedParticular,
     selectedPaymentStatus,
+    selectedOrderStatus,
     selectedMonth,
     fromDate,
     toDate,
@@ -1012,6 +1021,325 @@ const handleDeleteWarning = async () => {
   };
 
   // =========================================================
+  // GENERATE COPY DETAILS DOCX
+  // =========================================================
+
+  const generateCopyDetailsDOCX = async (items, fileName) => {
+    if (!items || items.length === 0) {
+      alert("No submissions found.");
+      return;
+    }
+
+    try {
+      const children = [];
+
+      items.forEach((item, index) => {
+        const particularName =
+          item?.particularName || item?.particularNameSnapshot || "-";
+
+        const totalCopies = Number(item?.totalCopies) || 0;
+
+        const contributorName = item?.contributorNameMalayalam || "-";
+
+        const address = item?.contributorAddress || "-";
+
+        const pincode = item?.contributorPincode || "-";
+
+        const phone = item?.contributorPhone || "-";
+
+        // =====================================================
+        // PARTICULAR + COPIES
+        // =====================================================
+
+        children.push(
+          new Paragraph({
+            spacing: {
+              before: index === 0 ? 0 : 250,
+              after: 100,
+            },
+
+            children: [
+              new TextRun({
+                text: `${particularName} — ${totalCopies} ${
+                  totalCopies === 1 ? "copy" : "copies"
+                }`,
+                bold: true,
+                size: 30,
+                font: {
+                  name: "Manjari",
+                  eastAsia: "Manjari",
+                  complexScript: "Manjari",
+                },
+              }),
+            ],
+          }),
+        );
+
+        // =====================================================
+        // CONTRIBUTOR NAME
+        // =====================================================
+
+        children.push(
+          new Paragraph({
+            spacing: {
+              after: 70,
+            },
+
+            children: [
+              new TextRun({
+                text: contributorName,
+                bold: true,
+                size: 26,
+                font: {
+                  name: "Manjari",
+                  eastAsia: "Manjari",
+                  complexScript: "Manjari",
+                },
+              }),
+            ],
+          }),
+        );
+
+        // =====================================================
+        // ADDRESS
+        // =====================================================
+
+        children.push(
+          new Paragraph({
+            spacing: {
+              after: 70,
+              line: 280,
+            },
+
+            children: [
+              new TextRun({
+                text: address,
+                size: 24,
+                font: {
+                  name: "Manjari",
+                  eastAsia: "Manjari",
+                  complexScript: "Manjari",
+                },
+              }),
+            ],
+          }),
+        );
+
+        // =====================================================
+        // PINCODE
+        // =====================================================
+
+        children.push(
+          new Paragraph({
+            spacing: {
+              after: 70,
+            },
+
+            children: [
+              new TextRun({
+                text: `Pincode: ${pincode}`,
+                size: 23,
+                font: {
+                  name: "Arial",
+                  eastAsia: "Arial",
+                },
+              }),
+            ],
+          }),
+        );
+
+        // =====================================================
+        // PHONE
+        // =====================================================
+
+        children.push(
+          new Paragraph({
+            spacing: {
+              after: 100,
+            },
+
+            children: [
+              new TextRun({
+                text: `Ph. ${phone}`,
+                size: 23,
+                font: {
+                  name: "Arial",
+                  eastAsia: "Arial",
+                },
+              }),
+            ],
+          }),
+        );
+
+        // =====================================================
+        // DIVIDER
+        // =====================================================
+
+        if (index < items.length - 1) {
+          children.push(
+            new Paragraph({
+              spacing: {
+                after: 100,
+              },
+
+              children: [
+                new TextRun({
+                  text: "────────────────────────────",
+                  size: 16,
+                }),
+              ],
+            }),
+          );
+        }
+      });
+
+      // =====================================================
+      // CREATE DOCUMENT
+      // =====================================================
+
+      const doc = new Document({
+        creator: "The Old Library",
+
+        title: "Story Poetry Copy Details",
+
+        description: "Particular, copies and contributor details",
+
+        styles: {
+          default: {
+            document: {
+              run: {
+                font: "Manjari",
+                size: 24,
+              },
+
+              paragraph: {
+                spacing: {
+                  line: 280,
+                },
+              },
+            },
+          },
+        },
+
+        sections: [
+          {
+            properties: {
+              page: {
+                margin: {
+                  top: 650,
+                  bottom: 650,
+                  left: 800,
+                  right: 800,
+                },
+              },
+            },
+
+            children,
+          },
+        ],
+      });
+
+      // =====================================================
+      // CREATE BLOB
+      // =====================================================
+
+      const blob = await Packer.toBlob(doc);
+
+      if (!blob || blob.size === 0) {
+        throw new Error("DOCX file is empty.");
+      }
+
+      // =====================================================
+      // DOWNLOAD
+      // =====================================================
+
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = blobUrl;
+
+      link.download = fileName.endsWith(".docx")
+        ? fileName
+        : `${fileName}.docx`;
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 1500);
+    } catch (error) {
+      console.error("Copy details DOCX generation failed:", error);
+
+      throw error;
+    }
+  };
+
+  //handle single download copy details
+
+  const handleDownloadCopyDetailsDOCX = async (item) => {
+    if (!item) return;
+
+    try {
+      const safeName = makeSafeFileName(
+        item.contributorNameMalayalam,
+        "contributor",
+      );
+
+      const safeParticular = makeSafeFileName(
+        item.particularName || item.particularNameSnapshot,
+        "particular",
+      );
+
+      const fileName = `${safeName}-${safeParticular}-copy-details.docx`;
+
+      await generateCopyDetailsDOCX([item], fileName);
+    } catch (error) {
+      console.error("Single copy details DOCX generation failed:", error);
+
+      alert(`Failed to generate DOCX.\n\n${error?.message || "Unknown error"}`);
+    }
+  };
+
+  // handle all downloadcopy details
+
+  const handleDownloadAllCopyDetailsDOCX = async () => {
+    try {
+      if (!filteredSubmissions || filteredSubmissions.length === 0) {
+        alert("No submissions found.");
+        return;
+      }
+
+      setGeneratingCopyDetails(true);
+
+      // Only use paid submissions
+      const copyDetailsSubmissions = filteredSubmissions.filter(
+        (item) => item?.paymentStatus === "Paid",
+      );
+
+      if (copyDetailsSubmissions.length === 0) {
+        alert("No paid submissions found.");
+        return;
+      }
+
+      await generateCopyDetailsDOCX(
+        copyDetailsSubmissions,
+        "All-Copy-Details.docx",
+      );
+    } catch (error) {
+      console.error("All copy details DOCX generation failed:", error);
+
+      alert(`Failed to generate DOCX.\n\n${error?.message || "Unknown error"}`);
+    } finally {
+      setGeneratingCopyDetails(false);
+    }
+  };
+
+  // =========================================================
   // DOWNLOAD MONTHLY / FILTERED DOCX
   // =========================================================
 
@@ -1179,7 +1507,9 @@ const handleDeleteWarning = async () => {
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedType("All");
+    setSelectedParticular("All");
     setSelectedPaymentStatus("All");
+    setSelectedOrderStatus("All");
     setSelectedMonth("");
     setFromDate("");
     setToDate("");
@@ -1193,6 +1523,144 @@ const handleDeleteWarning = async () => {
     navigate(`/admin/story/${item.storyPoetryId}`);
   };
 
+  const handleStartBarcodeScanner = () => {
+    setScannerError("");
+    setShowBarcodeScanner(true);
+  };
+
+  useEffect(() => {
+    if (!showBarcodeScanner) {
+      return;
+    }
+
+    let scanner;
+
+    const startScanner = async () => {
+      try {
+        if (!barcodeReaderRef.current) {
+          throw new Error("Barcode reader element not found.");
+        }
+
+        scanner = new Html5Qrcode("barcode-reader");
+
+        barcodeScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 300, height: 150 },
+          },
+          async (decodedText) => {
+            console.log("Barcode detected:", decodedText);
+
+            setBarcodeInput(decodedText);
+
+            try {
+              await scanner.stop();
+              await scanner.clear();
+            } catch (error) {
+              console.error("Failed to stop scanner:", error);
+            }
+
+            barcodeScannerRef.current = null;
+            setShowBarcodeScanner(false);
+          },
+          () => {
+            // Normal scanning failures are ignored
+          },
+        );
+      } catch (error) {
+        console.error("Barcode scanner failed:", error);
+
+        setScannerError(
+          "Unable to access the camera. Please allow camera permission and try again.",
+        );
+
+        setShowBarcodeScanner(false);
+      }
+    };
+
+    startScanner();
+
+    return () => {
+      if (barcodeScannerRef.current) {
+        barcodeScannerRef.current
+          .stop()
+          .then(() => barcodeScannerRef.current?.clear())
+          .catch((error) => {
+            console.error("Scanner cleanup failed:", error);
+          });
+
+        barcodeScannerRef.current = null;
+      }
+    };
+  }, [showBarcodeScanner]);
+
+  /* handle barcode save button */
+
+  const handleSaveBarcode = async (id) => {
+    if (!barcodeInput.trim()) {
+      Swal.fire({
+        icon: "warning",
+        title: "Barcode Required",
+        text: "Please enter or scan a barcode.",
+        confirmButtonColor: "#064e3b",
+      });
+
+      return;
+    }
+
+    try {
+      setBarcodeLoading(true);
+
+      const response = await updateStoryPoetryBarcode(id, barcodeInput.trim());
+
+      // Reload submissions from backend
+      await loadSubmissions();
+
+      Swal.fire({
+        icon: "success",
+        title: "Barcode Updated",
+        text: response?.message || "Barcode updated successfully.",
+        confirmButtonColor: "#064e3b",
+      });
+
+      setBarcodeEditingId(null);
+      setBarcodeInput("");
+    } catch (error) {
+      console.error("Barcode update failed:", error);
+
+      Swal.fire({
+        icon: "error",
+        title: "Barcode Update Failed",
+        text: error?.message || "Failed to update barcode.",
+        confirmButtonColor: "#064e3b",
+      });
+    } finally {
+      setBarcodeLoading(false);
+    }
+  };
+
+  // =========================================================
+  // UPDATE SP ORDER STATUS
+  // =========================================================
+
+  const handleUpdateOrderStatus = async (storyPoetryId, status) => {
+    try {
+      await updateStoryPoetryOrderStatus(storyPoetryId, status);
+
+      // Refresh submissions so UI uses the backend value
+      const updatedSubmissions = await getAllStoryPoetry();
+
+      setSubmissions(updatedSubmissions);
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+
+      alert(error.message || "Failed to update order status.");
+    }
+  };
+
   // =========================================================
   // FILTER SUMMARY
   // =========================================================
@@ -1200,6 +1668,7 @@ const handleDeleteWarning = async () => {
   const hasFilters =
     searchTerm ||
     selectedType !== "All" ||
+    selectedParticular !== "All" ||
     selectedPaymentStatus !== "All" ||
     selectedMonth ||
     fromDate ||
@@ -1304,7 +1773,7 @@ const handleDeleteWarning = async () => {
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search title or contributor..."
+                    placeholder="Search title or submission number..."
                     className="
                       w-full
                       pl-4
@@ -1363,7 +1832,10 @@ const handleDeleteWarning = async () => {
                       <button
                         key={type}
                         type="button"
-                        onClick={() => setSelectedType(type)}
+                        onClick={() => {
+                          setSelectedType(type);
+                          setSelectedParticular("All");
+                        }}
                         className={`
                           px-4
                           py-2
@@ -1385,6 +1857,47 @@ const handleDeleteWarning = async () => {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* =================================================
+    PARTICULAR FILTER
+================================================= */}
+
+              <div>
+                <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide block mb-2">
+                  Particular
+                </label>
+
+                <select
+                  value={selectedParticular}
+                  onChange={(e) => setSelectedParticular(e.target.value)}
+                  className="
+      w-full
+      xl:w-64
+      px-4
+      py-2.5
+      rounded-xl
+      border
+      border-stone-200
+      bg-stone-50
+      text-sm
+      text-gray-700
+      outline-none
+      focus:bg-white
+      focus:border-emerald-900
+      focus:ring-2
+      focus:ring-emerald-900/10
+      cursor-pointer
+    "
+                >
+                  <option value="All">All Particulars</option>
+
+                  {particularOptions.map((particular) => (
+                    <option key={particular} value={particular}>
+                      {particular}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* =================================================
@@ -1427,6 +1940,17 @@ const handleDeleteWarning = async () => {
                   })}
                 </div>
               </div>
+
+                    {/* order status filter */}
+              <select
+                value={selectedOrderStatus}
+                onChange={(e) => setSelectedOrderStatus(e.target.value)}
+                className="px-4 py-2 rounded-lg border border-stone-200 bg-white text-sm font-medium text-gray-700 outline-none focus:border-emerald-900 w-25"
+              >
+                <option value="All">All Order Status</option>
+                <option value="Prebook">Prebook</option>
+                <option value="Dispatched">Dispatched</option>
+              </select>
 
               {/* =================================================
                   DATE FILTERS
@@ -1606,6 +2130,85 @@ const handleDeleteWarning = async () => {
               </div>
 
               {/* =================================================
+                  DOWNLOAD ALL COPY DETAILS
+              ================================================= */}
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleDownloadAllCopyDetailsDOCX}
+                  disabled={generatingCopyDetails}
+                  className="
+                    inline-flex
+                    items-center
+                    justify-center
+                    gap-2
+                    px-5
+                    py-2.5
+                    rounded-xl
+                    border
+                    border-blue-200
+                    bg-blue-50
+                    hover:bg-blue-100
+                    disabled:bg-stone-100
+                    disabled:text-stone-400
+                    disabled:cursor-not-allowed
+                    text-blue-700
+                    text-sm
+                    font-bold
+                    whitespace-nowrap
+                    cursor-pointer
+                    transition-colors
+                  "
+                >
+                  {generatingCopyDetails ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <FileDown className="h-4 w-4" />
+                      Download All Copy Details
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* =================================================
+    COURIER DETAILS
+================================================= */}
+
+              <div className="flex justify-end mt-3">
+                <button
+                  type="button"
+                  onClick={() => navigate("/admin/courier-details")}
+                  className="
+      inline-flex
+      items-center
+      justify-center
+      gap-2
+      px-5
+      py-2.5
+      rounded-xl
+      border
+      border-emerald-200
+      bg-emerald-50
+      hover:bg-emerald-100
+      text-emerald-800
+      text-sm
+      font-bold
+      whitespace-nowrap
+      cursor-pointer
+      transition-colors
+    "
+                >
+                  <Truck className="h-4 w-4" />
+                  Courier Details
+                </button>
+              </div>
+
+              {/* =================================================
                   ACTIVE FILTERS
               ================================================= */}
 
@@ -1618,6 +2221,12 @@ const handleDeleteWarning = async () => {
                   {selectedType !== "All" && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
                       Type: {selectedType}
+                    </span>
+                  )}
+
+                  {selectedParticular !== "All" && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-100 text-purple-800 font-bold">
+                      Particular: {selectedParticular}
                     </span>
                   )}
 
@@ -1706,12 +2315,24 @@ const handleDeleteWarning = async () => {
 
                 <thead className="bg-stone-50 border-b border-stone-200">
                   <tr>
+                    <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-700">
+                      Submission Number
+                    </th>
+
                     <th className="text-left px-5 py-4 font-bold text-gray-700">
                       Submission
                     </th>
 
                     <th className="text-left px-5 py-4 font-bold text-gray-700">
                       Contributor
+                    </th>
+
+                    <th className="text-left px-5 py-4 font-bold text-gray-700">
+                      Phone
+                    </th>
+
+                    <th className="text-left px-5 py-4 font-bold text-gray-700">
+                      Particular
                     </th>
 
                     <th className="text-left px-5 py-4 font-bold text-gray-700">
@@ -1724,6 +2345,14 @@ const handleDeleteWarning = async () => {
 
                     <th className="text-left px-5 py-4 font-bold text-gray-700">
                       Submitted
+                    </th>
+
+                    <th className="text-left px-5 py-4 font-bold text-gray-700">
+                      Order Status
+                    </th>
+
+                    <th className="text-left px-5 py-4 font-bold text-gray-700">
+                      Barcode
                     </th>
 
                     <th className="text-right px-5 py-4 font-bold text-gray-700">
@@ -1748,10 +2377,12 @@ const handleDeleteWarning = async () => {
                           cursor-pointer
                         "
                     >
+                      <td className="px-5 py-4 text-sm font-medium text-gray-800">
+                        {item?.submissionNumber || "—"}
+                      </td>
                       {/* ===================================
                             SUBMISSION
                         =================================== */}
-
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
@@ -1777,17 +2408,31 @@ const handleDeleteWarning = async () => {
                       {/* ===================================
                             CONTRIBUTOR
                         =================================== */}
-
                       <td className="px-5 py-4">
                         <p className="font-semibold text-gray-800">
                           {item.contributorNameMalayalam || "-"}
                         </p>
                       </td>
+                      {/* Mobile number */}
+                      <td className="px-5 py-4">
+                        <p className="font-semibold text-gray-800">
+                          {item?.contributorPhone || "-"}
+                        </p>
+                      </td>
 
+                      {/* ===================================
+      PARTICULAR
+=================================== */}
+                      <td className="px-5 py-4">
+                        <div className="max-w-[220px]">
+                          <p className="font-semibold text-gray-800 truncate">
+                            {getParticularName(item)}
+                          </p>
+                        </div>
+                      </td>
                       {/* ===================================
                             TYPE
                         =================================== */}
-
                       <td className="px-5 py-4">
                         <span
                           className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getTypeStyle(
@@ -1797,11 +2442,9 @@ const handleDeleteWarning = async () => {
                           {item.type || "-"}
                         </span>
                       </td>
-
                       {/* ===================================
                             PAYMENT
                         =================================== */}
-
                       <td className="px-5 py-4">
                         <span
                           className={`inline-flex px-3 py-1 rounded-full text-[11px] font-bold ${getPaymentStyle(
@@ -1811,19 +2454,206 @@ const handleDeleteWarning = async () => {
                           {item.paymentStatus || "Pending"}
                         </span>
                       </td>
-
                       {/* ===================================
                             DATE
                         =================================== */}
-
                       <td className="px-5 py-4 text-stone-600 text-xs font-medium">
                         {formatDate(item.createdDate)}
                       </td>
 
+                      {/* Order status */}
+
+                      <td
+                        className="px-5 py-4"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <select
+                          value={item.spOrderStatus || ""}
+                          onChange={(e) =>
+                            handleUpdateOrderStatus(
+                              item.storyPoetryId,
+                              e.target.value,
+                            )
+                          }
+                          className="px-3 py-2 rounded-lg border border-stone-200 text-xs font-semibold"
+                        >
+                          <option value="">—</option>
+                          <option value="Prebook">PREBOOK</option>
+                          <option value="Dispatched">DISPATCHED</option>
+                        </select>
+                      </td>
+
+                      {/* ===================================
+                            BARCODE
+                        =================================== */}
+
+                      <td
+                        className="px-5 py-4"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {barcodeEditingId === item.storyPoetryId ? (
+                          <div className="flex flex-col gap-3">
+                            {/* Barcode input + Save */}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={barcodeInput}
+                                onChange={(e) =>
+                                  setBarcodeInput(e.target.value)
+                                }
+                                placeholder="Enter barcode"
+                                autoFocus
+                                className="
+            w-36
+            px-3
+            py-2
+            rounded-lg
+            border
+            border-stone-200
+            bg-stone-50
+            text-xs
+            text-gray-800
+            outline-none
+            focus:bg-white
+            focus:border-emerald-900
+            focus:ring-2
+            focus:ring-emerald-900/10
+          "
+                              />
+
+                              <button
+                                type="button"
+                                disabled={barcodeLoading}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSaveBarcode(item.storyPoetryId);
+                                }}
+                                className="
+            px-3
+            py-2
+            rounded-lg
+            bg-emerald-900
+            text-white
+            text-xs
+            font-semibold
+            hover:bg-emerald-800
+            transition
+            disabled:opacity-50
+            disabled:cursor-not-allowed
+          "
+                              >
+                                {barcodeLoading ? "Saving..." : "Save"}
+                              </button>
+                            </div>
+
+                            {/* Scanner */}
+                            {showBarcodeScanner && (
+                              <div className="mt-2 w-full">
+                                <div
+                                  id="barcode-reader"
+                                  ref={barcodeReaderRef}
+                                  className="
+              w-full
+              min-h-[250px]
+              overflow-hidden
+              rounded-xl
+              border
+              border-stone-200
+              bg-black
+            "
+                                />
+
+                                {scannerError && (
+                                  <p className="mt-2 text-xs text-red-500">
+                                    {scannerError}
+                                  </p>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowBarcodeScanner(false);
+                                  }}
+                                  className="
+              mt-2
+              text-xs
+              font-medium
+              text-stone-600
+            "
+                                >
+                                  Cancel Scanner
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ) : item.barcode ? (
+                          /* =========================================
+       EXISTING BARCODE
+       ========================================= */
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-gray-700">
+                              {item.barcode}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+
+                                setBarcodeEditingId(item.storyPoetryId);
+                                setBarcodeInput("");
+                                handleStartBarcodeScanner();
+                              }}
+                              className="
+          px-3
+          py-2
+          rounded-lg
+          border
+          border-emerald-900
+          text-emerald-900
+          text-xs
+          font-semibold
+          hover:bg-emerald-50
+          transition
+        "
+                            >
+                              Add New
+                            </button>
+                          </div>
+                        ) : (
+                          /* =========================================
+       NO BARCODE
+       ========================================= */
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+
+                              setBarcodeEditingId(item.storyPoetryId);
+                              setBarcodeInput("");
+                              handleStartBarcodeScanner();
+                            }}
+                            className="
+        px-3
+        py-2
+        rounded-lg
+        border
+        border-emerald-900
+        text-emerald-900
+        text-xs
+        font-semibold
+        hover:bg-emerald-50
+        transition
+      "
+                          >
+                            Scan Barcode
+                          </button>
+                        )}
+                      </td>
                       {/* ===================================
                             DOWNLOADS
                         =================================== */}
-
                       <td className="px-5 py-4">
                         <div
                           className="flex justify-end items-center gap-2"
@@ -1918,6 +2748,15 @@ const handleDeleteWarning = async () => {
                                 <span className="hidden xl:inline">DOCX</span>
                               </>
                             )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadCopyDetailsDOCX(item)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
+                          >
+                            <FileDown size={15} />
+                            Copy Details
                           </button>
                         </div>
                       </td>

@@ -218,3 +218,42 @@ export const updateOrderStatus = async (
 
   return data;
 };
+
+
+// update barcode
+
+// =========================================================
+// UPDATE ORDER BARCODE - ADMIN
+// =========================================================
+
+export const updateOrderBarcode = async (orderId, barcode) => {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error("Authentication required.");
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/Order/${orderId}/barcode`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        barcode: barcode.trim(),
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || "Failed to update barcode."
+    );
+  }
+
+  return data;
+};

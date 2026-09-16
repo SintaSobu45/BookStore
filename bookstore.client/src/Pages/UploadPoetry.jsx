@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
+import Swal from "sweetalert2";
 
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
@@ -25,6 +26,8 @@ import { addStoryPoetry } from "../services/storyPoetryService";
 import { getProfile } from "../services/profileService";
 
 import { getPageWarningByPage } from "../services/pageWarningService";
+
+import { getActiveStoryPoetryParticulars } from "../services/storyPoetryParticularService";
 
 export default function UploadPoetry() {
   const navigate = useNavigate();
@@ -41,6 +44,12 @@ export default function UploadPoetry() {
   // =========================================================
 
   const [contentType, setContentType] = useState("Poetry");
+
+  const [particulars, setParticulars] = useState([]);
+  const [selectedParticularId, setSelectedParticularId] = useState("");
+
+  const [particularsLoading, setParticularsLoading] = useState(false);
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
@@ -66,6 +75,9 @@ export default function UploadPoetry() {
     useState("");
 
   const [contributorCityMalayalam, setContributorCityMalayalam] = useState("");
+
+  const [contributorAddress, setContributorAddress] = useState("");
+  const [contributorPincode, setContributorPincode] = useState("");
 
   const [contributorEmail, setContributorEmail] = useState("");
   const [contributorPhone, setContributorPhone] = useState("");
@@ -391,6 +403,24 @@ export default function UploadPoetry() {
     }
 
     // =======================================================
+    // ADDRESS
+    // =======================================================
+
+    if (!contributorAddress.trim()) {
+      errors.contributorAddress = "* Please enter contributor address.";
+    }
+
+    // =======================================================
+    // PINCODE
+    // =======================================================
+
+    const pincodeRegex = /^\d{6}$/;
+
+    if (!pincodeRegex.test(contributorPincode)) {
+      errors.contributorPincode = "Pincode must be exactly 6 digits.";
+    }
+
+    // =======================================================
     // EMAIL
     // =======================================================
 
@@ -421,6 +451,32 @@ export default function UploadPoetry() {
 
     if (!contributorProfileImage) {
       errors.contributorProfileImage = "* Please upload your profile image.";
+    }
+
+    // =======================================================
+    // PARTICULAR
+    // =======================================================
+
+    if (!selectedParticularId) {
+      errors.particular = "Please select a particular.";
+    }
+
+    // =======================================================
+    // PARTICULAR
+    // =======================================================
+
+    if (!selectedParticularId) {
+      errors.particular = "Please select a particular.";
+
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "error",
+        title: "Please select a particular.",
+        showConfirmButton: false,
+        timer: 1000,
+        timerProgressBar: true,
+      });
     }
 
     // =======================================================
@@ -472,6 +528,8 @@ export default function UploadPoetry() {
         // Send original content exactly as entered.
         content: content.trim(),
 
+        storyPoetryParticularId: Number(selectedParticularId),
+
         contributorNameMalayalam: contributorNameMalayalam.trim(),
 
         contributorDistrictMalayalam: contributorDistrictMalayalam.trim(),
@@ -479,6 +537,10 @@ export default function UploadPoetry() {
         contributorCityMalayalam: contributorCityMalayalam.trim(),
 
         contributorEmail: contributorEmail.trim(),
+
+        contributorAddress: contributorAddress.trim(),
+
+        contributorPincode: contributorPincode,
 
         contributorPhone: contributorPhone,
 
@@ -550,12 +612,45 @@ export default function UploadPoetry() {
       setContentType("Poetry");
       setFieldErrors({});
     } catch (error) {
-      console.error("Story/Poetry submission failed:", error);
+  console.error("Story/Poetry submission failed:", error);
 
-      setError(error.message || "Failed to submit Story/Poetry.");
+  setLoading(false);
 
-      setLoading(false);
-    }
+  if (
+    error.message?.includes("already submitted to this particular")
+  ) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Already Submitted",
+      text: "You have already submitted to this particular. Please choose another.",
+      confirmButtonText: "Okay",
+      confirmButtonColor: "#065f46",
+    });
+
+    return;
+  }
+
+  if (
+    error.message?.includes("already submitted to this category")
+  ) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Already Submitted",
+      text: "You have already submitted to this particular. Please choose another.",
+      confirmButtonText: "Okay",
+      confirmButtonColor: "#065f46",
+    });
+
+    return;
+  }
+
+  await Swal.fire({
+    icon: "error",
+    title: "Submission Failed",
+    text: error.message || "Failed to submit Story/Poetry.",
+    confirmButtonText: "OK",
+  });
+}
   };
 
   // =========================================================
@@ -729,6 +824,37 @@ export default function UploadPoetry() {
       loadProfile();
     }
   }, [isLoggedIn]);
+
+  // =========================================================
+  // LOAD ACTIVE PARTICULARS WHEN TYPE CHANGES
+  // =========================================================
+
+  useEffect(() => {
+    const loadParticulars = async () => {
+      try {
+        setParticularsLoading(true);
+
+        setSelectedParticularId("");
+
+        const data = await getActiveStoryPoetryParticulars(contentType);
+
+        setParticulars(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to load particulars:", error);
+
+        setParticulars([]);
+      } finally {
+        setParticularsLoading(false);
+      }
+    };
+
+    if (isLoggedIn) {
+      loadParticulars();
+    } else {
+      setParticulars([]);
+      setSelectedParticularId("");
+    }
+  }, [contentType, isLoggedIn]);
 
   // =========================================================
   // LIMIT LABEL
@@ -986,10 +1112,12 @@ export default function UploadPoetry() {
                           key={option.value}
                           onClick={() => {
                             setContentType(option.value);
+                            setSelectedParticularId("");
 
                             setFieldErrors((prev) => ({
                               ...prev,
                               content: "",
+                              particular: "",
                             }));
                           }}
                           className={`
@@ -1053,6 +1181,74 @@ export default function UploadPoetry() {
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* =================================================
+    PARTICULAR
+================================================= */}
+
+                  <div className="mt-4 sm:mt-5">
+                    <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                      Particular
+                      <span className="text-red-500"> *</span>
+                    </label>
+
+                    <select
+                      value={selectedParticularId}
+                      onChange={(e) => {
+                        setSelectedParticularId(e.target.value);
+
+                        if (fieldErrors.particular) {
+                          setFieldErrors((prev) => ({
+                            ...prev,
+                            particular: "",
+                          }));
+                        }
+                      }}
+                      disabled={particularsLoading}
+                      className={`
+      w-full
+      bg-stone-50/75
+      border
+      rounded-xl
+      px-3
+      py-2.5
+      text-xs
+      text-gray-800
+      focus:outline-none
+      focus:border-emerald-800
+
+      ${fieldErrors.particular ? "border-red-500" : "border-stone-200"}
+    `}
+                    >
+                      <option value="">
+                        {particularsLoading
+                          ? "Loading particulars..."
+                          : "Select particular"}
+                      </option>
+
+                      {!particularsLoading &&
+                        particulars.map((particular) => (
+                          <option
+                            key={particular.storyPoetryParticularId}
+                            value={particular.storyPoetryParticularId}
+                          >
+                            {particular.name}
+                          </option>
+                        ))}
+                    </select>
+
+                    {fieldErrors.particular && (
+                      <p className="text-[10px] text-red-500 font-medium mt-1">
+                        {fieldErrors.particular}
+                      </p>
+                    )}
+
+                    {!particularsLoading && particulars.length === 0 && (
+                      <p className="text-[10px] text-stone-500 mt-1">
+                        No active particulars are available for {contentType}.
+                      </p>
+                    )}
                   </div>
 
                   {/* =================================================
@@ -1438,6 +1634,61 @@ export default function UploadPoetry() {
                     </div>
 
                     {/* =================================================
+  ADDRESS
+================================================= */}
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                        Address
+                        <span className="text-red-500"> *</span>
+                      </label>
+
+                      <textarea
+                        value={contributorAddress}
+                        onChange={(e) => {
+                          setContributorAddress(e.target.value);
+
+                          if (fieldErrors.contributorAddress) {
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              contributorAddress: "",
+                            }));
+                          }
+                        }}
+                        placeholder="Enter your full address"
+                        maxLength={500}
+                        rows={4}
+                        className={`
+    w-full
+    bg-stone-50/75
+    border
+    rounded-xl
+    py-2.5
+    px-3
+    text-xs
+    text-gray-800
+    focus:outline-none
+    focus:border-emerald-800
+    resize-none
+
+    ${fieldErrors.contributorAddress ? "border-red-500" : "border-stone-200"}
+  `}
+                      />
+
+                      {fieldErrors.contributorAddress && (
+                        <p className="text-[10px] text-red-500 font-medium mt-1">
+                          {fieldErrors.contributorAddress}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* =================================================
+  EMAIL
+================================================= */}
+
+                    <div></div>
+
+                    {/* =================================================
                       DISTRICT + CITY
 
                       DESKTOP:
@@ -1551,6 +1802,59 @@ export default function UploadPoetry() {
                     </div>
 
                     {/* =================================================
+  PINCODE
+================================================= */}
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+                        Pincode
+                        <span className="text-red-500"> *</span>
+                      </label>
+
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={contributorPincode}
+                        onChange={(e) => {
+                          const value = e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 6);
+
+                          setContributorPincode(value);
+
+                          if (fieldErrors.contributorPincode) {
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              contributorPincode: "",
+                            }));
+                          }
+                        }}
+                        placeholder="6 digit pincode"
+                        maxLength={6}
+                        className={`
+      w-full
+      bg-stone-50/75
+      border
+      rounded-xl
+      py-2.5
+      px-3
+      text-xs
+      text-gray-800
+      focus:outline-none
+      focus:border-emerald-800
+
+      ${fieldErrors.contributorPincode ? "border-red-500" : "border-stone-200"}
+    `}
+                      />
+
+                      {fieldErrors.contributorPincode && (
+                        <p className="text-[10px] text-red-500 font-medium mt-1">
+                          {fieldErrors.contributorPincode}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* =================================================
                       EMAIL
                   ================================================= */}
 
@@ -1613,7 +1917,7 @@ export default function UploadPoetry() {
 
                     <div>
                       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
-                        Phone Number
+                        Contact number/ Whatsapp
                         <span className="text-red-500"> *</span>
                       </label>
 
@@ -1905,14 +2209,36 @@ export default function UploadPoetry() {
             {/* PREVIEW BODY */}
 
             <div className="max-h-[calc(95vh-65px)] sm:max-h-[calc(90vh-80px)] overflow-y-auto">
-              {/* TITLE */}
+              <div className="flex justify-between items-center">
+                {/* TITLE */}
 
-              <div className="px-4 sm:px-8 pt-5 sm:pt-8">
-                <h1 className="text-lg sm:text-3xl font-extrabold text-[#1b3b2b] break-words">
-                  {title || "Untitled"}
-                </h1>
+                <div className="px-4 sm:px-8 pt-5 sm:pt-8">
+                  <h1 className="text-lg sm:text-3xl font-extrabold text-[#1b3b2b] break-words">
+                    {title || "Untitled"}
+                  </h1>
 
-                <div className="mt-2 h-1 w-10 sm:w-16 bg-[#1b3b2b] rounded-full" />
+                  <div className="mt-2 h-1 w-10 sm:w-16 bg-[#1b3b2b] rounded-full" />
+                </div>
+
+                {/* AUTHOR */}
+
+                <div className="px-4 sm:px-8 pb-5 sm:pb-8 mt-5">
+                  <div className="border-t border-stone-200 pt-3 sm:pt-4">
+                    <p className="text-[11px] sm:text-sm font-bold text-gray-800">
+                      {contributorNameMalayalam || "Contributor"}
+                    </p>
+
+                    <p className="text-[9px] sm:text-xs text-stone-500 mt-1">
+                      {contributorCityMalayalam}
+
+                      {contributorCityMalayalam && contributorDistrictMalayalam
+                        ? ", "
+                        : ""}
+
+                      {contributorDistrictMalayalam}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* CONTENT */}
@@ -1945,26 +2271,6 @@ export default function UploadPoetry() {
                   >
                     {content || "No content written yet."}
                   </div>
-                </div>
-              </div>
-
-              {/* AUTHOR */}
-
-              <div className="px-4 sm:px-8 pb-5 sm:pb-8">
-                <div className="border-t border-stone-200 pt-3 sm:pt-4">
-                  <p className="text-[11px] sm:text-sm font-bold text-gray-800">
-                    {contributorNameMalayalam || "Contributor"}
-                  </p>
-
-                  <p className="text-[9px] sm:text-xs text-stone-500 mt-1">
-                    {contributorCityMalayalam}
-
-                    {contributorCityMalayalam && contributorDistrictMalayalam
-                      ? ", "
-                      : ""}
-
-                    {contributorDistrictMalayalam}
-                  </p>
                 </div>
               </div>
             </div>

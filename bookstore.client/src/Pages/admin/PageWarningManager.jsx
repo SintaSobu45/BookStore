@@ -251,7 +251,7 @@ const PageWarningManager = ({ pageName }) => {
 
               <p className="text-sm text-stone-500 mt-1">
                 This message will be displayed as the important
-                notice on this page.
+                notice on writing page.
               </p>
 
             </div>

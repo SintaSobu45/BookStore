@@ -112,7 +112,8 @@ export const verifyPayment = async ({
 // =========================================================
 
 export const createStoryPoetryPayment = async (
-  storyPoetryId
+  storyPoetryId,
+  extraCopies
 ) => {
   try {
     console.log(
@@ -140,6 +141,7 @@ export const createStoryPoetryPayment = async (
 
         body: JSON.stringify({
           storyPoetryId,
+          extraCopies
         }),
       }
     );
@@ -241,6 +243,54 @@ export const verifyStoryPoetryPayment = async ({
     throw new Error(
       error.message ||
         "Story/Poetry payment verification failed."
+    );
+  }
+};
+
+
+// =========================================================
+// CANCEL STORY / POETRY PAYMENT
+// =========================================================
+
+export const cancelStoryPoetryPayment = async (paymentId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Please login before cancelling payment.");
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/StoryPoetryPayment/cancel/${paymentId}`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          "Failed to cancel payment."
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error(
+      "❌ Cancel Story/Poetry payment error:",
+      error
+    );
+
+    throw new Error(
+      error.message ||
+        "Failed to cancel payment."
     );
   }
 };
