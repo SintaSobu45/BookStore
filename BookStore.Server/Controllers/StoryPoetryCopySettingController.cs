@@ -7,7 +7,7 @@ namespace BookStore.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class StoryPoetryCopySettingController : ControllerBase
     {
         private readonly StoryPoetryCopySettingService _service;
@@ -73,6 +73,7 @@ namespace BookStore.Server.Controllers
 
         // POST: api/StoryPoetryCopySetting
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Add(
             [FromBody] AddStoryPoetryCopySettingRequest request)
         {
@@ -103,6 +104,7 @@ namespace BookStore.Server.Controllers
 
         // PUT: api/StoryPoetryCopySetting/1
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(
             int id,
             [FromBody] UpdateStoryPoetryCopySettingRequest request)
