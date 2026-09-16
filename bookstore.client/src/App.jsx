@@ -23,6 +23,7 @@ import Cart from "./Pages/cart";
 import MyOrders from "./Pages/Orders";
 import OrderSuccess from "./Pages/OrderSuccess";
 import YourUploads from "./Pages/YourUploads";
+import StoryPoetryPayment from "./Pages/StoryPoetryPayment";
 
 // ======================================================
 // PASSWORD RESET
@@ -46,6 +47,7 @@ import AdminCertificate from "./Pages/admin/AdminCertificates";
 import BookOrders from "./Pages/admin/BookOrders";
 import PromotionBanners from "./Pages/admin/PromotionBanners";
 import AdminLayout from "./Pages/admin/AdminLayout";
+import AdminParticulars from "./Pages/admin/AdminParticulars";
 
 // ======================================================
 // ROUTE PROTECTION
@@ -60,6 +62,7 @@ import AdminRoute from "./Components/AdminRoute";
 
 import ScrollToTop from "./Components/ScrollToTop";
 import SessionExpiryHandler from "./Components/SessionExpiryHandler";
+import CourierDetails from "./Pages/admin/CourierDetails";
 
 // ======================================================
 // ADMIN / EDITOR PAGE ACCESS
@@ -123,114 +126,68 @@ function App() {
 
         <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/forgot-password"
-          element={<ForgotPassword />}
-        />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        <Route
-          path="/verify-reset-otp"
-          element={<VerifyResetOtp />}
-        />
+        <Route path="/verify-reset-otp" element={<VerifyResetOtp />} />
 
-        <Route
-          path="/reset-password"
-          element={<ResetPassword />}
-        />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* =================================================
             BOOK ROUTES
         ================================================= */}
 
-        <Route
-          path="/all/books"
-          element={<BookList />}
-        />
+        <Route path="/all/books" element={<BookList />} />
 
-        <Route
-          path="/book/:id"
-          element={<BookDetail />}
-        />
+        <Route path="/book/:id" element={<BookDetail />} />
 
-        <Route
-          path="/category/:id"
-          element={<CategoryBooks />}
-        />
+        <Route path="/category/:id" element={<CategoryBooks />} />
 
         {/* =================================================
             ABOUT
         ================================================= */}
 
-        <Route
-          path="/about"
-          element={<About />}
-        />
+        <Route path="/about" element={<About />} />
 
         {/* =================================================
             STORY / POETRY UPLOAD
         ================================================= */}
 
-        <Route
-          path="/book/upload"
-          element={<UploadPoetry />}
-        />
+        <Route path="/book/upload" element={<UploadPoetry />} />
 
         {/* =================================================
             EVENTS
         ================================================= */}
 
-        <Route
-          path="/events"
-          element={<Events />}
-        />
+        <Route path="/events" element={<Events />} />
 
-        <Route
-          path="/events/:id"
-          element={<EventRegistration />}
-        />
+        <Route path="/events/:id" element={<EventRegistration />} />
 
         {/* =================================================
             USER ROUTES
         ================================================= */}
 
-        <Route
-          path="/my/registrations"
-          element={<MyRegistrations />}
-        />
+        <Route path="/my/registrations" element={<MyRegistrations />} />
 
-        <Route
-          path="/cart"
-          element={<Cart />}
-        />
+        <Route path="/cart" element={<Cart />} />
 
-        <Route
-          path="/orders"
-          element={<MyOrders />}
-        />
+        <Route path="/orders" element={<MyOrders />} />
 
-        <Route
-          path="/checkout"
-          element={<Checkout />}
-        />
+        <Route path="/checkout" element={<Checkout />} />
 
-        <Route
-          path="/order-success/:orderId"
-          element={<OrderSuccess />}
-        />
+        <Route path="/order-success/:orderId" element={<OrderSuccess />} />
 
         {/* =================================================
             AUTHENTICATED USER ROUTES
         ================================================= */}
 
         <Route element={<ProtectedRoute />}>
-          <Route
-            path="/profile"
-            element={<Profile />}
-          />
+          <Route path="/profile" element={<Profile />} />
+
+          <Route path="/your/uploads" element={<YourUploads />} />
 
           <Route
-            path="/your/uploads"
-            element={<YourUploads />}
+            path="/your/uploads/payment/:id"
+            element={<StoryPoetryPayment />}
           />
         </Route>
 
@@ -324,10 +281,26 @@ function App() {
           <Route
             path="story"
             element={
-              <AdminPageRoute
-                allowedRoles={["Admin", "Editor"]}
-              >
+              <AdminPageRoute allowedRoles={["Admin", "Editor"]}>
                 <AdminStoryPoetry />
+              </AdminPageRoute>
+            }
+          />
+
+          {/* Courier details */}
+
+          <Route path="/admin/courier-details" element={<CourierDetails />} />
+
+          {/* =================================================
+    PARTICULAR MANAGEMENT
+    ADMIN ONLY
+================================================= */}
+
+          <Route
+            path="particulars"
+            element={
+              <AdminPageRoute allowedRoles={["Admin"]}>
+                <AdminParticulars />
               </AdminPageRoute>
             }
           />
@@ -340,9 +313,7 @@ function App() {
           <Route
             path="story/:id"
             element={
-              <AdminPageRoute
-                allowedRoles={["Admin", "Editor"]}
-              >
+              <AdminPageRoute allowedRoles={["Admin", "Editor"]}>
                 <AdminStoryPoetryDetails />
               </AdminPageRoute>
             }

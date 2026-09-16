@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ShoppingBag,
   Loader2,
@@ -14,11 +14,17 @@ import {
   CreditCard,
   CheckCircle2,
   Truck,
+  ScanLine,
 } from "lucide-react";
+
+import Swal from "sweetalert2";
+
+import { Html5Qrcode } from "html5-qrcode";
 
 import {
   getAllOrders,
   updateOrderStatus,
+  updateOrderBarcode,
 } from "../../services/orderService";
 
 export default function BookOrders() {
@@ -42,6 +48,28 @@ export default function BookOrders() {
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
 
   // =========================================================
+  // BARCODE
+  // =========================================================
+
+  const [barcode, setBarcode] = useState("");
+  const [updatingBarcode, setUpdatingBarcode] = useState(false);
+
+  // Scanner state
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [scannerError, setScannerError] = useState("");
+  const [scannerOrder, setScannerOrder] = useState(null);
+  const [scannerStarting, setScannerStarting] = useState(false);
+
+  // IMPORTANT:
+  // Keep Html5Qrcode instance inside useRef.
+  const scannerRef = useRef(null);
+
+  // Prevent duplicate barcode callbacks
+  const scannedRef = useRef(false);
+
+  const scannerOrderRef = useRef(null);
+
+  // =========================================================
   // LOAD ORDERS
   // =========================================================
 
@@ -54,23 +82,16 @@ export default function BookOrders() {
 
       console.log("orders:", data);
 
-      // -----------------------------------------------------
       // Only keep PAID orders
-      // -----------------------------------------------------
-
       const paidOrders = (data || []).filter(
-        (order) =>
-          String(order.paymentStatus || "").toLowerCase() ===
-          "paid"
+        (order) => String(order.paymentStatus || "").toLowerCase() === "paid",
       );
 
       setOrders(paidOrders);
     } catch (error) {
       console.error("Failed to load orders:", error);
 
-      setError(
-        error.message || "Failed to load book orders."
-      );
+      setError(error.message || "Failed to load book orders.");
     } finally {
       setLoading(false);
     }
@@ -129,9 +150,8 @@ export default function BookOrders() {
     if (!order?.items) return 0;
 
     return order.items.reduce(
-      (total, item) =>
-        total + Number(item.quantity || 0),
-      0
+      (total, item) => total + Number(item.quantity || 0),
+      0,
     );
   };
 
@@ -144,9 +164,7 @@ export default function BookOrders() {
       return [];
     }
 
-    return order.items
-      .map((item) => item.bookTitle)
-      .filter(Boolean);
+    return order.items.map((item) => item.bookTitle).filter(Boolean);
   };
 
   // =========================================================
@@ -175,18 +193,11 @@ export default function BookOrders() {
     const search = searchTerm.toLowerCase().trim();
 
     return orders.filter((order) => {
-      // -----------------------------------------------------
       // STATUS FILTER
-      // -----------------------------------------------------
-
       const matchesStatus =
-        statusFilter === "All" ||
-        order.orderStatus === statusFilter;
+        statusFilter === "All" || order.orderStatus === statusFilter;
 
-      // -----------------------------------------------------
       // SEARCH FILTER
-      // -----------------------------------------------------
-
       const matchesSearch =
         !search ||
         String(order.orderId || "")
@@ -204,57 +215,39 @@ export default function BookOrders() {
         String(order.customerPhone || "")
           .toLowerCase()
           .includes(search) ||
-        // Also search by book title
+        String(order.barcode || "")
+          .toLowerCase()
+          .includes(search) ||
         order.items?.some((item) =>
           String(item.bookTitle || "")
             .toLowerCase()
-            .includes(search)
+            .includes(search),
         );
 
-      // -----------------------------------------------------
       // DATE FILTER
-      // -----------------------------------------------------
-
       let matchesDate = true;
 
       if (order.orderDate) {
         const orderDate = new Date(order.orderDate);
 
-        // Normalize order date to local date
         const orderYear = orderDate.getFullYear();
-        const orderMonth = String(
-          orderDate.getMonth() + 1
-        ).padStart(2, "0");
-        const orderDay = String(
-          orderDate.getDate()
-        ).padStart(2, "0");
+        const orderMonth = String(orderDate.getMonth() + 1).padStart(2, "0");
+        const orderDay = String(orderDate.getDate()).padStart(2, "0");
 
         const orderDateString = `${orderYear}-${orderMonth}-${orderDay}`;
 
-        // From date
         if (fromDate && orderDateString < fromDate) {
           matchesDate = false;
         }
 
-        // To date
         if (toDate && orderDateString > toDate) {
           matchesDate = false;
         }
       }
 
-      return (
-        matchesStatus &&
-        matchesSearch &&
-        matchesDate
-      );
+      return matchesStatus && matchesSearch && matchesDate;
     });
-  }, [
-    orders,
-    searchTerm,
-    statusFilter,
-    fromDate,
-    toDate,
-  ]);
+  }, [orders, searchTerm, statusFilter, fromDate, toDate]);
 
   // =========================================================
   // TOTAL AMOUNT RECEIVED
@@ -262,9 +255,8 @@ export default function BookOrders() {
 
   const totalAmountReceived = useMemo(() => {
     return orders.reduce(
-      (total, order) =>
-        total + Number(order.totalAmount || 0),
-      0
+      (total, order) => total + Number(order.totalAmount || 0),
+      0,
     );
   }, [orders]);
 
@@ -275,43 +267,28 @@ export default function BookOrders() {
   const totalOrders = orders.length;
 
   const confirmedOrders = orders.filter(
-    (order) =>
-      order.orderStatus === "Confirmed"
+    (order) => order.orderStatus === "Confirmed",
   ).length;
 
   const deliveredOrders = orders.filter(
-    (order) =>
-      order.orderStatus === "Delivered"
+    (order) => order.orderStatus === "Delivered",
   ).length;
 
   // =========================================================
   // UPDATE STATUS
   // =========================================================
 
-  const handleStatusChange = async (
-    order,
-    newStatus
-  ) => {
-    if (
-      !order ||
-      !newStatus ||
-      order.orderStatus === newStatus
-    ) {
+  const handleStatusChange = async (order, newStatus) => {
+    if (!order || !newStatus || order.orderStatus === newStatus) {
       return;
     }
 
     try {
       setUpdatingOrderId(order.orderId);
 
-      await updateOrderStatus(
-        order.orderId,
-        newStatus
-      );
+      await updateOrderStatus(order.orderId, newStatus);
 
-      // -----------------------------------------------------
       // Update orders list
-      // -----------------------------------------------------
-
       setOrders((previousOrders) =>
         previousOrders.map((item) =>
           item.orderId === order.orderId
@@ -319,44 +296,371 @@ export default function BookOrders() {
                 ...item,
                 orderStatus: newStatus,
               }
-            : item
-        )
+            : item,
+        ),
       );
 
-      // -----------------------------------------------------
       // Update selected order
-      // -----------------------------------------------------
-
       setSelectedOrder((previous) =>
-        previous &&
-        previous.orderId === order.orderId
+        previous && previous.orderId === order.orderId
           ? {
               ...previous,
               orderStatus: newStatus,
             }
-          : previous
+          : previous,
       );
     } catch (error) {
-      console.error(
-        "Failed to update order status:",
-        error
-      );
+      console.error("Failed to update order status:", error);
 
-      alert(
-        error.message ||
-          "Failed to update order status."
-      );
+      alert(error.message || "Failed to update order status.");
     } finally {
       setUpdatingOrderId(null);
     }
   };
 
   // =========================================================
+  // UPDATE BARCODE MANUALLY
+  // =========================================================
+
+  const handleBarcodeUpdate = async () => {
+    if (!selectedOrder) {
+      return;
+    }
+
+    const trimmedBarcode = barcode.trim();
+
+    if (!trimmedBarcode) {
+      Swal.fire({
+        icon: "warning",
+        title: "Barcode Required",
+        text: "Please enter a barcode.",
+        confirmButtonColor: "#064e3b",
+      });
+
+      return;
+    }
+
+    try {
+      setUpdatingBarcode(true);
+
+      const result = await updateOrderBarcode(
+        selectedOrder.orderId,
+        trimmedBarcode,
+      );
+
+      // Update orders list
+      setOrders((previousOrders) =>
+        previousOrders.map((order) =>
+          order.orderId === selectedOrder.orderId
+            ? {
+                ...order,
+                barcode: trimmedBarcode,
+              }
+            : order,
+        ),
+      );
+
+      // Update selected order
+      setSelectedOrder((previous) =>
+        previous
+          ? {
+              ...previous,
+              barcode: trimmedBarcode,
+            }
+          : previous,
+      );
+
+      setBarcode(trimmedBarcode);
+
+      // SUCCESS
+      Swal.fire({
+        icon: "success",
+        title: "Barcode Updated!",
+        text: result?.message || "Barcode updated successfully.",
+        confirmButtonColor: "#064e3b",
+      });
+    } catch (error) {
+      console.error("Failed to update barcode:", error);
+
+      Swal.fire({
+        icon: "error",
+        title: "Update Failed",
+        text: error.message || "Failed to update barcode.",
+        confirmButtonColor: "#dc2626",
+      });
+    } finally {
+      setUpdatingBarcode(false);
+    }
+  };
+  // =========================================================
+  // STOP BARCODE SCANNER
+  // =========================================================
+
+  const stopBarcodeScanner = async () => {
+    const scanner = scannerRef.current;
+
+    if (!scanner) {
+      return;
+    }
+
+    try {
+      const state = scanner.getState();
+
+      // Html5Qrcode scanner state:
+      // 2 = SCANNING
+      // 3 = PAUSED
+      if (state === 2 || state === 3) {
+        await scanner.stop();
+      }
+
+      await scanner.clear();
+    } catch (error) {
+      console.error("Failed to stop barcode scanner:", error);
+    } finally {
+      scannerRef.current = null;
+    }
+  };
+
+  // =========================================================
+  // START BARCODE SCANNER
+  // =========================================================
+
+  const handleStartBarcodeScanner = async (order) => {
+    if (!order?.orderId) {
+      console.error("No valid order supplied to scanner:", order);
+      return;
+    }
+
+    await stopBarcodeScanner();
+
+    scannerOrderRef.current = order;
+
+    setScannerOrder(order);
+    setScannerError("");
+    setScannerStarting(true);
+    scannedRef.current = false;
+    setShowBarcodeScanner(true);
+  };
+
+  // =========================================================
+  // START SCANNER AFTER MODAL IS RENDERED
+  // =========================================================
+
+  useEffect(() => {
+    if (!showBarcodeScanner) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const startScanner = async () => {
+      try {
+        // Wait for scanner modal/container to render
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        if (cancelled) {
+          return;
+        }
+
+        // IMPORTANT:
+        // Get the order from useRef.
+        // We CANNOT use "order" directly here.
+        const order = scannerOrderRef.current;
+
+        if (!order?.orderId) {
+          throw new Error("No order selected for barcode scanning.");
+        }
+
+        const element = document.getElementById("barcode-reader");
+
+        if (!element) {
+          throw new Error("Scanner container not found.");
+        }
+
+        const scanner = new Html5Qrcode("barcode-reader");
+
+        scannerRef.current = scanner;
+
+        await scanner.start(
+          {
+            facingMode: "environment",
+          },
+          {
+            fps: 10,
+            qrbox: {
+              width: 300,
+              height: 150,
+            },
+            aspectRatio: 1.777778,
+          },
+
+          // =====================================================
+          // BARCODE SUCCESS
+          // =====================================================
+
+          async (decodedText) => {
+            if (scannedRef.current) {
+              return;
+            }
+
+            const scannedBarcode = String(decodedText || "").trim();
+
+            if (!scannedBarcode) {
+              return;
+            }
+
+            scannedRef.current = true;
+
+            console.log("Barcode detected:", scannedBarcode);
+            console.log("Scanner order:", order);
+
+            try {
+              // Stop camera first
+              await stopBarcodeScanner();
+
+              if (cancelled) {
+                return;
+              }
+
+              setScannerStarting(false);
+              setUpdatingBarcode(true);
+
+              // =================================================
+              // SAVE BARCODE
+              // =================================================
+
+              const result = await updateOrderBarcode(
+                order.orderId,
+                scannedBarcode,
+              );
+
+              if (cancelled) {
+                return;
+              }
+
+              // =================================================
+              // UPDATE ORDERS LIST
+              // =================================================
+
+              setOrders((previousOrders) =>
+                previousOrders.map((item) =>
+                  item.orderId === order.orderId
+                    ? {
+                        ...item,
+                        barcode: scannedBarcode,
+                      }
+                    : item,
+                ),
+              );
+
+              // =================================================
+              // UPDATE SELECTED ORDER
+              // =================================================
+
+              setSelectedOrder((previous) =>
+                previous && previous.orderId === order.orderId
+                  ? {
+                      ...previous,
+                      barcode: scannedBarcode,
+                    }
+                  : previous,
+              );
+
+              // =================================================
+              // UPDATE INPUT
+              // =================================================
+
+              setBarcode(scannedBarcode);
+
+              // =================================================
+              // CLOSE SCANNER
+              // =================================================
+
+              setShowBarcodeScanner(false);
+              setScannerOrder(null);
+              scannerOrderRef.current = null;
+              setScannerError("");
+
+              Swal.fire({
+                icon: "success",
+                title: "Barcode Updated",
+                text: scannedBarcode,
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 2500,
+                timerProgressBar: true,
+              });
+            } catch (error) {
+              console.error("Failed to save scanned barcode:", error);
+
+              scannedRef.current = false;
+
+              setScannerError(error?.message || "Failed to update barcode.");
+            } finally {
+              setUpdatingBarcode(false);
+            }
+          },
+
+          // =====================================================
+          // BARCODE NOT FOUND
+          // =====================================================
+
+          () => {
+            // Ignore continuous "no barcode found" callbacks
+          },
+        );
+
+        if (!cancelled) {
+          setScannerStarting(false);
+        }
+      } catch (error) {
+        console.error("Barcode scanner failed:", error);
+
+        if (cancelled) {
+          return;
+        }
+
+        setScannerStarting(false);
+
+        setScannerError(
+          error?.message ||
+            "Unable to access the camera. Please allow camera permission and try again.",
+        );
+      }
+    };
+
+    startScanner();
+
+    return () => {
+      cancelled = true;
+
+      stopBarcodeScanner();
+    };
+  }, [showBarcodeScanner]);
+
+  // =========================================================
+  // CLOSE SCANNER
+  // =========================================================
+
+  const handleCloseBarcodeScanner = async () => {
+    await stopBarcodeScanner();
+
+    scannedRef.current = false;
+    scannerOrderRef.current = null;
+
+    setShowBarcodeScanner(false);
+    setScannerOrder(null);
+    setScannerError("");
+    setScannerStarting(false);
+  };
+  // =========================================================
   // OPEN ORDER
   // =========================================================
 
   const handleOpenOrder = (order) => {
     setSelectedOrder(order);
+    setBarcode(order.barcode || "");
   };
 
   // =========================================================
@@ -379,14 +683,11 @@ export default function BookOrders() {
   };
 
   // =========================================================
-  // CHECK WHETHER FILTERS ARE ACTIVE
+  // ACTIVE FILTERS
   // =========================================================
 
   const hasActiveFilters =
-    searchTerm ||
-    statusFilter !== "All" ||
-    fromDate ||
-    toDate;
+    searchTerm || statusFilter !== "All" || fromDate || toDate;
 
   // =========================================================
   // LOADING
@@ -417,13 +718,10 @@ export default function BookOrders() {
       ===================================================== */}
 
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-900">
-          Book Orders
-        </h1>
+        <h1 className="text-2xl font-extrabold text-gray-900">Book Orders</h1>
 
         <p className="text-sm text-stone-500 mt-1">
-          View and manage paid book orders placed by
-          customers.
+          View and manage paid book orders placed by customers.
         </p>
       </div>
 
@@ -465,9 +763,7 @@ export default function BookOrders() {
         {/* CONFIRMED */}
 
         <div className="bg-white border border-stone-200 rounded-2xl p-5">
-          <p className="text-xs text-stone-500 font-semibold">
-            Confirmed
-          </p>
+          <p className="text-xs text-stone-500 font-semibold">Confirmed</p>
 
           <p className="text-2xl font-extrabold text-amber-700 mt-1">
             {confirmedOrders}
@@ -477,9 +773,7 @@ export default function BookOrders() {
         {/* DELIVERED */}
 
         <div className="bg-white border border-stone-200 rounded-2xl p-5">
-          <p className="text-xs text-stone-500 font-semibold">
-            Delivered
-          </p>
+          <p className="text-xs text-stone-500 font-semibold">Delivered</p>
 
           <p className="text-2xl font-extrabold text-emerald-700 mt-1">
             {deliveredOrders}
@@ -526,10 +820,7 @@ export default function BookOrders() {
 
                 <p className="text-xs text-stone-500 mt-0.5">
                   {filteredOrders.length} order
-                  {filteredOrders.length !== 1
-                    ? "s"
-                    : ""}{" "}
-                  found
+                  {filteredOrders.length !== 1 ? "s" : ""} found
                 </p>
               </div>
 
@@ -541,11 +832,7 @@ export default function BookOrders() {
                 <div className="relative">
                   <select
                     value={statusFilter}
-                    onChange={(e) =>
-                      setStatusFilter(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setStatusFilter(e.target.value)}
                     className="
                       appearance-none
                       w-full
@@ -566,17 +853,11 @@ export default function BookOrders() {
                       focus:ring-emerald-900/10
                     "
                   >
-                    <option value="All">
-                      All Status
-                    </option>
+                    <option value="All">All Status</option>
 
-                    <option value="Confirmed">
-                      Confirmed
-                    </option>
+                    <option value="Confirmed">Confirmed</option>
 
-                    <option value="Delivered">
-                      Delivered
-                    </option>
+                    <option value="Delivered">Delivered</option>
                   </select>
 
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
@@ -590,11 +871,7 @@ export default function BookOrders() {
                   <input
                     type="text"
                     value={searchTerm}
-                    onChange={(e) =>
-                      setSearchTerm(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search order, name, book..."
                     className="
                       w-full
@@ -619,9 +896,7 @@ export default function BookOrders() {
                   {searchTerm && (
                     <button
                       type="button"
-                      onClick={() =>
-                        setSearchTerm("")
-                      }
+                      onClick={() => setSearchTerm("")}
                       className="
                         absolute
                         right-3
@@ -638,9 +913,7 @@ export default function BookOrders() {
               </div>
             </div>
 
-            {/* =================================================
-                DATE FILTERS
-            ================================================= */}
+            {/* DATE FILTERS */}
 
             <div className="flex flex-col sm:flex-row sm:items-end gap-3">
               {/* FROM DATE */}
@@ -656,11 +929,7 @@ export default function BookOrders() {
                   <input
                     type="date"
                     value={fromDate}
-                    onChange={(e) =>
-                      setFromDate(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setFromDate(e.target.value)}
                     className="
                       w-full
                       pl-9
@@ -696,11 +965,7 @@ export default function BookOrders() {
                     type="date"
                     value={toDate}
                     min={fromDate || undefined}
-                    onChange={(e) =>
-                      setToDate(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setToDate(e.target.value)}
                     className="
                       w-full
                       pl-9
@@ -722,7 +987,7 @@ export default function BookOrders() {
                 </div>
               </div>
 
-              {/* CLEAR FILTERS */}
+              {/* CLEAR */}
 
               {hasActiveFilters && (
                 <button
@@ -748,7 +1013,6 @@ export default function BookOrders() {
                   "
                 >
                   <X className="h-4 w-4" />
-
                   Clear Filters
                 </button>
               )}
@@ -764,13 +1028,10 @@ export default function BookOrders() {
           <div className="py-20 text-center">
             <ShoppingBag className="h-10 w-10 mx-auto text-stone-300 mb-3" />
 
-            <h3 className="font-bold text-gray-900">
-              No paid orders found
-            </h3>
+            <h3 className="font-bold text-gray-900">No paid orders found</h3>
 
             <p className="text-sm text-stone-500 mt-1">
-              No paid orders match your current
-              filters.
+              No paid orders match your current filters.
             </p>
           </div>
         ) : (
@@ -784,6 +1045,10 @@ export default function BookOrders() {
                 <tr>
                   <th className="text-left px-5 py-4 font-bold text-gray-700">
                     Order
+                  </th>
+
+                  <th className="text-left px-5 py-4 font-bold text-gray-700">
+                    Barcode
                   </th>
 
                   <th className="text-left px-5 py-4 font-bold text-gray-700">
@@ -810,32 +1075,23 @@ export default function BookOrders() {
 
               <tbody className="divide-y divide-stone-100">
                 {filteredOrders.map((order) => {
-                  const statusStyle =
-                    getOrderStatusStyle(
-                      order.orderStatus
-                    );
+                  const statusStyle = getOrderStatusStyle(order.orderStatus);
 
-                  const StatusIcon =
-                    statusStyle.icon;
+                  const StatusIcon = statusStyle.icon;
 
-                  const bookNames =
-                    getBookNames(order);
+                  const bookNames = getBookNames(order);
 
                   return (
                     <tr
                       key={order.orderId}
-                      onClick={() =>
-                        handleOpenOrder(order)
-                      }
+                      onClick={() => handleOpenOrder(order)}
                       className="
                         hover:bg-emerald-50/40
                         transition-colors
                         cursor-pointer
                       "
                     >
-                      {/* =================================================
-                          ORDER
-                      ================================================= */}
+                      {/* ORDER */}
 
                       <td className="px-5 py-4">
                         <div>
@@ -850,26 +1106,74 @@ export default function BookOrders() {
                           )}
 
                           <p className="text-xs text-stone-500 mt-1">
-                            {formatDate(
-                              order.orderDate
-                            )}
+                            {formatDate(order.orderDate)}
                           </p>
                         </div>
                       </td>
 
-                      {/* =================================================
-                          CUSTOMER
-                      ================================================= */}
+                      {/* BARCODE */}
+
+                      <td className="px-5 py-4">
+                        <div className="flex flex-col gap-2">
+                          {order.barcode ? (
+                            <div>
+                              <p className="font-mono text-sm font-semibold text-gray-900">
+                                {order.barcode}
+                              </p>
+
+                              <p className="text-[10px] text-emerald-700 mt-1">
+                                Tracking assigned
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-warning">
+                              Not assigned
+                            </span>
+                          )}
+
+                          {/* SCAN BUTTON */}
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+
+                              handleStartBarcodeScanner(order);
+                            }}
+                            className="
+                              inline-flex
+                              w-fit
+                              items-center
+                              justify-center
+                              gap-1.5
+                              px-3
+                              py-1.5
+                              rounded-lg
+                              bg-emerald-900
+                              hover:bg-emerald-800
+                              text-white
+                              text-[11px]
+                              font-bold
+                              transition-colors
+                              cursor-pointer
+                            "
+                          >
+                            <ScanLine className="h-3.5 w-3.5" />
+
+                            {order.barcode ? "Scan Again" : "Scan Barcode"}
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* CUSTOMER */}
 
                       <td className="px-5 py-4">
                         <p className="font-semibold text-gray-900">
-                          {order.customerName ||
-                            "-"}
+                          {order.customerName || "-"}
                         </p>
 
                         <p className="text-xs text-stone-500 mt-1">
-                          {order.customerEmail ||
-                            "-"}
+                          {order.customerEmail || "-"}
                         </p>
 
                         {order.customerPhone && (
@@ -879,89 +1183,52 @@ export default function BookOrders() {
                         )}
                       </td>
 
-                      {/* =================================================
-                          BOOKS
-                      ================================================= */}
+                      {/* BOOKS */}
 
                       <td className="px-5 py-4 min-w-[250px] max-w-[350px]">
                         {bookNames.length > 0 ? (
                           <div>
                             <div className="space-y-1">
-                              {bookNames
-                                .slice(0, 2)
-                                .map(
-                                  (
-                                    bookName,
-                                    index
-                                  ) => (
-                                    <p
-                                      key={`${bookName}-${index}`}
-                                      className="
-                                        font-semibold
-                                        text-gray-800
-                                        truncate
-                                      "
-                                      title={
-                                        bookName
-                                      }
-                                    >
-                                      {bookName}
-                                    </p>
-                                  )
-                                )}
+                              {bookNames.slice(0, 2).map((bookName, index) => (
+                                <p
+                                  key={`${bookName}-${index}`}
+                                  className="font-semibold text-gray-800 truncate"
+                                  title={bookName}
+                                >
+                                  {bookName}
+                                </p>
+                              ))}
                             </div>
 
-                            {bookNames.length >
-                              2 && (
+                            {bookNames.length > 2 && (
                               <p className="text-xs text-stone-500 mt-1">
-                                +
-                                {bookNames.length -
-                                  2}{" "}
-                                more
+                                +{bookNames.length - 2} more
                               </p>
                             )}
 
                             <p className="text-xs text-stone-500 mt-1">
-                              {getItemCount(
-                                order
-                              )}{" "}
-                              book
-                              {getItemCount(
-                                order
-                              ) !== 1
-                                ? "s"
-                                : ""}
+                              {getItemCount(order)} book
+                              {getItemCount(order) !== 1 ? "s" : ""}
                             </p>
                           </div>
                         ) : (
-                          <p className="text-stone-400">
-                            No book details
-                          </p>
+                          <p className="text-stone-400">No book details</p>
                         )}
                       </td>
 
-                      {/* =================================================
-                          AMOUNT
-                      ================================================= */}
+                      {/* AMOUNT */}
 
                       <td className="px-5 py-4">
                         <p className="font-bold text-gray-900">
-                          {formatMoney(
-                            order.totalAmount
-                          )}
+                          {formatMoney(order.totalAmount)}
                         </p>
 
                         <p className="text-xs text-stone-500 mt-1">
-                          Courier:{" "}
-                          {formatMoney(
-                            order.courierFee
-                          )}
+                          Courier: {formatMoney(order.courierFee)}
                         </p>
                       </td>
 
-                      {/* =================================================
-                          PAYMENT
-                      ================================================= */}
+                      {/* PAYMENT */}
 
                       <td className="px-5 py-4">
                         <span
@@ -979,38 +1246,26 @@ export default function BookOrders() {
                           "
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
-
                           Paid
                         </span>
                       </td>
 
-                      {/* =================================================
-                          STATUS
-                      ================================================= */}
+                      {/* STATUS */}
 
                       <td
                         className="px-5 py-4"
-                        onClick={(e) =>
-                          e.stopPropagation()
-                        }
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <div className="relative inline-block">
                           <select
                             value={
-                              order.orderStatus ===
-                              "Delivered"
+                              order.orderStatus === "Delivered"
                                 ? "Delivered"
                                 : "Confirmed"
                             }
-                            disabled={
-                              updatingOrderId ===
-                              order.orderId
-                            }
+                            disabled={updatingOrderId === order.orderId}
                             onChange={(e) =>
-                              handleStatusChange(
-                                order,
-                                e.target.value
-                              )
+                              handleStatusChange(order, e.target.value)
                             }
                             className={`
                               appearance-none
@@ -1028,17 +1283,12 @@ export default function BookOrders() {
                               ${statusStyle.className}
                             `}
                           >
-                            <option value="Confirmed">
-                              Confirmed
-                            </option>
+                            <option value="Confirmed">Confirmed</option>
 
-                            <option value="Delivered">
-                              Delivered
-                            </option>
+                            <option value="Delivered">Delivered</option>
                           </select>
 
-                          {updatingOrderId ===
-                          order.orderId ? (
+                          {updatingOrderId === order.orderId ? (
                             <Loader2 className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin" />
                           ) : (
                             <StatusIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" />
@@ -1085,20 +1335,14 @@ export default function BookOrders() {
               rounded-2xl
               shadow-2xl
             "
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* =================================================
-                MODAL HEADER
-            ================================================= */}
+            {/* MODAL HEADER */}
 
             <div className="sticky top-0 z-10 bg-white border-b border-stone-200 px-6 py-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs text-stone-500 font-semibold">
-                    Order
-                  </p>
+                  <p className="text-xs text-stone-500 font-semibold">Order</p>
 
                   <h2 className="text-xl font-extrabold text-gray-900">
                     #{selectedOrder.orderId}
@@ -1107,9 +1351,7 @@ export default function BookOrders() {
 
                 <button
                   type="button"
-                  onClick={
-                    handleCloseOrder
-                  }
+                  onClick={handleCloseOrder}
                   className="
                     w-9
                     h-9
@@ -1128,31 +1370,23 @@ export default function BookOrders() {
               </div>
             </div>
 
-            {/* =================================================
-                MODAL CONTENT
-            ================================================= */}
+            {/* MODAL CONTENT */}
 
             <div className="p-6 space-y-6">
-              {/* =================================================
-                  ORDER SUMMARY
-              ================================================= */}
+              {/* ORDER SUMMARY */}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* ORDER DATE */}
 
                 <div className="rounded-xl bg-stone-50 border border-stone-200 p-4">
                   <div className="flex items-center gap-2 text-stone-500">
                     <CalendarDays className="h-4 w-4" />
 
-                    <span className="text-xs font-semibold">
-                      Order Date
-                    </span>
+                    <span className="text-xs font-semibold">Order Date</span>
                   </div>
 
                   <p className="font-bold text-gray-900 mt-2">
-                    {formatDateTime(
-                      selectedOrder.orderDate
-                    )}
+                    {formatDateTime(selectedOrder.orderDate)}
                   </p>
                 </div>
 
@@ -1162,9 +1396,7 @@ export default function BookOrders() {
                   <div className="flex items-center gap-2 text-stone-500">
                     <CreditCard className="h-4 w-4" />
 
-                    <span className="text-xs font-semibold">
-                      Payment
-                    </span>
+                    <span className="text-xs font-semibold">Payment</span>
                   </div>
 
                   <span
@@ -1183,7 +1415,6 @@ export default function BookOrders() {
                     "
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
-
                     Paid
                   </span>
                 </div>
@@ -1194,28 +1425,19 @@ export default function BookOrders() {
                   <div className="flex items-center gap-2 text-stone-500">
                     <Package className="h-4 w-4" />
 
-                    <span className="text-xs font-semibold">
-                      Order Status
-                    </span>
+                    <span className="text-xs font-semibold">Order Status</span>
                   </div>
 
                   <div className="relative mt-2">
                     <select
                       value={
-                        selectedOrder.orderStatus ===
-                        "Delivered"
+                        selectedOrder.orderStatus === "Delivered"
                           ? "Delivered"
                           : "Confirmed"
                       }
-                      disabled={
-                        updatingOrderId ===
-                        selectedOrder.orderId
-                      }
+                      disabled={updatingOrderId === selectedOrder.orderId}
                       onChange={(e) =>
-                        handleStatusChange(
-                          selectedOrder,
-                          e.target.value
-                        )
+                        handleStatusChange(selectedOrder, e.target.value)
                       }
                       className="
                         w-full
@@ -1232,21 +1454,116 @@ export default function BookOrders() {
                         disabled:opacity-60
                       "
                     >
-                      <option value="Confirmed">
-                        Confirmed
-                      </option>
+                      <option value="Confirmed">Confirmed</option>
 
-                      <option value="Delivered">
-                        Delivered
-                      </option>
+                      <option value="Delivered">Delivered</option>
                     </select>
+                  </div>
+                </div>
+
+                {/* BARCODE */}
+
+                <div className="rounded-xl bg-stone-50 border border-stone-200 p-4">
+                  <div className="flex items-center gap-2 text-stone-500">
+                    <Package className="h-4 w-4" />
+
+                    <span className="text-xs font-semibold">
+                      Tracking Barcode
+                    </span>
+                  </div>
+
+                  <div className="mt-2 space-y-2">
+                    <input
+                      type="text"
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
+                      placeholder="Enter barcode"
+                      className="
+                        w-full
+                        px-3
+                        py-2
+                        rounded-lg
+                        border
+                        border-stone-200
+                        bg-white
+                        text-sm
+                        font-medium
+                        text-gray-900
+                        outline-none
+                        focus:border-emerald-900
+                        focus:ring-2
+                        focus:ring-emerald-900/10
+                      "
+                      disabled={updatingBarcode}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={handleBarcodeUpdate}
+                      disabled={updatingBarcode || !barcode.trim()}
+                      className="
+                        w-full
+                        flex
+                        items-center
+                        justify-center
+                        gap-2
+                        px-3
+                        py-2
+                        rounded-lg
+                        bg-emerald-900
+                        hover:bg-emerald-800
+                        text-white
+                        text-xs
+                        font-bold
+                        transition-colors
+                        disabled:opacity-50
+                        disabled:cursor-not-allowed
+                      "
+                    >
+                      {updatingBarcode ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Update Barcode"
+                      )}
+                    </button>
+
+                    {/* SCAN FROM MODAL */}
+
+                    <button
+                      type="button"
+                      onClick={() => handleStartBarcodeScanner(selectedOrder)}
+                      disabled={updatingBarcode}
+                      className="
+                        w-full
+                        flex
+                        items-center
+                        justify-center
+                        gap-2
+                        px-3
+                        py-2
+                        rounded-lg
+                        border
+                        border-emerald-900
+                        text-emerald-900
+                        hover:bg-emerald-50
+                        text-xs
+                        font-bold
+                        transition-colors
+                        disabled:opacity-50
+                        disabled:cursor-not-allowed
+                      "
+                    >
+                      <ScanLine className="h-3.5 w-3.5" />
+                      Scan Barcode
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* =================================================
-                  CUSTOMER + SHIPPING
-              ================================================= */}
+              {/* CUSTOMER + SHIPPING */}
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* CUSTOMER */}
@@ -1262,13 +1579,10 @@ export default function BookOrders() {
 
                   <div className="space-y-3">
                     <div>
-                      <p className="text-[11px] text-stone-500">
-                        Name
-                      </p>
+                      <p className="text-[11px] text-stone-500">Name</p>
 
                       <p className="text-sm font-semibold text-gray-900 mt-0.5">
-                        {selectedOrder.customerName ||
-                          "-"}
+                        {selectedOrder.customerName || "-"}
                       </p>
                     </div>
 
@@ -1276,13 +1590,10 @@ export default function BookOrders() {
                       <Mail className="h-4 w-4 text-stone-400 mt-0.5" />
 
                       <div>
-                        <p className="text-[11px] text-stone-500">
-                          Email
-                        </p>
+                        <p className="text-[11px] text-stone-500">Email</p>
 
                         <p className="text-sm font-medium text-gray-800">
-                          {selectedOrder.customerEmail ||
-                            "-"}
+                          {selectedOrder.customerEmail || "-"}
                         </p>
                       </div>
                     </div>
@@ -1291,13 +1602,10 @@ export default function BookOrders() {
                       <Phone className="h-4 w-4 text-stone-400 mt-0.5" />
 
                       <div>
-                        <p className="text-[11px] text-stone-500">
-                          Phone
-                        </p>
+                        <p className="text-[11px] text-stone-500">Phone</p>
 
                         <p className="text-sm font-medium text-gray-800">
-                          {selectedOrder.customerPhone ||
-                            "-"}
+                          {selectedOrder.customerPhone || "-"}
                         </p>
                       </div>
                     </div>
@@ -1316,61 +1624,37 @@ export default function BookOrders() {
                   </div>
 
                   <div className="text-sm text-gray-800 leading-6">
-                    <p>
-                      {selectedOrder.shippingAddress ||
-                        "-"}
-                    </p>
+                    <p>{selectedOrder.shippingAddress || "-"}</p>
 
                     <p>
                       {selectedOrder.city || ""}
-                      {selectedOrder.city &&
-                      selectedOrder.state
-                        ? ", "
-                        : ""}
+                      {selectedOrder.city && selectedOrder.state ? ", " : ""}
                       {selectedOrder.state || ""}
                     </p>
 
-                    <p>
-                      PIN:{" "}
-                      {selectedOrder.pincode ||
-                        "-"}
-                    </p>
+                    <p>PIN: {selectedOrder.pincode || "-"}</p>
                   </div>
                 </div>
               </div>
 
-              {/* =================================================
-                  ITEMS
-              ================================================= */}
+              {/* ITEMS */}
 
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-gray-900">
-                    Ordered Books
-                  </h3>
+                  <h3 className="font-bold text-gray-900">Ordered Books</h3>
 
                   <span className="text-xs text-stone-500">
-                    {getItemCount(
-                      selectedOrder
-                    )}{" "}
-                    book
-                    {getItemCount(
-                      selectedOrder
-                    ) !== 1
-                      ? "s"
-                      : ""}
+                    {getItemCount(selectedOrder)} book
+                    {getItemCount(selectedOrder) !== 1 ? "s" : ""}
                   </span>
                 </div>
 
                 <div className="border border-stone-200 rounded-2xl overflow-hidden">
                   <div className="divide-y divide-stone-100">
-                    {selectedOrder.items?.map(
-                      (item) => (
-                        <div
-                          key={
-                            item.orderItemId
-                          }
-                          className="
+                    {selectedOrder.items?.map((item) => (
+                      <div
+                        key={item.orderItemId}
+                        className="
                             p-4
                             flex
                             flex-col
@@ -1379,108 +1663,83 @@ export default function BookOrders() {
                             sm:justify-between
                             gap-3
                           "
-                        >
+                      >
+                        <div>
+                          <p className="font-bold text-gray-900">
+                            {item.bookTitle || "Unknown Book"}
+                          </p>
+
+                          <p className="text-xs text-stone-500 mt-1">
+                            Book ID #{item.bookId}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-8">
                           <div>
-                            <p className="font-bold text-gray-900">
-                              {item.bookTitle ||
-                                "Unknown Book"}
+                            <p className="text-[11px] text-stone-500">
+                              Quantity
                             </p>
 
-                            <p className="text-xs text-stone-500 mt-1">
-                              Book ID #
-                              {item.bookId}
+                            <p className="font-semibold text-gray-900">
+                              ×{item.quantity}
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-8">
-                            <div>
-                              <p className="text-[11px] text-stone-500">
-                                Quantity
-                              </p>
+                          <div>
+                            <p className="text-[11px] text-stone-500">
+                              Unit Price
+                            </p>
 
-                              <p className="font-semibold text-gray-900">
-                                ×{item.quantity}
-                              </p>
-                            </div>
+                            <p className="font-semibold text-gray-900">
+                              {formatMoney(item.unitPrice)}
+                            </p>
+                          </div>
 
-                            <div>
-                              <p className="text-[11px] text-stone-500">
-                                Unit Price
-                              </p>
+                          <div className="text-right">
+                            <p className="text-[11px] text-stone-500">Total</p>
 
-                              <p className="font-semibold text-gray-900">
-                                {formatMoney(
-                                  item.unitPrice
-                                )}
-                              </p>
-                            </div>
-
-                            <div className="text-right">
-                              <p className="text-[11px] text-stone-500">
-                                Total
-                              </p>
-
-                              <p className="font-bold text-gray-900">
-                                {formatMoney(
-                                  item.totalPrice
-                                )}
-                              </p>
-                            </div>
+                            <p className="font-bold text-gray-900">
+                              {formatMoney(item.totalPrice)}
+                            </p>
                           </div>
                         </div>
-                      )
-                    )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              {/* =================================================
-                  TOTALS
-              ================================================= */}
+              {/* TOTALS */}
 
               <div className="flex justify-end">
                 <div className="w-full sm:w-80 border border-stone-200 rounded-2xl p-5">
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">
-                      Subtotal
-                    </span>
+                    <span className="text-stone-500">Subtotal</span>
 
                     <span className="font-semibold text-gray-900">
-                      {formatMoney(
-                        selectedOrder.subTotal
-                      )}
+                      {formatMoney(selectedOrder.subTotal)}
                     </span>
                   </div>
 
                   <div className="flex justify-between text-sm mt-3">
-                    <span className="text-stone-500">
-                      Courier Fee
-                    </span>
+                    <span className="text-stone-500">Courier Fee</span>
 
                     <span className="font-semibold text-gray-900">
-                      {formatMoney(
-                        selectedOrder.courierFee
-                      )}
+                      {formatMoney(selectedOrder.courierFee)}
                     </span>
                   </div>
 
                   <div className="border-t border-stone-200 mt-4 pt-4 flex justify-between">
-                    <span className="font-bold text-gray-900">
-                      Total
-                    </span>
+                    <span className="font-bold text-gray-900">Total</span>
 
                     <span className="text-lg font-extrabold text-emerald-900">
-                      {formatMoney(
-                        selectedOrder.totalAmount
-                      )}
+                      {formatMoney(selectedOrder.totalAmount)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* =================================================
-                  GUEST INFORMATION
-              ================================================= */}
+              {/* GUEST */}
 
               {selectedOrder.guestOrderId && (
                 <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
@@ -1493,6 +1752,137 @@ export default function BookOrders() {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          BARCODE SCANNER MODAL
+      ===================================================== */}
+
+      {showBarcodeScanner && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[70]
+            bg-black/50
+            backdrop-blur-sm
+            flex
+            items-center
+            justify-center
+            p-4
+          "
+          onClick={handleCloseBarcodeScanner}
+        >
+          <div
+            className="
+              w-full
+              max-w-lg
+              bg-white
+              rounded-2xl
+              shadow-2xl
+              overflow-hidden
+            "
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* HEADER */}
+
+            <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-stone-500 font-semibold">
+                  Scan Barcode
+                </p>
+
+                <h2 className="text-lg font-extrabold text-gray-900">
+                  Order #{scannerOrder?.orderId}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseBarcodeScanner}
+                className="
+                  w-9
+                  h-9
+                  rounded-lg
+                  bg-stone-100
+                  hover:bg-stone-200
+                  flex
+                  items-center
+                  justify-center
+                  text-stone-600
+                  cursor-pointer
+                "
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* SCANNER */}
+
+            <div className="p-5">
+              <div
+                id="barcode-reader"
+                className="
+                  w-full
+                  overflow-hidden
+                  rounded-xl
+                  border
+                  border-stone-200
+                  bg-black
+                "
+              />
+
+              {/* STARTING */}
+
+              {scannerStarting && !scannerError && (
+                <div className="flex items-center justify-center gap-2 mt-4 text-sm text-stone-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Starting camera...
+                </div>
+              )}
+
+              {/* ERROR */}
+
+              {scannerError && (
+                <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-3">
+                  <p className="text-xs font-semibold text-red-700">
+                    {scannerError}
+                  </p>
+
+                  <p className="text-xs text-red-600 mt-1">
+                    Please allow camera access and try again.
+                  </p>
+                </div>
+              )}
+
+              <p className="text-xs text-stone-500 text-center mt-4">
+                Point your camera at the barcode.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleCloseBarcodeScanner}
+                className="
+                  w-full
+                  mt-4
+                  px-4
+                  py-2.5
+                  rounded-xl
+                  border
+                  border-stone-200
+                  bg-stone-50
+                  hover:bg-stone-100
+                  text-sm
+                  font-semibold
+                  text-stone-700
+                  cursor-pointer
+                "
+              >
+                Cancel Scanner
+              </button>
             </div>
           </div>
         </div>

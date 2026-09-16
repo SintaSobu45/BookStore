@@ -9,6 +9,10 @@ import {
   CalendarDays,
   LogOut,
   Paperclip,
+  PenLine,
+  ListTree,
+  ScrollText,
+  Package,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 
@@ -75,132 +79,173 @@ function AdminLayout() {
         />
       )}
 
+     {/* =========================
+    Sidebar
+========================= */}
+<aside
+  className={`
+    fixed
+    left-0
+    top-0
+    z-50
+    h-screen
+    w-64
+    bg-gray-900
+    text-white
+    p-6
+    flex
+    flex-col
+    transform
+    transition-transform
+    duration-300
+    ease-in-out
+    ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+    md:translate-x-0
+    md:z-30
+  `}
+>
+  {/* =========================
+      Sidebar Header with Logo
+  ========================= */}
+  <div className="flex-shrink-0 flex items-center justify-center mb-8">
+    <Link
+      to={homePath}
+      onClick={handleNavigation}
+      className="w-full h-16 overflow-hidden flex items-center justify-center"
+    >
+      <img
+        src={logo}
+        alt="The Old Library"
+        className="w-full h-full object-cover bg-white rounded-2"
+      />
+    </Link>
+
+    {/* Mobile Close Button */}
+    <button
+      onClick={() => setSidebarOpen(false)}
+      className="md:hidden p-1 rounded-lg transition text-stone-400 hover:text-white cursor-pointer"
+      aria-label="Close menu"
+    >
+      <X className="w-5 h-5" />
+    </button>
+  </div>
+
+  {/* =========================
+      Navigation Scroll Area
+  ========================= */}
+  <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
+    <nav className="space-y-3">
+
       {/* =========================
-          Sidebar
+          Admin-only Navigation
       ========================= */}
-      <aside
-        className={`
-          fixed
-          left-0
-          top-0
-          z-50
-          h-screen
-          w-64
-          bg-gray-900
-          text-white
-          p-6
-          transform
-          transition-transform
-          duration-300
-          ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0
-          md:z-30
-        `}
-      >
-        {/* Sidebar Header with Logo */}
-        <div className="flex items-center justify-center mb-8">
+      {!isEditor && (
+        <>
           <Link
-            to={homePath}
+            to="/admin"
             onClick={handleNavigation}
-            className="w-full h-16 overflow-hidden flex items-center justify-center"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition"
           >
-            <img
-              src={logo}
-              alt="The Old Library"
-              className="w-full h-full object-cover bg-white rounded-2"
-            />
+            <LayoutDashboard className="w-5 h-5" />
+            <span>Dashboard</span>
           </Link>
 
-          {/* Mobile Close Button */}
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden p-1 rounded-lg transition text-stone-400 hover:text-white cursor-pointer"
-            aria-label="Close menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* =========================
-            Navigation
-        ========================= */}
-        <nav className="space-y-3">
-          {/* Admin-only navigation */}
-          {!isEditor && (
-            <>
-              <Link
-                to="/admin"
-                onClick={handleNavigation}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
-              >
-                <LayoutDashboard className="w-5 h-5" />
-                <span>Dashboard</span>
-              </Link>
-
-              <Link
-                to="/admin/books"
-                onClick={handleNavigation}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
-              >
-                <BookOpen className="w-5 h-5" />
-                <span>Books</span>
-              </Link>
-
-              <Link
-                to="/admin/library"
-                onClick={handleNavigation}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
-              >
-                <Library className="w-5 h-5" />
-                <span>Library Management</span>
-              </Link>
-
-              <Link
-                to="/admin/events"
-                onClick={handleNavigation}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
-              >
-                <CalendarDays className="w-5 h-5" />
-                <span>Events</span>
-              </Link>
-            </>
-          )}
-
-          {/* Story & Poetry - Admin + Editor */}
           <Link
-            to="/admin/story"
+            to="/admin/books"
             onClick={handleNavigation}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition"
+          >
+            <BookOpen className="w-5 h-5" />
+            <span>Books</span>
+          </Link>
+
+          <Link
+            to="/admin/library"
+            onClick={handleNavigation}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition"
+          >
+            <Library className="w-5 h-5" />
+            <span>Library Management</span>
+          </Link>
+
+          <Link
+            to="/admin/events"
+            onClick={handleNavigation}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition"
           >
             <CalendarDays className="w-5 h-5" />
-            <span>Story & Poetry</span>
+            <span>Events</span>
           </Link>
+        </>
+      )}
 
-          {/* Admin-only navigation */}
-          {!isEditor && (
-            <Link
-              to="/admin/certificates"
-              onClick={handleNavigation}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition"
-            >
-              <Paperclip className="w-5 h-5" />
-              <span>Certificates</span>
-            </Link>
-          )}
-        </nav>
+      {/* =========================
+          Story & Poetry
+      ========================= */}
+      <Link
+        to="/admin/story"
+        onClick={handleNavigation}
+        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition"
+      >
+        <PenLine className="w-5 h-5" />
+        <span>Anthology</span>
+      </Link>
 
-        {/* =========================
-            Logout
-        ========================= */}
-        <button
-          onClick={handleLogout}
-          className="mt-10 w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 py-3 rounded-lg transition cursor-pointer font-bold"
+
+      {/* =========================
+          Courier details
+      ========================= */}
+      <Link
+        to="/admin/courier-details"
+        onClick={handleNavigation}
+        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition"
+      >
+        <Package className="w-5 h-5" />
+        <span>Courier</span>
+      </Link>
+
+      {/* =========================
+          Particulars
+      ========================= */}
+      <Link
+        to="/admin/particulars"
+        onClick={handleNavigation}
+        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition"
+      >
+        <ListTree className="w-5 h-5" />
+        <span>SPS Category</span>
+      </Link>
+
+      {/* =========================
+          Certificates
+      ========================= */}
+      {!isEditor && (
+        <Link
+          to="/admin/certificates"
+          onClick={handleNavigation}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition"
         >
-          <LogOut className="w-5 h-5" />
-          <span>Logout</span>
-        </button>
-      </aside>
+          <ScrollText className="w-5 h-5" />
+          <span>Certificates</span>
+        </Link>
+      )}
+
+    </nav>
+  </div>
+
+  {/* =========================
+      Logout
+  ========================= */}
+  <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700">
+    <button
+      onClick={handleLogout}
+      className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 py-3 rounded-lg transition cursor-pointer font-bold"
+    >
+      <LogOut className="w-5 h-5" />
+      <span>Logout</span>
+    </button>
+  </div>
+</aside>
 
       {/* =========================
           Main Area
