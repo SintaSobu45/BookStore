@@ -4,6 +4,10 @@
     {
         public int RegistrationId { get; set; }
 
+        public int UserId { get; set; }
+
+        public int EventId { get; set; }
+
         public string UserName { get; set; } = string.Empty;
 
         public string Email { get; set; } = string.Empty;
@@ -22,7 +26,7 @@
 
         public string Status { get; set; } = string.Empty;
 
-        //attendance
+        // Attendance
         public string AttendanceStatus { get; set; } = string.Empty;
 
         public string PaymentStatus { get; set; } = string.Empty;
