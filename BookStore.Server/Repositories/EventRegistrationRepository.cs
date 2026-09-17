@@ -108,6 +108,9 @@ namespace BookStore.Server.Repositories
                     RegistrationId =
                         r.RegistrationId,
 
+                    UserId = r.UserId,
+                    EventId = r.EventId,
+
                     UserName =
                         r.User!.Name,
 
@@ -181,6 +184,9 @@ namespace BookStore.Server.Repositories
                 {
                     RegistrationId =
                         r.RegistrationId,
+
+                    UserId = r.UserId,
+                    EventId = r.EventId,
 
                     UserName =
                         r.User!.Name,
