@@ -53,6 +53,36 @@ namespace BookStore.Server.Repositories
         }
 
 
+
+        // =========================================================
+        // GET PAID + PREBOOK SUBMISSIONS BY USER
+        // =========================================================
+        // Used when an event registration is marked as Attended.
+        //
+        // Only submissions matching BOTH conditions are eligible:
+        // 1. PaymentStatus = Paid
+        // 2. SpOrderStatus = Prebook
+        //
+        // No Type filter is applied.
+        // Therefore Story, Poetry and Special are all included.
+        // =========================================================
+
+        public async Task<List<StoryPoetry>> GetPaidPrebookByUserIdAsync(
+            int userId)
+        {
+            return await _context.StoryPoetries
+                .Where(s =>
+                    s.UserId == userId &&
+                    s.PaymentStatus == "Paid" &&
+                    s.SpOrderStatus == "Prebook")
+                .ToListAsync();
+        }
+
+
+
+
+
+
         // =========================================================
         // GET PAYMENT NOTIFICATION PENDING
         // =========================================================

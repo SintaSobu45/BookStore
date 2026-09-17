@@ -135,6 +135,8 @@ namespace BookStore.Server.Repositories
                     Status =
                         r.Status,
 
+                    AttendanceStatus = r.AttendanceStatus,
+
                     PaymentStatus =
                         _context.Payments
                             .Where(p =>
@@ -206,6 +208,8 @@ namespace BookStore.Server.Repositories
 
                     Status =
                         r.Status,
+
+                    AttendanceStatus = r.AttendanceStatus,
 
                     PaymentStatus =
                         _context.Payments

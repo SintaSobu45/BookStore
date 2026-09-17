@@ -22,6 +22,9 @@
 
         public string Status { get; set; } = string.Empty;
 
+        //attendance
+        public string AttendanceStatus { get; set; } = string.Empty;
+
         public string PaymentStatus { get; set; } = string.Empty;
 
         public string PaymentMethod { get; set; } = string.Empty;

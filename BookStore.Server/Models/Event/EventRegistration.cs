@@ -21,6 +21,15 @@ public class EventRegistration
     [StringLength(50)]
     public string Status { get; set; } = "Registered";
 
+
+    // EVENT ATTENDANCE STATUS
+    // Registered → Attended
+    // This is separate from Status/payment flow.
+    // =========================================================
+
+    [StringLength(20)]
+    public string AttendanceStatus { get; set; } = "Registered";
+
     public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
 
     // Navigation

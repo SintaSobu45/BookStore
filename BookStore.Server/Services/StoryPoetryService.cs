@@ -999,6 +999,45 @@ namespace BookStore.Server.Services
         }
 
 
+
+        // =========================================================
+        // DISPATCH PAID + PREBOOK SUBMISSIONS FOR USER
+        // =========================================================
+        // Used when the user's event registration is marked Attended.
+        //
+        // Rules:
+        // - Only Paid submissions are eligible
+        // - Only Prebook submissions are eligible
+        // - Story, Poetry and Special are all included
+        // - Dispatched submissions are untouched
+        // - PaymentStatus is never changed
+        // - This method does NOT call SaveChangesAsync()
+        //   because attendance + dispatch must be saved in
+        //   one transaction by EventRegistrationService.
+        // =========================================================
+
+        public async Task<int> DispatchPaidPrebookSubmissionsForUserAsync(
+            int userId)
+        {
+            var submissions =
+                await _storyPoetryRepository
+                    .GetPaidPrebookByUserIdAsync(userId);
+
+            foreach (var submission in submissions)
+            {
+                submission.SpOrderStatus = "Dispatched";
+                submission.UpdatedDate = DateTime.UtcNow;
+            }
+
+            return submissions.Count;
+        }
+
+
+
+
+
+
+
         // =========================================================
         // UPDATE SP ORDER STATUS
         // =========================================================
