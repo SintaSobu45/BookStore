@@ -127,5 +127,44 @@ namespace BookStore.Server.Controllers
 
             return Ok(registrations);
         }
+
+
+        // =========================================================
+        // MARK EVENT REGISTRATION AS ATTENDED
+        // PUT: api/EventRegistration/{registrationId}/attendance
+        // ADMIN ONLY
+        // =========================================================
+
+        [HttpPut("{registrationId}/attendance")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> MarkAsAttended(
+            int registrationId)
+        {
+            var result =
+                await _eventRegistrationService
+                    .MarkAsAttendedAsync(registrationId);
+
+            // -----------------------------------------------------
+            // Registration Not Found / Operation Failed
+            // -----------------------------------------------------
+
+            if (!result.Success)
+            {
+                return NotFound(new
+                {
+                    Message = result.Message
+                });
+            }
+
+            // -----------------------------------------------------
+            // Attendance Marked Successfully
+            // -----------------------------------------------------
+
+            return Ok(new
+            {
+                Message = result.Message,
+                DispatchedCount = result.DispatchedCount
+            });
+        }
     }
 }

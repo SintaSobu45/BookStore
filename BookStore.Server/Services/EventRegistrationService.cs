@@ -1,4 +1,5 @@
-﻿using BookStore.Server.DTOs.EventRegistration;
+﻿using BookStore.Server.Data;
+using BookStore.Server.DTOs.EventRegistration;
 using BookStore.Server.Models.Event;
 using BookStore.Server.Repositories;
 
@@ -7,11 +8,18 @@ namespace BookStore.Server.Services
     public class EventRegistrationService
     {
         private readonly EventRegistrationRepository _repository;
+        private readonly StoryPoetryService _storyPoetryService;
+        private readonly ApplicationDbContext _context;
 
         public EventRegistrationService(
-            EventRegistrationRepository repository)
+            EventRegistrationRepository repository,
+              StoryPoetryService storyPoetryService,
+             ApplicationDbContext context
+            )
         {
             _repository = repository;
+            _storyPoetryService = storyPoetryService;
+            _context = context;
         }
 
 
@@ -183,6 +191,127 @@ namespace BookStore.Server.Services
         {
             return await _repository
                 .GetAllRegistrationsAsync();
+        }
+
+
+        // =========================================================
+        // MARK EVENT REGISTRATION AS ATTENDED
+        // =========================================================
+        // Admin marks a specific event registration as Attended.
+        //
+        // When attendance is marked:
+        // 1. Registration AttendanceStatus → Attended
+        // 2. Same user's Paid + Prebook StoryPoetry
+        //    → Dispatched
+        //
+        // Both operations happen inside ONE database transaction.
+        //
+        // PaymentStatus is never changed.
+        // EventId is never added to StoryPoetry.
+        // =========================================================
+
+        public async Task<(bool Success, string Message, int DispatchedCount)>
+            MarkAsAttendedAsync(int registrationId)
+        {
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // -----------------------------------------------------
+                // 1. GET REGISTRATION
+                // -----------------------------------------------------
+
+                var registration =
+                    await _repository.GetRegistrationAsync(
+                        registrationId);
+
+                if (registration == null)
+                {
+                    return (
+                        false,
+                        "Event registration not found.",
+                        0
+                    );
+                }
+
+
+                // -----------------------------------------------------
+                // 2. ALREADY ATTENDED
+                // -----------------------------------------------------
+
+                if (string.Equals(
+                        registration.AttendanceStatus,
+                        "Attended",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    await transaction.CommitAsync();
+
+                    return (
+                        true,
+                        "This registration is already marked as attended.",
+                        0
+                    );
+                }
+
+
+                // -----------------------------------------------------
+                // 3. MARK ATTENDANCE
+                // -----------------------------------------------------
+
+                registration.AttendanceStatus = "Attended";
+
+
+                // -----------------------------------------------------
+                // 4. DISPATCH ELIGIBLE STORY / POETRY / SPECIAL
+                // -----------------------------------------------------
+                // Same UserId from EventRegistration.
+                //
+                // Only:
+                // PaymentStatus = Paid
+                // SpOrderStatus = Prebook
+                //
+                // Story, Poetry and Special are all included.
+
+                int dispatchedCount =
+                    await _storyPoetryService
+                        .DispatchPaidPrebookSubmissionsForUserAsync(
+                            registration.UserId);
+
+
+                // -----------------------------------------------------
+                // 5. SAVE EVERYTHING ONCE
+                // -----------------------------------------------------
+
+                await _context.SaveChangesAsync();
+
+
+                // -----------------------------------------------------
+                // 6. COMMIT TRANSACTION
+                // -----------------------------------------------------
+
+                await transaction.CommitAsync();
+
+
+                return (
+                    true,
+                    "Attendance marked successfully.",
+                    dispatchedCount
+                );
+            }
+            catch
+            {
+                // -----------------------------------------------------
+                // ANY ERROR
+                // -----------------------------------------------------
+                // Attendance remains Registered.
+                // StoryPoetry remains Prebook.
+                // -----------------------------------------------------
+
+                await transaction.RollbackAsync();
+
+                throw;
+            }
         }
     }
 }
