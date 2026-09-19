@@ -35,6 +35,17 @@ namespace BookStore.Server.Services
             _storyPoetryCopySettingService = storyPoetryCopySettingService;
         }
 
+        //report
+
+        public async Task<List<StoryPoetryEventReportDto>> GetEventReportAsync(
+    DateTime? fromDate,
+    DateTime? toDate)
+        {
+            return await _storyPoetryRepository.GetEventReportAsync(
+                fromDate,
+                toDate);
+        }
+
 
         // =========================================================
         // ADD STORY / POETRY / SPECIAL
