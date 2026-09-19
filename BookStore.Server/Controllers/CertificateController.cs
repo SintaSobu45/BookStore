@@ -254,6 +254,41 @@ namespace BookStore.Server.Controllers
             }
         }
 
+        //certoficate print
+
+        [HttpGet("event/{eventId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetCertificatesByEvent(
+    int eventId)
+        {
+            try
+            {
+                var certificates =
+                    await _certificateService
+                        .GetCertificatesByEventIdAsync(
+                            eventId);
+
+                return Ok(new
+                {
+                    message =
+                        "Event certificates retrieved successfully.",
+
+                    data =
+                        certificates
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(
+                    500,
+                    new
+                    {
+                        message =
+                            "An unexpected error occurred while retrieving event certificates."
+                    });
+            }
+        }
+
 
         // =========================================================
         // ADMIN - SEND CERTIFICATE PDF

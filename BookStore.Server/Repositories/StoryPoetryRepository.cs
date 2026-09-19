@@ -444,5 +444,50 @@ namespace BookStore.Server.Repositories
         {
             await _context.SaveChangesAsync();
         }
+
+        //report
+        public async Task<List<StoryPoetryEventReportDto>> GetEventReportAsync(
+    DateTime? fromDate,
+    DateTime? toDate)
+        {
+            var query =
+                from sp in _context.StoryPoetries
+                join er in _context.EventRegistrations
+                    on sp.UserId equals er.UserId
+                select new StoryPoetryEventReportDto
+                {
+                    UserId = sp.UserId,
+                    WriterName = sp.ContributorNameMalayalam,
+                    SubmissionNumber = sp.SubmissionNumber,
+                    Phone = sp.ContributorPhone,
+                    Address = sp.ContributorAddress,
+                    PaymentDate = sp.PaymentEnabledAt,
+                    PaymentAmount = sp.Amount,
+                    ParticularName = sp.ParticularNameSnapshot,
+                    TotalCopies = sp.TotalCopies,
+                    EventRegDate = er.RegistrationDate,
+                    EventAmount = er.TotalAmount,
+                    SpOrderStatus = sp.SpOrderStatus,
+                    Barcode = sp.Barcode
+                };
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(x =>
+                    x.EventRegDate >= fromDate.Value.Date);
+            }
+
+            if (toDate.HasValue)
+            {
+                var nextDay = toDate.Value.Date.AddDays(1);
+
+                query = query.Where(x =>
+                    x.EventRegDate < nextDay);
+            }
+
+            return await query
+                .OrderBy(x => x.UserId)
+                .ToListAsync();
+        }
     }
 }

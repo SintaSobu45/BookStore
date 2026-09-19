@@ -112,5 +112,28 @@ namespace BookStore.Server.Repositories
                 .OrderByDescending(c => c.CreatedDate)
                 .ToListAsync();
         }
+
+        //certificate print
+
+
+        public async Task<List<Certificate>> GetByEventIdAsync(
+    int eventId)
+        {
+            return await _context.Certificates
+                .Include(c => c.StoryPoetry)
+                .Where(c =>
+                    c.StoryPoetry != null &&
+                    c.StoryPoetry.PaymentStatus == "Paid" &&
+                    _context.EventRegistrations.Any(r =>
+                        r.EventId == eventId &&
+                        r.UserId == c.UserId &&
+                        _context.Payments.Any(p =>
+                            p.EventRegistrationId == r.RegistrationId &&
+                            p.Status == "Paid")))
+                .OrderByDescending(c => c.CreatedDate)
+                .ToListAsync();
+        }
+
+
     }
 }

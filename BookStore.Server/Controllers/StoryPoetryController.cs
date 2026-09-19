@@ -19,6 +19,8 @@ namespace BookStore.Server.Controllers
             _storyPoetryService = storyPoetryService;
         }
 
+
+
         private int GetUserId()
         {
             var userIdClaim =
@@ -37,6 +39,31 @@ namespace BookStore.Server.Controllers
             }
 
             return userId;
+        }
+
+
+        //report
+        [HttpGet("event-report")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetEventReport(
+    [FromQuery] DateTime? fromDate,
+    [FromQuery] DateTime? toDate)
+        {
+            if (fromDate.HasValue &&
+                toDate.HasValue &&
+                fromDate.Value.Date > toDate.Value.Date)
+            {
+                return BadRequest(new
+                {
+                    message = "From date cannot be later than To date."
+                });
+            }
+
+            var result = await _storyPoetryService.GetEventReportAsync(
+                fromDate,
+                toDate);
+
+            return Ok(result);
         }
 
 
@@ -286,7 +313,7 @@ namespace BookStore.Server.Controllers
         }
 
         // =========================================================
-        // ADMIN - UPDATE BARCODE
+        // ADMIN + EDITOR - UPDATE BARCODE
         // =========================================================
 
         [Authorize(Roles = "Admin,Editor")]

@@ -346,6 +346,44 @@ namespace BookStore.Server.Services
             };
         }
 
+        //certificate print
+        public async Task<List<CertificateSummaryResponse>>
+    GetCertificatesByEventIdAsync(
+        int eventId)
+        {
+            var certificates =
+                await _certificateRepository
+                    .GetByEventIdAsync(
+                        eventId);
+
+            return certificates
+                .Select(c =>
+                    new CertificateSummaryResponse
+                    {
+                        CertificateId =
+                            c.CertificateId,
+
+                        StoryPoetryId =
+                            c.StoryPoetryId,
+
+                        UserId =
+                            c.UserId,
+
+                        CertificateNumber =
+                            c.CertificateNumber,
+
+                        RecipientName =
+                            c.RecipientName,
+
+                        IssuedDate =
+                            c.IssuedDate,
+
+                        IsSent =
+                            c.IsSent
+                    })
+                .ToList();
+        }
+
 
         // =========================================================
         // SEND CERTIFICATE EMAIL
