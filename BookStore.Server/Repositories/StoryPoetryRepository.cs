@@ -489,5 +489,67 @@ namespace BookStore.Server.Repositories
                 .OrderBy(x => x.UserId)
                 .ToListAsync();
         }
+
+
+        // =========================================================
+        // EVENT COPY PREPARATION REPORT
+        // =========================================================
+        // Gets StoryPoetry submissions belonging to users who are
+        // registered for the selected event.
+        //
+        // Only EventId is used to identify the selected event.
+        // AttendanceStatus is NOT considered.
+        //
+        // One user can have multiple StoryPoetry submissions.
+        // Each submission appears as a separate row.
+        // =========================================================
+
+        public async Task<List<EventCopyPreparationReportDto>>
+            GetEventCopyPreparationReportAsync(int eventId)
+        {
+            return await (
+                from er in _context.EventRegistrations
+                join sp in _context.StoryPoetries
+                    on er.UserId equals sp.UserId
+                where er.EventId == eventId
+                select new EventCopyPreparationReportDto
+                {
+                    UserId = sp.UserId,
+
+                    WriterName =
+                        sp.ContributorNameMalayalam,
+
+                    Phone =
+                        sp.ContributorPhone,
+
+                    BookTitle =
+                        sp.Title,
+
+                    BookType =
+                        sp.Type,
+
+                    ParticularName =
+                        sp.ParticularNameSnapshot,
+
+                    SubmissionNumber =
+                        sp.SubmissionNumber,
+
+                    TotalCopies =
+                        sp.TotalCopies,
+
+                    SpOrderStatus =
+                        sp.SpOrderStatus,
+
+                    Barcode =
+                        sp.Barcode,
+
+                    EventRegistrationDate =
+                        er.RegistrationDate
+                }
+            )
+            .OrderBy(x => x.UserId)
+            .ThenBy(x => x.BookTitle)
+            .ToListAsync();
+        }
     }
 }
