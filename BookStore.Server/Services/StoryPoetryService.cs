@@ -46,6 +46,20 @@ namespace BookStore.Server.Services
                 toDate);
         }
 
+        // =========================================================
+        // EVENT COPY PREPARATION REPORT
+        // =========================================================
+        // Gets StoryPoetry submissions belonging to users
+        // registered for the selected event.
+        // =========================================================
+
+        public async Task<List<EventCopyPreparationReportDto>>
+            GetEventCopyPreparationReportAsync(int eventId)
+        {
+            return await _storyPoetryRepository
+                .GetEventCopyPreparationReportAsync(eventId);
+        }
+
 
         // =========================================================
         // ADD STORY / POETRY / SPECIAL

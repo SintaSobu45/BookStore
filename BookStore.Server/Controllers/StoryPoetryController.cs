@@ -404,5 +404,24 @@ namespace BookStore.Server.Controllers
                 });
             }
         }
+
+        // =========================================================
+        // ADMIN - EVENT COPY PREPARATION REPORT
+        // =========================================================
+        // Gets StoryPoetry submissions belonging to users
+        // registered for the selected event.
+        // =========================================================
+
+        [HttpGet("event-copy-preparation-report")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetEventCopyPreparationReport(
+            [FromQuery] int eventId)
+        {
+            var result =
+                await _storyPoetryService
+                    .GetEventCopyPreparationReportAsync(eventId);
+
+            return Ok(result);
+        }
     }
 }
