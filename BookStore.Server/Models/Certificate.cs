@@ -43,6 +43,8 @@ namespace BookStore.Server.Models
         [StringLength(50)]
         public string CertificateNumber { get; set; } = string.Empty;
 
+        public string SubmissionNumber { get; set; } = string.Empty;
+
 
         // Snapshot of the Malayalam contributor name
         // from StoryPoetry.ContributorNameMalayalam

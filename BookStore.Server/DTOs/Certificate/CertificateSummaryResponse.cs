@@ -10,6 +10,8 @@
 
         public string CertificateNumber { get; set; } = string.Empty;
 
+        public string SubmissionNumber { get; set; } = string.Empty;
+
         public string RecipientName { get; set; } = string.Empty;
 
         public DateTime IssuedDate { get; set; }

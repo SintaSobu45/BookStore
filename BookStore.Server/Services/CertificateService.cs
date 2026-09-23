@@ -137,6 +137,8 @@ namespace BookStore.Server.Services
                     RecipientName =
                         submission.ContributorNameMalayalam,
 
+                    SubmissionNumber = submission.SubmissionNumber,
+
                     CertificateNumber =
                         GenerateCertificateNumber(),
 
@@ -239,6 +241,9 @@ namespace BookStore.Server.Services
                         RecipientName =
                             submission.ContributorNameMalayalam,
 
+
+                        SubmissionNumber = submission.SubmissionNumber,
+
                         CertificateNumber =
                             GenerateCertificateNumber(),
 
@@ -286,7 +291,8 @@ namespace BookStore.Server.Services
 
                         UserId =
                             c.UserId,
-
+                        SubmissionNumber =
+    c.SubmissionNumber,
                         CertificateNumber =
                             c.CertificateNumber,
 
@@ -332,6 +338,8 @@ namespace BookStore.Server.Services
                 UserId =
                     certificate.UserId,
 
+                SubmissionNumber = certificate.SubmissionNumber,
+
                 CertificateNumber =
                     certificate.CertificateNumber,
 
@@ -368,6 +376,8 @@ namespace BookStore.Server.Services
 
                         UserId =
                             c.UserId,
+
+                        SubmissionNumber = c.SubmissionNumber,
 
                         CertificateNumber =
                             c.CertificateNumber,
