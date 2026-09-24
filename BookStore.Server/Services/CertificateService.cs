@@ -79,6 +79,9 @@ namespace BookStore.Server.Services
                         ContributorEmail =
                             submission.ContributorEmail,
 
+                        SubmissionNumber =
+            submission.SubmissionNumber,
+
                         CreatedDate =
                             submission.CreatedDate
                     });

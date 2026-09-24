@@ -14,6 +14,9 @@
 
         public string ContributorEmail { get; set; } = string.Empty;
 
+
+        public string SubmissionNumber { get; set; } = string.Empty;
+
         public DateTime CreatedDate { get; set; }
     }
 }
