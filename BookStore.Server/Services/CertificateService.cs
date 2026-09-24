@@ -9,15 +9,18 @@ namespace BookStore.Server.Services
         private readonly CertificateRepository _certificateRepository;
         private readonly StoryPoetryRepository _storyPoetryRepository;
         private readonly EmailService _emailService;
+        private readonly EventRegistrationRepository _eventRegistrationRepository;
 
         public CertificateService(
             CertificateRepository certificateRepository,
             StoryPoetryRepository storyPoetryRepository,
-            EmailService emailService)
+            EmailService emailService,
+            EventRegistrationRepository eventRegistrationRepository)
         {
             _certificateRepository = certificateRepository;
             _storyPoetryRepository = storyPoetryRepository;
             _emailService = emailService;
+            _eventRegistrationRepository = eventRegistrationRepository;
         }
 
 
@@ -31,65 +34,59 @@ namespace BookStore.Server.Services
         // No Certificate yet
         // =========================================================
 
-        public async Task<List<CertificateCandidateResponse>>
-            GetCandidatesAsync()
+        public async Task<List<CertificateCandidateResponse>> GetCandidatesAsync(int eventId)
         {
-            var submissions =
-                await _storyPoetryRepository
-                    .GetAllEntitiesAsync();
+            var registrations = await _eventRegistrationRepository
+                .GetByEventIdAsync(eventId);
 
-            var result =
-                new List<CertificateCandidateResponse>();
+            var userIds = registrations
+                .Select(r => r.UserId)
+                .ToHashSet();
+
+            var eventName = registrations
+                .Select(r => r.Event?.EventName)
+                .FirstOrDefault();
+
+            var submissions = await _storyPoetryRepository.GetAllEntitiesAsync();
+
+            var result = new List<CertificateCandidateResponse>();
 
             foreach (var submission in submissions)
             {
-                if (submission.PaymentStatus != "Paid")
-                {
+                // 1. User must be registered for selected event
+                if (!userIds.Contains(submission.UserId))
                     continue;
-                }
 
-                var certificateExists =
-                    await _certificateRepository
-                        .ExistsForStoryPoetryAsync(
-                            submission.StoryPoetryId);
+                // 2. Story/Poetry payment must be completed
+                if (submission.PaymentStatus != "Paid")
+                    continue;
+
+                // 3. Certificate must not already exist
+                var certificateExists = await _certificateRepository
+                    .ExistsForStoryPoetryAsync(submission.StoryPoetryId);
 
                 if (certificateExists)
-                {
                     continue;
-                }
 
-                result.Add(
-                    new CertificateCandidateResponse
-                    {
-                        StoryPoetryId =
-                            submission.StoryPoetryId,
+                result.Add(new CertificateCandidateResponse
+                {
+                    StoryPoetryId = submission.StoryPoetryId,
+                    UserId = submission.UserId,
+                    Title = submission.Title,
+                    Type = submission.Type,
+                    ContributorNameMalayalam = submission.ContributorNameMalayalam,
+                    ContributorEmail = submission.ContributorEmail,
+                    SubmissionNumber = submission.SubmissionNumber,
 
-                        UserId =
-                            submission.UserId,
+                    EventId = eventId,
+                    EventName = eventName,
 
-                        Title =
-                            submission.Title,
-
-                        Type =
-                            submission.Type,
-
-                        ContributorNameMalayalam =
-                            submission.ContributorNameMalayalam,
-
-                        ContributorEmail =
-                            submission.ContributorEmail,
-
-                        SubmissionNumber =
-            submission.SubmissionNumber,
-
-                        CreatedDate =
-                            submission.CreatedDate
-                    });
+                    CreatedDate = submission.CreatedDate
+                });
             }
 
             return result;
         }
-
 
         // =========================================================
         // GENERATE SINGLE CERTIFICATE RECORD

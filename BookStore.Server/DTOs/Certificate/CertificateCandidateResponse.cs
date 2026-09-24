@@ -6,6 +6,8 @@
 
         public int UserId { get; set; }
 
+
+
         public string Title { get; set; } = string.Empty;
 
         public string Type { get; set; } = string.Empty;
@@ -16,6 +18,9 @@
 
 
         public string SubmissionNumber { get; set; } = string.Empty;
+
+        public int? EventId { get; set; }
+        public string? EventName { get; set; }
 
         public DateTime CreatedDate { get; set; }
     }
