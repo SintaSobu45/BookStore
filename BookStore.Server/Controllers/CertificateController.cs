@@ -27,32 +27,33 @@ namespace BookStore.Server.Controllers
 
         [HttpGet("candidates")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetCandidates()
+        public async Task<IActionResult> GetCandidates(int eventId)
         {
             try
             {
-                var candidates =
-                    await _certificateService
-                        .GetCandidatesAsync();
+                if (eventId <= 0)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Valid EventId is required."
+                    });
+                }
+
+                var candidates = await _certificateService
+                    .GetCandidatesAsync(eventId);
 
                 return Ok(new
                 {
-                    message =
-                        "Certificate candidates retrieved successfully.",
-
-                    data =
-                        candidates
+                    message = "Certificate candidates retrieved successfully.",
+                    data = candidates
                 });
             }
             catch (Exception)
             {
-                return StatusCode(
-                    500,
-                    new
-                    {
-                        message =
-                            "An unexpected error occurred while retrieving certificate candidates."
-                    });
+                return StatusCode(500, new
+                {
+                    message = "An unexpected error occurred while retrieving certificate candidates."
+                });
             }
         }
 
@@ -98,6 +99,8 @@ namespace BookStore.Server.Controllers
 
                             UserId =
                                 certificate.UserId,
+
+                            SubmissionNumber = certificate.SubmissionNumber,
 
                             CertificateNumber =
                                 certificate.CertificateNumber,

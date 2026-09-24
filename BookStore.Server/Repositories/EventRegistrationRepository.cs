@@ -75,6 +75,17 @@ namespace BookStore.Server.Repositories
                     e => e.EventId == eventId);
         }
 
+        //lastfilter
+        public async Task<List<EventRegistration>> GetByEventIdAsync(int eventId)
+        {
+            return await _context.EventRegistrations
+                .Include(r => r.Event)
+                .Where(r =>
+                    r.EventId == eventId &&
+                    r.Status == "Registered")
+                .ToListAsync();
+        }
+
 
         // =========================================================
         // ADD REGISTRATION
