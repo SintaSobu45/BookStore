@@ -41,6 +41,13 @@
         //barcode
         public string? Barcode { get; set; }
 
+
+
+        //delivery email tracking
+        public bool DeliveryEmailSent { get; set; }
+
+        public DateTime? DeliveryEmailSentAt { get; set; }
+
         public List<OrderItemResponse> Items { get; set; }
             = new List<OrderItemResponse>();
     }

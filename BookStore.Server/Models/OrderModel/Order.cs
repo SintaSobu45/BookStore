@@ -127,6 +127,14 @@ namespace BookStore.Server.Models.OrderModel
 
 
         // =========================================================
+        // DELIVERY EMAIL TRACKING
+        // =========================================================
+
+        public bool DeliveryEmailSent { get; set; } = false;
+
+        public DateTime? DeliveryEmailSentAt { get; set; }
+
+        // =========================================================
         // DATE
         // =========================================================
 
