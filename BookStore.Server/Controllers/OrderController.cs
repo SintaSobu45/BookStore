@@ -281,5 +281,43 @@ namespace BookStore.Server.Controllers
 
             return Ok(result);
         }
+
+        // =========================================================
+        // SEND DELIVERY EMAIL - ADMIN ONLY
+        // =========================================================
+
+        [HttpPost("{id:int}/send-email")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> SendDeliveryEmail(
+            int id)
+        {
+            try
+            {
+                var success =
+                    await _orderService
+                        .SendDeliveryEmailAsync(id);
+
+                if (!success)
+                {
+                    return NotFound(new
+                    {
+                        message = "Order not found."
+                    });
+                }
+
+                return Ok(new
+                {
+                    message =
+                        "Delivery email sent successfully."
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
     }
 }
