@@ -12,11 +12,13 @@ import {
   Package,
   ClipboardList,
   Feather,
+  MessageCircle,
 } from "lucide-react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { getProfile } from "../services/profileService";
 import { getCart } from "../services/cartService";
 import logo from "../assets/logo.png";
+import { getLogo } from "../services/logoService";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -25,8 +27,25 @@ export default function Navbar() {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+  const [logoUrl, setLogoUrl] = useState(null);
 
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const data = await getLogo();
+
+        if (data?.imageUrl) {
+          setLogoUrl(data.imageUrl);
+        }
+      } catch (error) {
+        console.error("Failed to load logo:", error);
+      }
+    };
+
+    loadLogo();
+  }, []);
 
   // AUTH
   const token = localStorage.getItem("token");
@@ -129,7 +148,7 @@ export default function Navbar() {
   const navLinks = [
     { name: "Home", path: "/", end: true },
     { name: "Books", path: "/all/books" },
-    { name: "Writings", path: "/book/upload" },
+    { name: "Anthologies", path: "/book/upload" },
     { name: "Events", path: "/events" },
     { name: "About Us", path: "/about" },
   ];
@@ -155,9 +174,9 @@ export default function Navbar() {
             className="flex items-center justify-center cursor-pointer overflow-visible"
           >
             <img
-              src={logo}
+              src={logoUrl || logo}
               alt="The Old Library"
-              className="h-20 sm:h-24 md:h-28 w-auto object-contain -my-6 scale-125"
+              className="h-20 sm:h-24 md:h-24 w-auto object-contain"
             />
           </Link>
 
@@ -269,7 +288,9 @@ export default function Navbar() {
                           </div>
                           <div>
                             <p className="text-sm font-medium">My Profile</p>
-                            <p className="text-xs text-gray-400">View your profile</p>
+                            <p className="text-xs text-gray-400">
+                              View your profile
+                            </p>
                           </div>
                         </Link>
 
@@ -283,7 +304,9 @@ export default function Navbar() {
                           </div>
                           <div>
                             <p className="text-sm font-medium">My Orders</p>
-                            <p className="text-xs text-gray-400">View your orders</p>
+                            <p className="text-xs text-gray-400">
+                              View your orders
+                            </p>
                           </div>
                         </Link>
 
@@ -296,7 +319,7 @@ export default function Navbar() {
                             <ClipboardList className="h-5 w-5 text-purple-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium">My Registrations</p>
+                            <p className="text-sm font-medium">Registrations</p>
                             <p className="text-xs text-gray-400">
                               View your event registrations
                             </p>
@@ -334,6 +357,21 @@ export default function Navbar() {
                             </p>
                           </div>
                         </Link>
+
+                        <a
+  href="https://chat.whatsapp.com/BAhOLBTLsJiLVdD4ynrdw8"
+  target="_blank"
+  rel="noopener noreferrer"
+  onClick={handleMobileNavigation}
+  className="flex items-center justify-between px-5 py-4 border-b border-gray-100 text-gray-700 hover:text-green-500 transition-colors"
+>
+  <div className="flex items-center gap-3">
+    <i class="fa-brands text-green-500 fa-whatsapp"></i>
+    <span> Community</span>
+  </div>
+
+  <ChevronRight className="h-4 w-4 text-gray-400" />
+</a>
                       </div>
 
                       <div className="border-t border-gray-100 p-2">
@@ -410,25 +448,25 @@ export default function Navbar() {
 
           <div className="absolute left-0 top-0 bottom-0 w-[82%] max-w-sm bg-white shadow-2xl overflow-y-auto">
             <div className="bg-[skyblue] px-5 py-4 flex items-center justify-between">
-  {/* Logo */}
-  <div className="flex rounded-2 w-100 items-center">
-    <img
-      src={logo}
-      alt="The Old Library"
-      className="w-100 h-24 object-contain img-fluid"
-    />
-  </div>
+              {/* Logo */}
+              <div className="flex rounded-2 w-100 items-center">
+                <img
+                  src={logoUrl || logo}
+                  alt="The Old Library"
+                  className="w-100 h-24 object-contain img-fluid"
+                />
+              </div>
 
-  {/* Close Button */}
-  <button
-    type="button"
-    onClick={() => setMobileMenuOpen(false)}
-    className="text-white hover:bg-white/10 rounded-full p-2"
-    aria-label="Close menu"
-  >
-    <X className="h-6 w-6" />
-  </button>
-</div>
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-white hover:bg-white/10 rounded-full p-2"
+                aria-label="Close menu"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
 
             <div className="px-5 py-4 bg-gray-50 border-b">
               {isLoggedIn ? (
@@ -464,8 +502,12 @@ export default function Navbar() {
                       <User className="h-5 w-5 text-emerald-700" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">Login / Register</p>
-                      <p className="text-xs text-gray-500">Access your account</p>
+                      <p className="font-semibold text-gray-900">
+                        Login / Register
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Access your account
+                      </p>
                     </div>
                   </div>
                   <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -545,7 +587,7 @@ export default function Navbar() {
                   >
                     <div className="flex items-center gap-3">
                       <ClipboardList className="h-5 w-5 text-gray-500" />
-                      <span>My Registrations</span>
+                      <span>Registrations</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-gray-400" />
                   </Link>
@@ -561,6 +603,21 @@ export default function Navbar() {
                     </div>
                     <ChevronRight className="h-4 w-4 text-gray-400" />
                   </Link>
+
+                  <a
+                    href="https://chat.whatsapp.com/BAhOLBTLsJiLVdD4ynrdw8"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleMobileNavigation}
+                    className="flex items-center justify-between px-5 py-4 border-b border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <i class="fa-brands fa-2x text-green-500  fa-whatsapp"></i>
+                      <span>WhatsApp Community</span>
+                    </div>
+
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </a>
 
                   <div className="px-5 py-4">
                     <button

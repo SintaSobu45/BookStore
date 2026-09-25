@@ -407,7 +407,7 @@ function EventModal({ show, onClose, eventData, refresh }) {
                   <img
                     src={bannerPreview}
                     alt="Banner preview"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 </div>
               </div>

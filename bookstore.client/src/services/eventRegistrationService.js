@@ -172,3 +172,34 @@ export const verifyEventPayment = async ({
 
   return data;
 };
+
+
+
+// Mark event registration as attended - Admin only
+export const markAttendance = async (registrationId) => {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("You are not logged in.");
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/EventRegistration/${registrationId}/attendance`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message || "Failed to mark attendance."
+    );
+  }
+
+  return data;
+};

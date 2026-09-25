@@ -11,7 +11,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
-import { getStoryPoetryById } from "../services/storyPoetryService";
+import {
+  getStoryPoetryById,
+  getStoryPoetryCopySettings,
+} from "../services/storyPoetryService";
 import {
   createStoryPoetryPayment,
   verifyStoryPoetryPayment,
@@ -25,19 +28,44 @@ const StoryPoetryPayment = () => {
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [requestedCopies, setRequestedCopies] = useState(0);
+  const [complimentaryCopies, setComplimentaryCopies] = useState(0);
+
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
     const loadSubmission = async () => {
       try {
         setLoading(true);
+
         const data = await getStoryPoetryById(id);
-        console.log('submissiondata',data);
-        
+
+        console.log("submissiondata", data);
+
         setSubmission(data);
+
+        // Load configured complimentary copies
+        const copySettings = await getStoryPoetryCopySettings();
+
+        const submissionType = data?.type?.trim()?.toLowerCase();
+
+        const matchingSetting = copySettings?.find(
+          (setting) => setting?.type?.trim()?.toLowerCase() === submissionType,
+        );
+
+        if (matchingSetting) {
+          setComplimentaryCopies(Number(matchingSetting.freeCopies ?? 0));
+        } else {
+          console.warn(
+            `No copy setting found for submission type: ${data?.type}`,
+          );
+
+          setComplimentaryCopies(0);
+        }
       } catch (error) {
         console.error("Failed to load submission:", error);
+
         toast.error(error?.message || "Failed to load submission.");
+
         navigate("/your/uploads");
       } finally {
         setLoading(false);
@@ -54,7 +82,9 @@ const StoryPoetryPayment = () => {
       <div className="min-h-screen bg-[#f8f9f8] flex items-center justify-center px-4">
         <div className="flex flex-col items-center gap-3">
           <Loader2 size={32} className="animate-spin text-[#1b3b2b]" />
-          <p className="text-gray-600 text-sm font-medium">Loading payment details...</p>
+          <p className="text-gray-600 text-sm font-medium">
+            Loading payment details...
+          </p>
         </div>
       </div>
     );
@@ -64,7 +94,6 @@ const StoryPoetryPayment = () => {
 
   const uploadFee = Number(submission.baseAmount ?? 0);
   const extraCopyPrice = Number(submission.extraCopyPrice ?? 0);
-  const complimentaryCopies = 2;
   const extraCopyAmount = extraCopyPrice * requestedCopies;
   const totalAmount = uploadFee + extraCopyAmount;
 
@@ -75,7 +104,7 @@ const StoryPoetryPayment = () => {
         return;
       }
       const existingScript = document.querySelector(
-        'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+        'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
       );
       if (existingScript) {
         existingScript.onload = () => resolve(true);
@@ -102,13 +131,13 @@ const StoryPoetryPayment = () => {
       const razorpayLoaded = await loadRazorpayScript();
       if (!razorpayLoaded) {
         throw new Error(
-          "Unable to load Razorpay. Please check your connection and try again."
+          "Unable to load Razorpay. Please check your connection and try again.",
         );
       }
 
       const paymentData = await createStoryPoetryPayment(
         submission.storyPoetryId,
-        requestedCopies
+        requestedCopies,
       );
 
       const paymentId =
@@ -168,7 +197,7 @@ const StoryPoetryPayment = () => {
             console.error("Payment verification error:", err);
             toast.error(
               err?.message ||
-                "Payment verification failed. Please contact support."
+                "Payment verification failed. Please contact support.",
             );
           } finally {
             setPaymentLoading(false);
@@ -228,10 +257,8 @@ const StoryPoetryPayment = () => {
 
         {/* E-Commerce Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
           {/* Left Column: Order & Submission Details */}
           <div className="lg:col-span-7 space-y-5">
-            
             {/* Submission Banner Card */}
             <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-sm space-y-4">
               <div className="flex items-start justify-between gap-3">
@@ -251,30 +278,44 @@ const StoryPoetryPayment = () => {
               {/* Contributor Metadata Grid */}
               <div className="grid grid-cols-2 gap-3 bg-gray-50/80 p-3.5 rounded-xl border border-gray-100 text-xs">
                 <div>
-                  <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Contributor</span>
+                  <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">
+                    Contributor
+                  </span>
                   <span className="font-semibold text-gray-800 truncate block mt-0.5">
                     {submission.contributorNameMalayalam || "—"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Particular</span>
+                  <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">
+                    Particular
+                  </span>
                   <span className="font-semibold text-gray-800 truncate block mt-0.5">
-                    {submission.particularName || submission.particularNameSnapshot || "—"}
+                    {submission.particularName ||
+                      submission.particularNameSnapshot ||
+                      "—"}
                   </span>
                 </div>
                 {submission.contributorPhone && (
                   <div>
-                    <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Phone</span>
+                    <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">
+                      Phone
+                    </span>
                     <span className="font-semibold text-gray-800 truncate block mt-0.5">
                       {submission.contributorPhone}
                     </span>
                   </div>
                 )}
-                {(submission.contributorDistrictMalayalam || submission.contributorCityMalayalam) && (
+                {(submission.contributorDistrictMalayalam ||
+                  submission.contributorCityMalayalam) && (
                   <div>
-                    <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">Location</span>
+                    <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider">
+                      Location
+                    </span>
                     <span className="font-semibold text-gray-800 truncate block mt-0.5">
-                      {[submission.contributorDistrictMalayalam, submission.contributorCityMalayalam]
+                      {[
+                        submission.contributorDistrictMalayalam,
+                        submission.contributorCityMalayalam,
+                      ]
                         .filter(Boolean)
                         .join(", ")}
                     </span>
@@ -304,7 +345,9 @@ const StoryPoetryPayment = () => {
               {/* Extra Copy Selector */}
               <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-3">
                 <div>
-                  <p className="text-xs font-bold text-gray-900">Additional Copies</p>
+                  <p className="text-xs font-bold text-gray-900">
+                    Additional Copies
+                  </p>
                   <p className="text-[11px] text-gray-500 mt-0.5">
                     {formatCurrency(extraCopyPrice)} per copy
                   </p>
@@ -323,7 +366,6 @@ const StoryPoetryPayment = () => {
                 </select>
               </div>
             </div>
-
           </div>
 
           {/* Right Column: Sticky Payment Summary Card */}
@@ -338,38 +380,52 @@ const StoryPoetryPayment = () => {
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between items-center text-gray-600">
                   <span>Upload Fee</span>
-                  <span className="font-semibold text-gray-900">{formatCurrency(uploadFee)}</span>
+                  <span className="font-semibold text-gray-900">
+                    {formatCurrency(uploadFee)}
+                  </span>
                 </div>
 
                 <div className="flex justify-between items-center text-gray-600">
                   <span>Complimentary Copies</span>
-                  <span className="font-semibold text-gray-900">{complimentaryCopies} Copies</span>
+                  <span className="font-semibold text-gray-900">
+                    {complimentaryCopies} Copies
+                  </span>
                 </div>
 
                 {requestedCopies > 0 && (
                   <>
                     <div className="flex justify-between items-center text-gray-600">
                       <span>Extra Copy Price</span>
-                      <span className="font-semibold text-gray-900">{formatCurrency(extraCopyPrice)}</span>
+                      <span className="font-semibold text-gray-900">
+                        {formatCurrency(extraCopyPrice)}
+                      </span>
                     </div>
 
                     <div className="flex justify-between items-center text-gray-600">
                       <span>Extra Copies</span>
-                      <span className="font-semibold text-gray-900">{requestedCopies}</span>
+                      <span className="font-semibold text-gray-900">
+                        {requestedCopies}
+                      </span>
                     </div>
                   </>
                 )}
 
                 <div className="pt-3 border-t border-gray-200 flex justify-between items-baseline">
                   <div>
-                    <span className="text-sm font-bold text-gray-900 block">Total Payable</span>
-                    <span className="text-[10px] text-gray-400">Inclusive of all taxes</span>
+                    <span className="text-sm font-bold text-gray-900 block">
+                      Total Payable
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      Inclusive of all taxes
+                    </span>
                   </div>
                   <div className="text-right">
                     <span className="text-xl font-bold text-[#1b3b2b]">
                       {formatCurrency(totalAmount)}
                     </span>
-                    <span className="text-[10px] font-medium text-gray-500 block">INR</span>
+                    <span className="text-[10px] font-medium text-gray-500 block">
+                      INR
+                    </span>
                   </div>
                 </div>
               </div>
@@ -402,7 +458,6 @@ const StoryPoetryPayment = () => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

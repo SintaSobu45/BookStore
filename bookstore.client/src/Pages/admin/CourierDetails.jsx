@@ -30,6 +30,8 @@ import {
 } from "docx";
 
 import { getAllStoryPoetry } from "../../services/storyPoetryService";
+import { getAllEventRegistrations } from "../../services/eventRegistrationService";
+import { getAllStoryPoetryParticulars } from "../../services/storyPoetryParticularService";
 
 export default function CourierDetails() {
   // =========================================================
@@ -40,10 +42,19 @@ export default function CourierDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [particulars, setParticulars] = useState([]);
+  const [particularsLoading, setParticularsLoading] = useState(false);
+
+  const [eventRegistrations, setEventRegistrations] = useState([]);
+  const [eventRegistrationsLoading, setEventRegistrationsLoading] =
+    useState(false);
+
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("All");
   const [selectedParticular, setSelectedParticular] = useState("All");
+  const [selectedEvent, setSelectedEvent] = useState("All");
+  const [selectedAttendance, setSelectedAttendance] = useState("All");
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState("All");
 
   const [selectedMonth, setSelectedMonth] = useState("");
@@ -80,8 +91,44 @@ export default function CourierDetails() {
     }
   };
 
+  const loadParticulars = async () => {
+    try {
+      setParticularsLoading(true);
+
+      const data = await getAllStoryPoetryParticulars();
+
+      setParticulars(
+        Array.isArray(data) ? data.filter((item) => item?.isActive) : [],
+      );
+    } catch (err) {
+      console.error("Failed to load particulars:", err);
+      setParticulars([]);
+    } finally {
+      setParticularsLoading(false);
+    }
+  };
+
+  const loadEventRegistrations = async () => {
+    try {
+      setEventRegistrationsLoading(true);
+
+      const data = await getAllEventRegistrations();
+
+      console.log("Courier Event Registrations:", data);
+
+      setEventRegistrations(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load event registrations:", err);
+      setEventRegistrations([]);
+    } finally {
+      setEventRegistrationsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadSubmissions();
+    loadEventRegistrations();
+    loadParticulars();
   }, []);
 
   // =========================================================
@@ -264,20 +311,88 @@ export default function CourierDetails() {
   // =========================================================
 
   const particularOptions = useMemo(() => {
-    const values = new Set();
+    return particulars
+      .filter((particular) => {
+        if (!particular?.isActive) return false;
 
-    submissions.forEach((item) => {
-      const particular = getParticularName(item);
+        if (selectedType === "All") return true;
 
-      if (particular && particular !== "-") {
-        values.add(particular);
+        return (
+          String(particular.type || "")
+            .trim()
+            .toLowerCase() === String(selectedType).trim().toLowerCase()
+        );
+      })
+      .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+  }, [particulars, selectedType]);
+
+  const eventOptions = useMemo(() => {
+    const events = new Map();
+
+    eventRegistrations.forEach((registration) => {
+      const eventId = registration?.eventId;
+      const eventName = registration?.eventName;
+
+      if (eventId && eventName) {
+        events.set(String(eventId), eventName);
       }
     });
 
-    return Array.from(values).sort((a, b) =>
-      String(a).localeCompare(String(b)),
-    );
-  }, [submissions]);
+    return Array.from(events.entries()).map(([eventId, eventName]) => ({
+      eventId,
+      eventName,
+    }));
+  }, [eventRegistrations]);
+
+  const eventFilteredSubmissions = useMemo(() => {
+    if (selectedEvent === "All") {
+      return submissions;
+    }
+
+    if (selectedAttendance !== "Not Attended") {
+      return submissions;
+    }
+
+    // Get users who attended THIS specific event
+    const attendedUserIds = new Set();
+
+    eventRegistrations.forEach((registration) => {
+      const eventId = registration?.eventId;
+      const attendanceStatus = registration?.attendanceStatus;
+
+      if (
+        String(eventId) === String(selectedEvent) &&
+        String(attendanceStatus || "")
+          .trim()
+          .toLowerCase() === "attended"
+      ) {
+        const userId =
+          registration?.userId ||
+          registration?.user_id ||
+          registration?.user?.userId;
+
+        if (userId) {
+          attendedUserIds.add(String(userId));
+        }
+      }
+    });
+
+    // Remove only users who attended the selected event
+    return submissions.filter((submission) => {
+      const userId =
+        submission?.userId ||
+        submission?.contributorId ||
+        submission?.user_id ||
+        submission?.contributorUserId;
+
+      // If submission has no user ID, keep it
+      if (!userId) {
+        return true;
+      }
+
+      return !attendedUserIds.has(String(userId));
+    });
+  }, [submissions, eventRegistrations, selectedEvent, selectedAttendance]);
 
   // =========================================================
   // FILTERED SUBMISSIONS
@@ -286,7 +401,7 @@ export default function CourierDetails() {
   const filteredSubmissions = useMemo(() => {
     const search = normalize(searchTerm);
 
-    return submissions.filter((item) => {
+    return eventFilteredSubmissions.filter((item) => {
       // -----------------------------------------------------
       // SEARCH
       // -----------------------------------------------------
@@ -383,7 +498,7 @@ export default function CourierDetails() {
       );
     });
   }, [
-    submissions,
+    eventFilteredSubmissions,
     searchTerm,
     selectedType,
     selectedParticular,
@@ -520,6 +635,8 @@ export default function CourierDetails() {
     setSelectedType("All");
     setSelectedParticular("All");
     setSelectedPaymentStatus("All");
+    setSelectedEvent("All");
+    setSelectedAttendance("All");
     setSelectedMonth("");
     setFromDate("");
     setToDate("");
@@ -534,6 +651,8 @@ export default function CourierDetails() {
     selectedType !== "All" ||
     selectedParticular !== "All" ||
     selectedPaymentStatus !== "All" ||
+    selectedEvent !== "All" ||
+    selectedAttendance !== "All" ||
     selectedMonth ||
     fromDate ||
     toDate;
@@ -586,6 +705,19 @@ export default function CourierDetails() {
       // =====================================================
 
       const filterParts = [];
+
+      const selectedEventName =
+        selectedEvent === "All"
+          ? "All Events"
+          : eventOptions.find(
+              (event) => String(event.eventId) === String(selectedEvent),
+            )?.eventName || "-";
+
+      filterParts.push(`Event: ${selectedEventName}`);
+
+      if (selectedAttendance === "Not Attended") {
+        filterParts.push("Attendance: Not Attended");
+      }
 
       if (selectedType !== "All") {
         filterParts.push(`Type: ${selectedType}`);
@@ -1226,8 +1358,46 @@ export default function CourierDetails() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {/* SEARCH */}
+            {/* Event */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Event
+              </label>
 
+              <select
+                value={selectedEvent}
+                onChange={(e) => setSelectedEvent(e.target.value)}
+                disabled={eventRegistrationsLoading}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-200"
+              >
+                <option value="All">All Events</option>
+
+                {eventOptions.map((event) => (
+                  <option key={event.eventId} value={event.eventId}>
+                    {event.eventName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Attendance */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Attendance
+              </label>
+
+              <select
+                value={selectedAttendance}
+                onChange={(e) => setSelectedAttendance(e.target.value)}
+                disabled={selectedEvent === "All"}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-200"
+              >
+                <option value="All">All Attendance</option>
+                <option value="Not Attended">Not Attended</option>
+              </select>
+            </div>
+
+            {/* SEARCH */}
             <div className="xl:col-span-2">
               <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wide block mb-2">
                 Search
@@ -1329,29 +1499,16 @@ export default function CourierDetails() {
               <select
                 value={selectedParticular}
                 onChange={(e) => setSelectedParticular(e.target.value)}
-                className="
-                  w-full
-                  px-4
-                  py-2.5
-                  rounded-xl
-                  border
-                  border-stone-200
-                  bg-stone-50
-                  text-sm
-                  text-gray-700
-                  outline-none
-                  focus:bg-white
-                  focus:border-emerald-900
-                  focus:ring-2
-                  focus:ring-emerald-900/10
-                  cursor-pointer
-                "
+                className="form-control"
               >
                 <option value="All">All Particulars</option>
 
                 {particularOptions.map((particular) => (
-                  <option key={particular} value={particular}>
-                    {particular}
+                  <option
+                    key={particular.storyPoetryParticularId}
+                    value={particular.name}
+                  >
+                    {particular.name}
                   </option>
                 ))}
               </select>

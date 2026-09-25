@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { getEvents, deleteEvent } from "../../services/eventService";
 
-import { getAllEventRegistrations } from "../../services/eventRegistrationService";
+import {
+  getAllEventRegistrations,
+  markAttendance,
+} from "../../services/eventRegistrationService";
 
 import EventModal from "./EventModal";
 
@@ -34,6 +37,11 @@ function EventManager() {
   const [registrationLoading, setRegistrationLoading] = useState(false);
 
   const [registrationError, setRegistrationError] = useState("");
+  //attendance
+  const [selectedRegistrations, setSelectedRegistrations] = useState([]);
+  const [selectedRegistrationEvent, setSelectedRegistrationEvent] =
+    useState("All");
+  const [attendanceLoading, setAttendanceLoading] = useState(null);
 
   // =====================================================
   // LOAD EVENTS
@@ -97,6 +105,16 @@ function EventManager() {
       console.log("Paid registrations:", paidRegistrations);
 
       setRegistrations(paidRegistrations);
+
+      // Select all registrations that are not already attended
+      setSelectedRegistrations(
+        paidRegistrations
+          .filter(
+            (registration) =>
+              registration.attendanceStatus?.toLowerCase() !== "attended",
+          )
+          .map((registration) => registration.registrationId),
+      );
     } catch (error) {
       console.error("Failed to load registrations:", error);
 
@@ -105,6 +123,109 @@ function EventManager() {
       );
     } finally {
       setRegistrationLoading(false);
+    }
+  };
+
+  const registrationEventOptions = useMemo(() => {
+    const events = new Map();
+
+    registrations.forEach((registration) => {
+      const eventId = registration?.eventId;
+      const eventName = registration?.eventName;
+
+      if (eventId && eventName) {
+        events.set(String(eventId), eventName);
+      }
+    });
+
+    return Array.from(events.entries()).map(([eventId, eventName]) => ({
+      eventId,
+      eventName,
+    }));
+  }, [registrations]);
+
+  // =====================================================
+  // MARK ATTENDANCE
+  // =====================================================
+
+  const handleMarkAttendance = async (registrationId) => {
+    try {
+      setAttendanceLoading(registrationId);
+
+      await markAttendance(registrationId);
+
+      // Refetch registrations after successful update
+      await loadRegistrations();
+    } catch (error) {
+      console.error("Failed to mark attendance:", error);
+
+      alert(error.message || "Failed to mark attendance.");
+    } finally {
+      setAttendanceLoading(null);
+    }
+  };
+
+  // =====================================================
+  // ATTENDANCE SELECTION
+  // =====================================================
+
+  const handleSelectRegistration = (registrationId) => {
+    setSelectedRegistrations((previous) => {
+      if (previous.includes(registrationId)) {
+        return previous.filter((id) => id !== registrationId);
+      }
+
+      return [...previous, registrationId];
+    });
+  };
+
+  const handleSelectAll = () => {
+    const selectableRegistrations = filteredRegistrations
+      .filter(
+        (registration) =>
+          registration.attendanceStatus?.toLowerCase() !== "attended",
+      )
+      .map((registration) => registration.registrationId);
+
+    const allSelected = selectableRegistrations.every((id) =>
+      selectedRegistrations.includes(id),
+    );
+
+    if (allSelected) {
+      setSelectedRegistrations([]);
+    } else {
+      setSelectedRegistrations(selectableRegistrations);
+    }
+  };
+
+  // =====================================================
+  // MARK SELECTED AS ATTENDED
+  // =====================================================
+
+  const handleMarkSelectedAttended = async () => {
+    if (selectedRegistrations.length === 0) {
+      alert("Please select at least one registration.");
+      return;
+    }
+
+    try {
+      setAttendanceLoading(true);
+
+      await Promise.all(
+        selectedRegistrations.map((registrationId) =>
+          markAttendance(registrationId),
+        ),
+      );
+
+      await loadRegistrations();
+
+      alert("Selected registrations marked as attended.");
+    } catch (error) {
+      console.error("Failed to mark attendance:", error);
+
+      alert(error.message || "Failed to mark attendance.");
+    } finally {
+      setAttendanceLoading(false);
     }
   };
 
@@ -189,6 +310,15 @@ function EventManager() {
   // =====================================================
 
   const filteredRegistrations = registrations.filter((registration) => {
+    // Event filter
+    if (
+      selectedRegistrationEvent !== "All" &&
+      String(registration.eventId) !== String(selectedRegistrationEvent)
+    ) {
+      return false;
+    }
+
+    // Search filter
     const searchTerm = registrationSearch.toLowerCase().trim();
 
     if (!searchTerm) return true;
@@ -384,7 +514,8 @@ function EventManager() {
         SEARCH REGISTRATIONS
     ===================================================== */}
 
-          <div className="mb-6">
+          <div className="mb-6 flex flex-col md:flex-row gap-3">
+            {/* Search */}
             <input
               type="text"
               placeholder="Search by registered user or email..."
@@ -392,6 +523,21 @@ function EventManager() {
               onChange={(e) => setRegistrationSearch(e.target.value)}
               className="w-full md:w-96 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+
+            {/* Event Filter */}
+            <select
+              value={selectedRegistrationEvent}
+              onChange={(e) => setSelectedRegistrationEvent(e.target.value)}
+              className="w-full md:w-72 border border-gray-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="All">All Events</option>
+
+              {registrationEventOptions.map((event) => (
+                <option key={event.eventId} value={event.eventId}>
+                  {event.eventName}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* =====================================================
@@ -450,6 +596,64 @@ function EventManager() {
             )}
 
           {/* =====================================================
+    ATTENDANCE CONTROLS
+===================================================== */}
+
+          {!registrationLoading &&
+            !registrationError &&
+            registrations.length > 0 && (
+              <div className="bg-white rounded-2xl shadow p-5 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filteredRegistrations.filter(
+                          (registration) =>
+                            registration.attendanceStatus?.toLowerCase() !==
+                            "attended",
+                        ).length > 0 &&
+                        filteredRegistrations
+                          .filter(
+                            (registration) =>
+                              registration.attendanceStatus?.toLowerCase() !==
+                              "attended",
+                          )
+                          .every((registration) =>
+                            selectedRegistrations.includes(
+                              registration.registrationId,
+                            ),
+                          )
+                      }
+                      onChange={handleSelectAll}
+                      className="w-5 h-5 cursor-pointer"
+                    />
+
+                    <span className="font-medium text-gray-700">
+                      Select All
+                    </span>
+
+                    <span className="text-sm text-gray-500">
+                      ({selectedRegistrations.length} selected)
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={handleMarkSelectedAttended}
+                    disabled={
+                      attendanceLoading || selectedRegistrations.length === 0
+                    }
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-5 py-2.5 rounded-xl font-medium"
+                  >
+                    {attendanceLoading
+                      ? "Marking Attendance..."
+                      : "Mark Selected as Attended"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+          {/* =====================================================
         REGISTRATIONS TABLE
     ===================================================== */}
 
@@ -461,6 +665,10 @@ function EventManager() {
                   <table className="w-full whitespace-nowrap">
                     <thead className="bg-gray-100">
                       <tr>
+                        <th className="p-4 text-left"></th>
+
+                        <th className="p-4 text-left">Attendance</th>
+
                         <th className="p-4 text-left">User</th>
 
                         <th className="p-4 text-left">Contact</th>
@@ -485,6 +693,43 @@ function EventManager() {
                           key={registration.registrationId}
                           className="border-t hover:bg-gray-50"
                         >
+                          {/* SELECT */}
+
+                          <td className="p-4 text-center">
+                            {registration.attendanceStatus?.toLowerCase() ===
+                            "attended" ? (
+                              <span className="text-gray-400">—</span>
+                            ) : (
+                              <input
+                                type="checkbox"
+                                checked={selectedRegistrations.includes(
+                                  registration.registrationId,
+                                )}
+                                onChange={() =>
+                                  handleSelectRegistration(
+                                    registration.registrationId,
+                                  )
+                                }
+                                className="w-5 h-5 cursor-pointer"
+                              />
+                            )}
+                          </td>
+
+                          {/* ATTENDANCE */}
+
+                          <td className="p-4">
+                            {registration.attendanceStatus?.toLowerCase() ===
+                            "attended" ? (
+                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                Attended
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
+                                Registered
+                              </span>
+                            )}
+                          </td>
+
                           {/* USER */}
 
                           <td className="p-4">

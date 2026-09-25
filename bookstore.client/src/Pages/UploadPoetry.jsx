@@ -104,6 +104,11 @@ export default function UploadPoetry() {
 
   const [successToast, setSuccessToast] = useState("");
 
+  /* User id */
+  const userId = localStorage.getItem("userId");
+
+  const draftStorageKey = userId ? `storyPoetryDraft_${userId}` : null;
+
   // =========================================================
   // CONTENT LIMIT CONFIGURATION
   // =========================================================
@@ -612,45 +617,41 @@ export default function UploadPoetry() {
       setContentType("Poetry");
       setFieldErrors({});
     } catch (error) {
-  console.error("Story/Poetry submission failed:", error);
+      console.error("Story/Poetry submission failed:", error);
 
-  setLoading(false);
+      setLoading(false);
 
-  if (
-    error.message?.includes("already submitted to this particular")
-  ) {
-    await Swal.fire({
-      icon: "warning",
-      title: "Already Submitted",
-      text: "You have already submitted to this particular. Please choose another.",
-      confirmButtonText: "Okay",
-      confirmButtonColor: "#065f46",
-    });
+      if (error.message?.includes("already submitted to this particular")) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Already Submitted",
+          text: "You have already submitted to this particular. Please choose another.",
+          confirmButtonText: "Okay",
+          confirmButtonColor: "#065f46",
+        });
 
-    return;
-  }
+        return;
+      }
 
-  if (
-    error.message?.includes("already submitted to this category")
-  ) {
-    await Swal.fire({
-      icon: "warning",
-      title: "Already Submitted",
-      text: "You have already submitted to this particular. Please choose another.",
-      confirmButtonText: "Okay",
-      confirmButtonColor: "#065f46",
-    });
+      if (error.message?.includes("already submitted to this category")) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Already Submitted",
+          text: "You have already submitted to this particular. Please choose another.",
+          confirmButtonText: "Okay",
+          confirmButtonColor: "#065f46",
+        });
 
-    return;
-  }
+        return;
+      }
 
-  await Swal.fire({
-    icon: "error",
-    title: "Submission Failed",
-    text: error.message || "Failed to submit Story/Poetry.",
-    confirmButtonText: "OK",
-  });
-}
+      await Swal.fire({
+        icon: "error",
+        title: "Submission Failed",
+        text: error.message || "Failed to submit Story/Poetry.",
+        confirmButtonText: "OK",
+      });
+    }
   };
 
   // =========================================================
@@ -737,7 +738,12 @@ export default function UploadPoetry() {
   // =========================================================
 
   useEffect(() => {
-    const savedData = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!draftStorageKey) {
+      setDraftRestored(true);
+      return;
+    }
+
+    const savedData = sessionStorage.getItem(draftStorageKey);
 
     if (savedData) {
       try {
@@ -761,20 +767,19 @@ export default function UploadPoetry() {
       } catch (error) {
         console.error("Failed to restore Story/Poetry draft:", error);
 
-        sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+        sessionStorage.removeItem(draftStorageKey);
       }
     }
 
-    // Important: restoration is finished
     setDraftRestored(true);
-  }, []);
+  }, [draftStorageKey]);
 
   // =========================================================
   // SAVE FORM DATA AFTER DRAFT HAS BEEN RESTORED
   // =========================================================
 
   useEffect(() => {
-    if (!draftRestored) {
+    if (!draftRestored || !draftStorageKey) {
       return;
     }
 
@@ -789,9 +794,10 @@ export default function UploadPoetry() {
       contributorPhone,
     };
 
-    sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+    sessionStorage.setItem(draftStorageKey, JSON.stringify(draftData));
   }, [
     draftRestored,
+    draftStorageKey,
     contentType,
     title,
     content,
@@ -2028,7 +2034,7 @@ export default function UploadPoetry() {
                         </label>
                       </div>
 
-                      <p className="text-[9px] text-red-600 mt-1.5 font-medium">
+                      <p className="text-[9px] text-green-600 mt-1.5 font-medium">
                         ⚠ Please upload a clear, high-quality profile image with
                         a plain/no background.
                       </p>

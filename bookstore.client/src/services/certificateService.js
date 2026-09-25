@@ -8,19 +8,24 @@ const getAuthHeaders = () => {
 };
 
 // 1. Get Candidates
-export const getCertificateCandidates = async () => {
-  const response = await fetch(`${API_BASE_URL}/api/Certificate/candidates`, {
-    headers: {
-      ...getAuthHeaders(),
-      "Content-Type": "application/json",
-    },
-  });
+export const getCertificateCandidates = async (eventId) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/Certificate/candidates?eventId=${eventId}`,
+    {
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   const result = await response.json();
+
   if (!response.ok) {
     throw new Error(result.message || "Failed to fetch candidates");
   }
-  return result.data;
+
+  return result.data || [];
 };
 
 // 2. Bulk Generate Certificates
@@ -66,4 +71,31 @@ export const sendCertificatePdf = async (certificateId, pdfBlob, fileName) => {
     throw new Error(result.message || "Failed to send certificate PDF");
   }
   return result.data;
+};
+
+// =========================================================
+// GET CERTIFICATES FOR EVENT
+// =========================================================
+
+export const getEventCertificates = async (eventId) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/Certificate/event/${eventId}`,
+    {
+      method: "GET",
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message || "Failed to fetch event certificates",
+    );
+  }
+
+  return result.data || [];
 };
