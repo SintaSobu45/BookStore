@@ -1011,6 +1011,8 @@ namespace BookStore.Server.Services
             storyPoetry.Barcode =
                 barcode.Trim();
 
+            storyPoetry.SpOrderStatus = "Dispatched";
+
 
             await _storyPoetryRepository
                 .UpdateAsync(storyPoetry);
