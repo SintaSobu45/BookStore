@@ -257,3 +257,35 @@ export const updateOrderBarcode = async (orderId, barcode) => {
 
   return data;
 };
+
+
+//send order email
+
+export const sendOrderEmail = async (orderId) => {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error("Authentication required.");
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/Order/${orderId}/send-email`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || "Failed to send email."
+    );
+  }
+
+  return data;
+};

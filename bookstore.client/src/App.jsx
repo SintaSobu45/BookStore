@@ -63,6 +63,7 @@ import AdminRoute from "./Components/AdminRoute";
 import ScrollToTop from "./Components/ScrollToTop";
 import SessionExpiryHandler from "./Components/SessionExpiryHandler";
 import CourierDetails from "./Pages/admin/CourierDetails";
+import Reports from "./Pages/admin/Reports";
 
 // ======================================================
 // ADMIN / EDITOR PAGE ACCESS
@@ -301,6 +302,20 @@ function App() {
             element={
               <AdminPageRoute allowedRoles={["Admin"]}>
                 <AdminParticulars />
+              </AdminPageRoute>
+            }
+          />
+
+          {/* =================================================
+    REPORTS
+    ADMIN ONLY
+================================================= */}
+
+          <Route
+            path="reports"
+            element={
+              <AdminPageRoute allowedRoles={["Admin"]}>
+                <Reports />
               </AdminPageRoute>
             }
           />

@@ -28,15 +28,9 @@ export const addStoryPoetry = async (storyPoetryData) => {
     storyPoetryData.contributorAddressMalayalam || "",
   );
 
-  formData.append(
-    "ContributorAddress",
-    storyPoetryData.contributorAddress,
-  );
+  formData.append("ContributorAddress", storyPoetryData.contributorAddress);
 
-  formData.append(
-    "ContributorPincode",
-    storyPoetryData.contributorPincode,
-  );
+  formData.append("ContributorPincode", storyPoetryData.contributorPincode);
 
   formData.append(
     "ContributorDistrictMalayalam",
@@ -48,15 +42,9 @@ export const addStoryPoetry = async (storyPoetryData) => {
     storyPoetryData.contributorCityMalayalam,
   );
 
-  formData.append(
-    "ContributorEmail",
-    storyPoetryData.contributorEmail,
-  );
+  formData.append("ContributorEmail", storyPoetryData.contributorEmail);
 
-  formData.append(
-    "ContributorPhone",
-    storyPoetryData.contributorPhone,
-  );
+  formData.append("ContributorPhone", storyPoetryData.contributorPhone);
 
   formData.append(
     "ContributorProfileImage",
@@ -101,20 +89,14 @@ export const addStoryPoetry = async (storyPoetryData) => {
     // ASP.NET error response may contain the exception text
     if (responseText) {
       if (
-        responseText.includes(
-          "You have already submitted to this category",
-        )
+        responseText.includes("You have already submitted to this category")
       ) {
         throw new Error(
           "You have already submitted to this particular. Please choose another.",
         );
       }
 
-      if (
-        responseText.includes(
-          "You have already submitted this particular",
-        )
-      ) {
+      if (responseText.includes("You have already submitted this particular")) {
         throw new Error(
           "You have already submitted to this particular. Please choose another.",
         );
@@ -406,15 +388,12 @@ export const updateStoryPoetryBarcode = async (id, barcode) => {
 
   if (!response.ok) {
     throw new Error(
-      data?.message ||
-        data?.title ||
-        "Failed to update barcode.",
+      data?.message || data?.title || "Failed to update barcode.",
     );
   }
 
   return data;
 };
-
 
 // =========================================================
 // ADMIN - UPDATE SP ORDER STATUS
@@ -441,11 +420,146 @@ export const updateStoryPoetryOrderStatus = async (id, status) => {
 
   if (!response.ok) {
     throw new Error(
-      data?.message ||
-        data?.title ||
-        "Failed to update order status.",
+      data?.message || data?.title || "Failed to update order status.",
     );
   }
 
   return data;
+};
+
+// =========================================================
+// ADMIN - STORY / POETRY COPY SETTINGS
+// =========================================================
+
+export const getStoryPoetryCopySettings = async () => {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(`${API_BASE_URL}/api/StoryPoetryCopySetting`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message || "Failed to load Story/Poetry copy settings.",
+    );
+  }
+
+  return data;
+};
+
+// =========================================================
+// ADMIN - UPDATE STORY / POETRY FREE COPIES
+// =========================================================
+
+export const updateStoryPoetryCopySetting = async (id, freeCopies) => {
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/StoryPoetryCopySetting/${id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        freeCopies,
+      }),
+    },
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Failed to update free copies.");
+  }
+
+  return data;
+};
+
+// =========================================================
+// ADMIN - GET STORY POETRY + EVENT REPORT
+// =========================================================
+
+export const getStoryPoetryEventReport = async (fromDate, toDate) => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("You are not logged in.");
+  }
+
+  const params = new URLSearchParams();
+
+  if (fromDate) {
+    params.append("fromDate", fromDate);
+  }
+
+  if (toDate) {
+    params.append("toDate", toDate);
+  }
+
+  const queryString = params.toString();
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/StoryPoetry/event-report${
+      queryString ? `?${queryString}` : ""
+    }`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result?.message || "Failed to load report.");
+  }
+
+  return result;
+};
+
+// =========================================================
+// ADMIN - GET EVENT COPY PREPARATION REPORT
+// =========================================================
+
+export const getEventCopyPreparationReport = async (eventId) => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("You are not logged in.");
+  }
+
+  if (!eventId) {
+    throw new Error("Please select an event.");
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/StoryPoetry/event-copy-preparation-report?eventId=${eventId}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result?.message || "Failed to load event copy preparation report.",
+    );
+  }
+
+  console.log("EVENT COPY REPORT SERVICE RESPONSE:", result);
+
+  return Array.isArray(result) ? result : result?.data || [];
 };

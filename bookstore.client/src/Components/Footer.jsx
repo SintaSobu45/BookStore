@@ -1,9 +1,29 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
+import { getLogo } from "../services/logoService";
 
 export default function Footer() {
+   const [logoUrl, setLogoUrl] = React.useState(null);
+
+    useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const data = await getLogo();
+
+        if (data?.imageUrl) {
+          setLogoUrl(data.imageUrl);
+        }
+      } catch (error) {
+        console.error("Failed to load logo:", error);
+      }
+    };
+
+    loadLogo();
+  }, []);
+
+
   return (
     <footer className="bg-white pt-5 sm:pt-8 pb-3 sm:pb-4">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -39,7 +59,7 @@ export default function Footer() {
               {/* LOGO */}
 
               <img
-                src={logo}
+                src={logoUrl || logo}
                 alt="The Old Library Logo"
                 className="object-contain shrink-0 w-[75px] sm:w-[100px]"
               />
@@ -310,7 +330,7 @@ export default function Footer() {
                 />
 
                 <span>
-                  Thattarambalam, Mavelikara, <br /> Kerala, India
+                  MCUBE TOWER, VELIYANOOR <br />Thrissur, Kerala, 680021
                 </span>
               </li>
 
@@ -379,7 +399,7 @@ export default function Footer() {
         >
           <div>© 2026 THE OLD LIBRARY. All rights reserved.</div>
 
-          <div>~ Design & developed by Gseven Technologies Irinjalakuda</div>
+          {/* <div>~ Design & developed by Gseven Technologies Irinjalakuda</div> */}
         </div>
       </div>
     </footer>

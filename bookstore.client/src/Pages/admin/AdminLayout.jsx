@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import {
   Menu,
@@ -8,15 +8,17 @@ import {
   Library,
   CalendarDays,
   LogOut,
-  Paperclip,
   PenLine,
   ListTree,
   ScrollText,
   Package,
+  FileChartColumnIncreasing,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
+import { getLogo } from "../../services/logoService";
 
 function AdminLayout() {
+  const [logoUrl, setLogoUrl] = useState(null);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -24,6 +26,22 @@ function AdminLayout() {
   const isEditor = role === "Editor";
 
   const homePath = isEditor ? "/admin/story" : "/admin";
+
+  useEffect(() => {
+  const loadLogo = async () => {
+    try {
+      const data = await getLogo();
+      console.log('logo response',data.imageUrl);
+      if (data?.imageUrl) {
+        setLogoUrl(data.imageUrl);
+      }
+    } catch (error) {
+      console.error("Failed to load logo:", error);
+    }
+  };
+
+  loadLogo();
+}, []);
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -54,7 +72,7 @@ function AdminLayout() {
           className="flex items-center cursor-pointer overflow-visible"
         >
           <img
-            src={logo}
+            src={logoUrl || logo}
             alt="The Old Library"
             className="h-16 w-auto object-contain -my-3 scale-110"
           />
@@ -90,7 +108,7 @@ function AdminLayout() {
     z-50
     h-screen
     w-64
-    bg-gray-900
+    bg-green-900
     text-white
     p-6
     flex
@@ -111,12 +129,12 @@ function AdminLayout() {
     <Link
       to={homePath}
       onClick={handleNavigation}
-      className="w-full h-16 overflow-hidden flex items-center justify-center"
+      className="w-full h-28 overflow-hidden flex items-center justify-center"
     >
       <img
-        src={logo}
+        src={logoUrl || logo}
         alt="The Old Library"
-        className="w-full h-full object-cover bg-white rounded-2"
+         className="max-w-full max-h-full   object-contain"
       />
     </Link>
 
@@ -229,6 +247,16 @@ function AdminLayout() {
           <span>Certificates</span>
         </Link>
       )}
+
+
+      <Link
+          to="/admin/reports"
+          onClick={handleNavigation}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg bg-orange-500  hover:text-gray-900 transition"
+        >
+          <FileChartColumnIncreasing className="w-5 h-5" />
+          <span>Reports</span>
+        </Link>
 
     </nav>
   </div>

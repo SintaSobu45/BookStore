@@ -1,10 +1,8 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import React, { useEffect, useMemo, useState } from "react";
 
 import {
   BookOpen,
   Leaf,
-  Eye,
   Loader2,
   X,
   Download,
@@ -39,6 +37,8 @@ import {
 } from "../../services/pageWarningService";
 import CourierDetails from "./CourierDetails";
 
+import { getAllStoryPoetryParticulars } from "../../services/storyPoetryParticularService";
+
 export default function AdminStoryPoetry() {
   const navigate = useNavigate();
 
@@ -55,6 +55,10 @@ export default function AdminStoryPoetry() {
 
   // Type filter
   const [selectedType, setSelectedType] = useState("All");
+
+  //particulars
+  const [particulars, setParticulars] = useState([]);
+
   // Particular filter
   const [selectedParticular, setSelectedParticular] = useState("All");
 
@@ -101,13 +105,6 @@ export default function AdminStoryPoetry() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [barcodeEditingId, setBarcodeEditingId] = useState(null);
   const [barcodeLoading, setBarcodeLoading] = useState(false);
-
-  //barcode scanner
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [scannerError, setScannerError] = useState("");
-
-  const barcodeScannerRef = useRef(null);
-  const barcodeReaderRef = useRef(null);
 
   //loda warnings
 
@@ -232,6 +229,7 @@ export default function AdminStoryPoetry() {
   useEffect(() => {
     loadSubmissions();
     loadWarnings();
+    loadParticulars();
   }, []);
 
   // =========================================================
@@ -367,6 +365,17 @@ export default function AdminStoryPoetry() {
     return item?.particularName || item?.particularNameSnapshot || "-";
   };
 
+  const loadParticulars = async () => {
+    try {
+      const data = await getAllStoryPoetryParticulars();
+
+      setParticulars(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load particulars:", error);
+      setParticulars([]);
+    }
+  };
+
   // =========================================================
   // TYPE FILTER
   // =========================================================
@@ -396,17 +405,19 @@ export default function AdminStoryPoetry() {
   // =========================================================
 
   const particularOptions = useMemo(() => {
+    const activeParticulars = particulars.filter(
+      (item) => item?.isActive === true,
+    );
+
     const filteredByType =
       selectedType === "All"
-        ? submissions
-        : submissions.filter((item) => item?.type === selectedType);
+        ? activeParticulars
+        : activeParticulars.filter((item) => item?.type === selectedType);
 
-    const particulars = filteredByType
-      .map((item) => getParticularName(item))
-      .filter((particular) => particular && particular !== "-");
-
-    return [...new Set(particulars)].sort((a, b) => a.localeCompare(b));
-  }, [submissions, selectedType]);
+    return [...filteredByType].sort((a, b) =>
+      String(a?.name || "").localeCompare(String(b?.name || "")),
+    );
+  }, [particulars, selectedType]);
 
   // =========================================================
   // FILTERED SUBMISSIONS
@@ -421,6 +432,8 @@ export default function AdminStoryPoetry() {
         !search ||
         item?.title?.toLowerCase().includes(search) ||
         item?.contributorNameMalayalam?.toLowerCase().includes(search) ||
+        item?.contributorEmail?.toLowerCase().includes(search) ||
+        item?.contributorPhone.includes(search) ||
         getParticularName(item)?.toLowerCase().includes(search) ||
         String(item?.submissionNumber || "")
           .toLowerCase()
@@ -1523,80 +1536,6 @@ export default function AdminStoryPoetry() {
     navigate(`/admin/story/${item.storyPoetryId}`);
   };
 
-  const handleStartBarcodeScanner = () => {
-    setScannerError("");
-    setShowBarcodeScanner(true);
-  };
-
-  useEffect(() => {
-    if (!showBarcodeScanner) {
-      return;
-    }
-
-    let scanner;
-
-    const startScanner = async () => {
-      try {
-        if (!barcodeReaderRef.current) {
-          throw new Error("Barcode reader element not found.");
-        }
-
-        scanner = new Html5Qrcode("barcode-reader");
-
-        barcodeScannerRef.current = scanner;
-
-        await scanner.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 300, height: 150 },
-          },
-          async (decodedText) => {
-            console.log("Barcode detected:", decodedText);
-
-            setBarcodeInput(decodedText);
-
-            try {
-              await scanner.stop();
-              await scanner.clear();
-            } catch (error) {
-              console.error("Failed to stop scanner:", error);
-            }
-
-            barcodeScannerRef.current = null;
-            setShowBarcodeScanner(false);
-          },
-          () => {
-            // Normal scanning failures are ignored
-          },
-        );
-      } catch (error) {
-        console.error("Barcode scanner failed:", error);
-
-        setScannerError(
-          "Unable to access the camera. Please allow camera permission and try again.",
-        );
-
-        setShowBarcodeScanner(false);
-      }
-    };
-
-    startScanner();
-
-    return () => {
-      if (barcodeScannerRef.current) {
-        barcodeScannerRef.current
-          .stop()
-          .then(() => barcodeScannerRef.current?.clear())
-          .catch((error) => {
-            console.error("Scanner cleanup failed:", error);
-          });
-
-        barcodeScannerRef.current = null;
-      }
-    };
-  }, [showBarcodeScanner]);
-
   /* handle barcode save button */
 
   const handleSaveBarcode = async (id) => {
@@ -1893,8 +1832,11 @@ export default function AdminStoryPoetry() {
                   <option value="All">All Particulars</option>
 
                   {particularOptions.map((particular) => (
-                    <option key={particular} value={particular}>
-                      {particular}
+                    <option
+                      key={particular.storyPoetryParticularId}
+                      value={particular.name}
+                    >
+                      {particular.name}
                     </option>
                   ))}
                 </select>
@@ -1941,7 +1883,7 @@ export default function AdminStoryPoetry() {
                 </div>
               </div>
 
-                    {/* order status filter */}
+              {/* order status filter */}
               <select
                 value={selectedOrderStatus}
                 onChange={(e) => setSelectedOrderStatus(e.target.value)}
@@ -2133,7 +2075,7 @@ export default function AdminStoryPoetry() {
                   DOWNLOAD ALL COPY DETAILS
               ================================================= */}
 
-              <div className="flex justify-end">
+              {/* <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={handleDownloadAllCopyDetailsDOCX}
@@ -2173,7 +2115,7 @@ export default function AdminStoryPoetry() {
                     </>
                   )}
                 </button>
-              </div>
+              </div> */}
 
               {/* =================================================
     COURIER DETAILS
@@ -2412,7 +2354,9 @@ export default function AdminStoryPoetry() {
                         <p className="font-semibold text-gray-800">
                           {item.contributorNameMalayalam || "-"}
                         </p>
+                        <span>{item.contributorEmail || "-"}</span>
                       </td>
+
                       {/* Mobile number */}
                       <td className="px-5 py-4">
                         <p className="font-semibold text-gray-800">
@@ -2484,113 +2428,76 @@ export default function AdminStoryPoetry() {
                       </td>
 
                       {/* ===================================
-                            BARCODE
-                        =================================== */}
+    BARCODE
+=================================== */}
 
                       <td
                         className="px-5 py-4"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {barcodeEditingId === item.storyPoetryId ? (
-                          <div className="flex flex-col gap-3">
-                            {/* Barcode input + Save */}
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                value={barcodeInput}
-                                onChange={(e) =>
-                                  setBarcodeInput(e.target.value)
-                                }
-                                placeholder="Enter barcode"
-                                autoFocus
-                                className="
-            w-36
-            px-3
-            py-2
-            rounded-lg
-            border
-            border-stone-200
-            bg-stone-50
-            text-xs
-            text-gray-800
-            outline-none
-            focus:bg-white
-            focus:border-emerald-900
-            focus:ring-2
-            focus:ring-emerald-900/10
-          "
-                              />
-
-                              <button
-                                type="button"
-                                disabled={barcodeLoading}
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                          /* =========================================
+       BARCODE EDITING
+    ========================================= */
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={barcodeInput}
+                              onChange={(e) => setBarcodeInput(e.target.value)}
+                              placeholder="Scan barcode"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !barcodeLoading) {
+                                  e.preventDefault();
                                   handleSaveBarcode(item.storyPoetryId);
-                                }}
-                                className="
-            px-3
-            py-2
-            rounded-lg
-            bg-emerald-900
-            text-white
-            text-xs
-            font-semibold
-            hover:bg-emerald-800
-            transition
-            disabled:opacity-50
-            disabled:cursor-not-allowed
-          "
-                              >
-                                {barcodeLoading ? "Saving..." : "Save"}
-                              </button>
-                            </div>
+                                }
+                              }}
+                              className="
+          w-36
+          px-3
+          py-2
+          rounded-lg
+          border
+          border-stone-200
+          bg-stone-50
+          text-xs
+          text-gray-800
+          outline-none
+          focus:bg-white
+          focus:border-emerald-900
+          focus:ring-2
+          focus:ring-emerald-900/10
+        "
+                            />
 
-                            {/* Scanner */}
-                            {showBarcodeScanner && (
-                              <div className="mt-2 w-full">
-                                <div
-                                  id="barcode-reader"
-                                  ref={barcodeReaderRef}
-                                  className="
-              w-full
-              min-h-[250px]
-              overflow-hidden
-              rounded-xl
-              border
-              border-stone-200
-              bg-black
-            "
-                                />
-
-                                {scannerError && (
-                                  <p className="mt-2 text-xs text-red-500">
-                                    {scannerError}
-                                  </p>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowBarcodeScanner(false);
-                                  }}
-                                  className="
-              mt-2
-              text-xs
-              font-medium
-              text-stone-600
-            "
-                                >
-                                  Cancel Scanner
-                                </button>
-                              </div>
-                            )}
+                            <button
+                              type="button"
+                              disabled={barcodeLoading}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveBarcode(item.storyPoetryId);
+                              }}
+                              className="
+          px-3
+          py-2
+          rounded-lg
+          bg-emerald-900
+          text-white
+          text-xs
+          font-semibold
+          hover:bg-emerald-800
+          transition
+          disabled:opacity-50
+          disabled:cursor-not-allowed
+        "
+                            >
+                              {barcodeLoading ? "Saving..." : "Save"}
+                            </button>
                           </div>
                         ) : item.barcode ? (
                           /* =========================================
        EXISTING BARCODE
-       ========================================= */
+    ========================================= */
                           <div className="flex items-center gap-3">
                             <span className="text-sm font-medium text-gray-700">
                               {item.barcode}
@@ -2603,7 +2510,6 @@ export default function AdminStoryPoetry() {
 
                                 setBarcodeEditingId(item.storyPoetryId);
                                 setBarcodeInput("");
-                                handleStartBarcodeScanner();
                               }}
                               className="
           px-3
@@ -2624,7 +2530,7 @@ export default function AdminStoryPoetry() {
                         ) : (
                           /* =========================================
        NO BARCODE
-       ========================================= */
+    ========================================= */
                           <button
                             type="button"
                             onClick={(e) => {
@@ -2632,7 +2538,6 @@ export default function AdminStoryPoetry() {
 
                               setBarcodeEditingId(item.storyPoetryId);
                               setBarcodeInput("");
-                              handleStartBarcodeScanner();
                             }}
                             className="
         px-3
@@ -2647,10 +2552,11 @@ export default function AdminStoryPoetry() {
         transition
       "
                           >
-                            Scan Barcode
+                            Add Barcode
                           </button>
                         )}
                       </td>
+
                       {/* ===================================
                             DOWNLOADS
                         =================================== */}

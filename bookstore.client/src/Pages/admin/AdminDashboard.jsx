@@ -21,6 +21,7 @@ import { getAuthors } from "../../services/authorService";
 import { getCategories } from "../../services/categoryService";
 import { getPublishers } from "../../services/publisherService";
 import PaymentSettings from "./PaymentSettings";
+import LogoSettings from "./LogoSettings";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -51,6 +52,7 @@ function AdminDashboard() {
   const [stockSearch, setStockSearch] = useState("");
 
   const [showPaymentSettings, setShowPaymentSettings] = useState(false);
+  const [showLogoSettings, setShowLogoSettings] = useState(false);
 
   const inventoryRef = useRef(null);
 
@@ -307,6 +309,16 @@ function AdminDashboard() {
         </div>
 
         <div className="d-flex gap-3">
+          <button
+            type="button"
+            onClick={() => setShowLogoSettings(true)}
+            className="px-4 py-2.5 bg-[#1b3b2b] text-white rounded-lg font-semibold hover:bg-[#143022] transition"
+          >
+            Logo Settings
+          </button>
+
+         
+
           <button
             type="button"
             onClick={() => setShowPaymentSettings(true)}
@@ -1183,6 +1195,14 @@ function AdminDashboard() {
         isOpen={showPaymentSettings}
         onClose={() => setShowPaymentSettings(false)}
       />
+
+      <LogoSettings
+        isOpen={showLogoSettings}
+        onClose={() => setShowLogoSettings(false)}
+      />
+
+     
+
     </div>
   );
 }

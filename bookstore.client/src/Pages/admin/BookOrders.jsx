@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ShoppingBag,
   Loader2,
@@ -14,17 +14,15 @@ import {
   CreditCard,
   CheckCircle2,
   Truck,
-  ScanLine,
 } from "lucide-react";
 
-import Swal from "sweetalert2";
-
-import { Html5Qrcode } from "html5-qrcode";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from "docx";
 
 import {
   getAllOrders,
   updateOrderStatus,
   updateOrderBarcode,
+  sendOrderEmail,
 } from "../../services/orderService";
 
 export default function BookOrders() {
@@ -34,6 +32,7 @@ export default function BookOrders() {
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [generatingCourier, setGeneratingCourier] = useState(false);
   const [error, setError] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,20 +53,10 @@ export default function BookOrders() {
   const [barcode, setBarcode] = useState("");
   const [updatingBarcode, setUpdatingBarcode] = useState(false);
 
-  // Scanner state
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [scannerError, setScannerError] = useState("");
-  const [scannerOrder, setScannerOrder] = useState(null);
-  const [scannerStarting, setScannerStarting] = useState(false);
-
-  // IMPORTANT:
-  // Keep Html5Qrcode instance inside useRef.
-  const scannerRef = useRef(null);
-
-  // Prevent duplicate barcode callbacks
-  const scannedRef = useRef(false);
-
-  const scannerOrderRef = useRef(null);
+  // send email
+  const [sendingEmailOrderId, setSendingEmailOrderId] = useState(null);
+  //email filter
+  const [emailFilter, setEmailFilter] = useState("All");
 
   // =========================================================
   // LOAD ORDERS
@@ -193,17 +182,35 @@ export default function BookOrders() {
     const search = searchTerm.toLowerCase().trim();
 
     return orders.filter((order) => {
+      // =========================================================
       // STATUS FILTER
+      // =========================================================
+
       const matchesStatus =
         statusFilter === "All" || order.orderStatus === statusFilter;
 
+      // =========================================================
+      // EMAIL FILTER
+      // =========================================================
+
+      const matchesEmail =
+        emailFilter === "All" ||
+        (emailFilter === "Sent" && order.deliveryEmailSent === true) ||
+        (emailFilter === "Not Sent" && order.deliveryEmailSent !== true);
+
+      // =========================================================
       // SEARCH FILTER
+      // =========================================================
+
       const matchesSearch =
         !search ||
         String(order.orderId || "")
           .toLowerCase()
           .includes(search) ||
         String(order.guestOrderId || "")
+          .toLowerCase()
+          .includes(search) ||
+        String(order.orderNumber || "")
           .toLowerCase()
           .includes(search) ||
         String(order.customerName || "")
@@ -224,7 +231,10 @@ export default function BookOrders() {
             .includes(search),
         );
 
+      // =========================================================
       // DATE FILTER
+      // =========================================================
+
       let matchesDate = true;
 
       if (order.orderDate) {
@@ -245,9 +255,199 @@ export default function BookOrders() {
         }
       }
 
-      return matchesStatus && matchesSearch && matchesDate;
+      return matchesStatus && matchesEmail && matchesSearch && matchesDate;
     });
-  }, [orders, searchTerm, statusFilter, fromDate, toDate]);
+  }, [orders, searchTerm, statusFilter, emailFilter, fromDate, toDate]);
+
+  const courierOrders = useMemo(() => {
+    return filteredOrders.filter((order) => {
+      const paymentStatus = String(order?.paymentStatus || "")
+        .trim()
+        .toLowerCase();
+
+      const orderStatus = String(order?.orderStatus || "")
+        .trim()
+        .toLowerCase();
+
+      return paymentStatus === "paid" && orderStatus === "confirmed";
+    });
+  }, [filteredOrders]);
+
+  const courierCustomers = useMemo(() => {
+    return courierOrders.map((order) => ({
+      orderId: order?.orderId ?? "-",
+      customerName: order?.customerName || "-",
+      customerPhone: order?.customerPhone || "-",
+      shippingAddress: order?.shippingAddress || "-",
+      pincode: order?.pincode || "-",
+
+      books: (order?.items || []).map((item) => ({
+        bookTitle: item?.bookTitle || "-",
+        quantity: Number(item?.quantity) || 0,
+      })),
+    }));
+  }, [courierOrders]);
+
+  const generateCourierDOCX = async () => {
+    if (!courierCustomers.length) {
+      alert("No confirmed paid orders available for courier.");
+      return;
+    }
+
+    try {
+      setGeneratingCourier(true);
+
+      const sections = [];
+
+      courierCustomers.forEach((customer, index) => {
+        // ORDER ID
+        sections.push(
+          new Paragraph({
+            text: `Order ID: #${customer.orderId}`,
+            heading: HeadingLevel.HEADING_2,
+          }),
+        );
+
+        // USER NAME
+        sections.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Customer Name: ",
+                bold: true,
+              }),
+              new TextRun(customer.customerName),
+            ],
+          }),
+        );
+
+        // PHONE
+        sections.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Phone: ",
+                bold: true,
+              }),
+              new TextRun(customer.customerPhone),
+            ],
+          }),
+        );
+
+        // ADDRESS
+        sections.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Address: ",
+                bold: true,
+              }),
+              new TextRun(customer.shippingAddress),
+            ],
+          }),
+        );
+
+        // PINCODE
+        sections.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Pincode: ",
+                bold: true,
+              }),
+              new TextRun(customer.pincode),
+            ],
+          }),
+        );
+
+        // BOOKS
+        sections.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Books:",
+                bold: true,
+              }),
+            ],
+          }),
+        );
+
+        customer.books.forEach((book) => {
+          sections.push(
+            new Paragraph({
+              text: `${book.bookTitle} — ${book.quantity} ${
+                book.quantity === 1 ? "copy" : "copies"
+              }`,
+              bullet: {
+                level: 0,
+              },
+            }),
+          );
+        });
+
+        // SEPARATOR
+        if (index < courierCustomers.length - 1) {
+          sections.push(
+            new Paragraph({
+              text: "────────────────────────────────",
+              spacing: {
+                before: 120,
+                after: 180,
+              },
+            }),
+          );
+        }
+      });
+
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new Paragraph({
+                text: "Courier Details",
+                heading: HeadingLevel.TITLE,
+              }),
+
+              new Paragraph({
+                text: `Total Orders: ${courierCustomers.length}`,
+              }),
+
+              new Paragraph({
+                text: "",
+              }),
+
+              ...sections,
+            ],
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(doc);
+
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Courier-Details.docx";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Courier DOCX generation failed:", error);
+
+      alert(
+        `Failed to generate Courier Details.\n\n${
+          error?.message || "Unknown error"
+        }`,
+      );
+    } finally {
+      setGeneratingCourier(false);
+    }
+  };
 
   // =========================================================
   // TOTAL AMOUNT RECEIVED
@@ -355,6 +555,7 @@ export default function BookOrders() {
             ? {
                 ...order,
                 barcode: trimmedBarcode,
+                orderStatus: "Delivered",
               }
             : order,
         ),
@@ -366,6 +567,7 @@ export default function BookOrders() {
           ? {
               ...previous,
               barcode: trimmedBarcode,
+              orderStatus: "Delivered",
             }
           : previous,
       );
@@ -392,268 +594,60 @@ export default function BookOrders() {
       setUpdatingBarcode(false);
     }
   };
-  // =========================================================
-  // STOP BARCODE SCANNER
-  // =========================================================
 
-  const stopBarcodeScanner = async () => {
-    const scanner = scannerRef.current;
+  //handle send email button
 
-    if (!scanner) {
+  const handleSendEmail = async (order) => {
+    if (!order || sendingEmailOrderId === order.orderId) {
       return;
     }
 
     try {
-      const state = scanner.getState();
+      setSendingEmailOrderId(order.orderId);
 
-      // Html5Qrcode scanner state:
-      // 2 = SCANNING
-      // 3 = PAUSED
-      if (state === 2 || state === 3) {
-        await scanner.stop();
-      }
+      const result = await sendOrderEmail(order.orderId);
 
-      await scanner.clear();
+      // =========================================================
+      // UPDATE LOCAL ORDER STATE
+      // =========================================================
+
+      setOrders((currentOrders) =>
+        currentOrders.map((currentOrder) =>
+          currentOrder.orderId === order.orderId
+            ? {
+                ...currentOrder,
+                deliveryEmailSent: true,
+                deliveryEmailSentAt:
+                  result?.deliveryEmailSentAt || new Date().toISOString(),
+              }
+            : currentOrder,
+        ),
+      );
+
+      // =========================================================
+      // SUCCESS
+      // =========================================================
+
+      Swal.fire({
+        icon: "success",
+        title: "Email Sent",
+        text: result?.message || "Delivery email sent successfully.",
+      });
     } catch (error) {
-      console.error("Failed to stop barcode scanner:", error);
+      // =========================================================
+      // ERROR
+      // =========================================================
+
+      Swal.fire({
+        icon: "error",
+        title: "Email Failed",
+        text: error?.message || "Failed to send email.",
+      });
     } finally {
-      scannerRef.current = null;
+      setSendingEmailOrderId(null);
     }
   };
 
-  // =========================================================
-  // START BARCODE SCANNER
-  // =========================================================
-
-  const handleStartBarcodeScanner = async (order) => {
-    if (!order?.orderId) {
-      console.error("No valid order supplied to scanner:", order);
-      return;
-    }
-
-    await stopBarcodeScanner();
-
-    scannerOrderRef.current = order;
-
-    setScannerOrder(order);
-    setScannerError("");
-    setScannerStarting(true);
-    scannedRef.current = false;
-    setShowBarcodeScanner(true);
-  };
-
-  // =========================================================
-  // START SCANNER AFTER MODAL IS RENDERED
-  // =========================================================
-
-  useEffect(() => {
-    if (!showBarcodeScanner) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const startScanner = async () => {
-      try {
-        // Wait for scanner modal/container to render
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        if (cancelled) {
-          return;
-        }
-
-        // IMPORTANT:
-        // Get the order from useRef.
-        // We CANNOT use "order" directly here.
-        const order = scannerOrderRef.current;
-
-        if (!order?.orderId) {
-          throw new Error("No order selected for barcode scanning.");
-        }
-
-        const element = document.getElementById("barcode-reader");
-
-        if (!element) {
-          throw new Error("Scanner container not found.");
-        }
-
-        const scanner = new Html5Qrcode("barcode-reader");
-
-        scannerRef.current = scanner;
-
-        await scanner.start(
-          {
-            facingMode: "environment",
-          },
-          {
-            fps: 10,
-            qrbox: {
-              width: 300,
-              height: 150,
-            },
-            aspectRatio: 1.777778,
-          },
-
-          // =====================================================
-          // BARCODE SUCCESS
-          // =====================================================
-
-          async (decodedText) => {
-            if (scannedRef.current) {
-              return;
-            }
-
-            const scannedBarcode = String(decodedText || "").trim();
-
-            if (!scannedBarcode) {
-              return;
-            }
-
-            scannedRef.current = true;
-
-            console.log("Barcode detected:", scannedBarcode);
-            console.log("Scanner order:", order);
-
-            try {
-              // Stop camera first
-              await stopBarcodeScanner();
-
-              if (cancelled) {
-                return;
-              }
-
-              setScannerStarting(false);
-              setUpdatingBarcode(true);
-
-              // =================================================
-              // SAVE BARCODE
-              // =================================================
-
-              const result = await updateOrderBarcode(
-                order.orderId,
-                scannedBarcode,
-              );
-
-              if (cancelled) {
-                return;
-              }
-
-              // =================================================
-              // UPDATE ORDERS LIST
-              // =================================================
-
-              setOrders((previousOrders) =>
-                previousOrders.map((item) =>
-                  item.orderId === order.orderId
-                    ? {
-                        ...item,
-                        barcode: scannedBarcode,
-                      }
-                    : item,
-                ),
-              );
-
-              // =================================================
-              // UPDATE SELECTED ORDER
-              // =================================================
-
-              setSelectedOrder((previous) =>
-                previous && previous.orderId === order.orderId
-                  ? {
-                      ...previous,
-                      barcode: scannedBarcode,
-                    }
-                  : previous,
-              );
-
-              // =================================================
-              // UPDATE INPUT
-              // =================================================
-
-              setBarcode(scannedBarcode);
-
-              // =================================================
-              // CLOSE SCANNER
-              // =================================================
-
-              setShowBarcodeScanner(false);
-              setScannerOrder(null);
-              scannerOrderRef.current = null;
-              setScannerError("");
-
-              Swal.fire({
-                icon: "success",
-                title: "Barcode Updated",
-                text: scannedBarcode,
-                toast: true,
-                position: "top-end",
-                showConfirmButton: false,
-                timer: 2500,
-                timerProgressBar: true,
-              });
-            } catch (error) {
-              console.error("Failed to save scanned barcode:", error);
-
-              scannedRef.current = false;
-
-              setScannerError(error?.message || "Failed to update barcode.");
-            } finally {
-              setUpdatingBarcode(false);
-            }
-          },
-
-          // =====================================================
-          // BARCODE NOT FOUND
-          // =====================================================
-
-          () => {
-            // Ignore continuous "no barcode found" callbacks
-          },
-        );
-
-        if (!cancelled) {
-          setScannerStarting(false);
-        }
-      } catch (error) {
-        console.error("Barcode scanner failed:", error);
-
-        if (cancelled) {
-          return;
-        }
-
-        setScannerStarting(false);
-
-        setScannerError(
-          error?.message ||
-            "Unable to access the camera. Please allow camera permission and try again.",
-        );
-      }
-    };
-
-    startScanner();
-
-    return () => {
-      cancelled = true;
-
-      stopBarcodeScanner();
-    };
-  }, [showBarcodeScanner]);
-
-  // =========================================================
-  // CLOSE SCANNER
-  // =========================================================
-
-  const handleCloseBarcodeScanner = async () => {
-    await stopBarcodeScanner();
-
-    scannedRef.current = false;
-    scannerOrderRef.current = null;
-
-    setShowBarcodeScanner(false);
-    setScannerOrder(null);
-    setScannerError("");
-    setScannerStarting(false);
-  };
   // =========================================================
   // OPEN ORDER
   // =========================================================
@@ -678,6 +672,7 @@ export default function BookOrders() {
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("All");
+    setEmailFilter("All");
     setFromDate("");
     setToDate("");
   };
@@ -687,7 +682,11 @@ export default function BookOrders() {
   // =========================================================
 
   const hasActiveFilters =
-    searchTerm || statusFilter !== "All" || fromDate || toDate;
+    searchTerm ||
+    statusFilter !== "All" ||
+    emailFilter !== "All" ||
+    fromDate ||
+    toDate;
 
   // =========================================================
   // LOADING
@@ -717,12 +716,32 @@ export default function BookOrders() {
           HEADER
       ===================================================== */}
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-900">Book Orders</h1>
+      <div className="mb-6 flex justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900">Book Orders</h1>
 
-        <p className="text-sm text-stone-500 mt-1">
-          View and manage paid book orders placed by customers.
-        </p>
+          <p className="text-sm text-stone-500 mt-1">
+            View and manage paid book orders placed by customers.
+          </p>
+        </div>
+
+        <button
+          onClick={generateCourierDOCX}
+          disabled={generatingCourier || courierCustomers.length === 0}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+        >
+          {generatingCourier ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Truck className="h-4 w-4" />
+              Download Courier Details
+            </>
+          )}
+        </button>
       </div>
 
       {/* =====================================================
@@ -857,7 +876,43 @@ export default function BookOrders() {
 
                     <option value="Confirmed">Confirmed</option>
 
-                    <option value="Delivered">Delivered</option>
+                    <option value="Delivered">Dispatch</option>
+                  </select>
+
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
+                </div>
+
+                {/* EMAIL FILTER */}
+
+                <div className="relative">
+                  <select
+                    value={emailFilter}
+                    onChange={(e) => setEmailFilter(e.target.value)}
+                    className="
+      appearance-none
+      w-full
+      sm:w-40
+      px-4
+      py-2.5
+      pr-9
+      rounded-xl
+      border
+      border-stone-200
+      bg-stone-50
+      text-sm
+      text-gray-700
+      outline-none
+      focus:bg-white
+      focus:border-emerald-900
+      focus:ring-2
+      focus:ring-emerald-900/10
+    "
+                  >
+                    <option value="All">All Emails</option>
+
+                    <option value="Sent">Sent</option>
+
+                    <option value="Not Sent">Not Sent</option>
                   </select>
 
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
@@ -1048,6 +1103,10 @@ export default function BookOrders() {
                   </th>
 
                   <th className="text-left px-5 py-4 font-bold text-gray-700">
+                    Order Number
+                  </th>
+
+                  <th className="text-left px-5 py-4 font-bold text-gray-700">
                     Barcode
                   </th>
 
@@ -1069,6 +1128,10 @@ export default function BookOrders() {
 
                   <th className="text-left px-5 py-4 font-bold text-gray-700">
                     Status
+                  </th>
+
+                  <th className="text-left px-5 py-4 font-bold text-gray-700">
+                    Email
                   </th>
                 </tr>
               </thead>
@@ -1111,6 +1174,10 @@ export default function BookOrders() {
                         </div>
                       </td>
 
+                      <td className="text-center text-stone-700">
+                        {order?.orderNumber}
+                      </td>
+
                       {/* BARCODE */}
 
                       <td className="px-5 py-4">
@@ -1130,38 +1197,6 @@ export default function BookOrders() {
                               Not assigned
                             </span>
                           )}
-
-                          {/* SCAN BUTTON */}
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              handleStartBarcodeScanner(order);
-                            }}
-                            className="
-                              inline-flex
-                              w-fit
-                              items-center
-                              justify-center
-                              gap-1.5
-                              px-3
-                              py-1.5
-                              rounded-lg
-                              bg-emerald-900
-                              hover:bg-emerald-800
-                              text-white
-                              text-[11px]
-                              font-bold
-                              transition-colors
-                              cursor-pointer
-                            "
-                          >
-                            <ScanLine className="h-3.5 w-3.5" />
-
-                            {order.barcode ? "Scan Again" : "Scan Barcode"}
-                          </button>
                         </div>
                       </td>
 
@@ -1285,7 +1320,7 @@ export default function BookOrders() {
                           >
                             <option value="Confirmed">Confirmed</option>
 
-                            <option value="Delivered">Delivered</option>
+                            <option value="Delivered">Dispatch</option>
                           </select>
 
                           {updatingOrderId === order.orderId ? (
@@ -1296,6 +1331,74 @@ export default function BookOrders() {
 
                           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none opacity-60" />
                         </div>
+                      </td>
+
+                      <td
+                        className="px-5 py-4"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {order.deliveryEmailSent ? (
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className="
+          inline-flex
+          items-center
+          justify-center
+          gap-1.5
+          px-3
+          py-1.5
+          rounded-lg
+          bg-emerald-100
+          text-emerald-800
+          text-xs
+          font-bold
+          cursor-default
+        "
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Sent
+                            </span>
+
+                            {order.deliveryEmailSentAt && (
+                              <span className="text-[10px] text-stone-400">
+                                {formatDateTime(order.deliveryEmailSentAt)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSendEmail(order)}
+                            disabled={sendingEmailOrderId === order.orderId}
+                            className="
+        inline-flex
+        items-center
+        gap-2
+        px-3
+        py-1.5
+        rounded-lg
+        bg-emerald-600
+        text-white
+        text-xs
+        font-semibold
+        hover:bg-emerald-700
+        disabled:opacity-60
+        disabled:cursor-not-allowed
+      "
+                          >
+                            {sendingEmailOrderId === order.orderId ? (
+                              <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              <>
+                                <Mail className="h-3.5 w-3.5" />
+                                Send Email
+                              </>
+                            )}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -1456,7 +1559,7 @@ export default function BookOrders() {
                     >
                       <option value="Confirmed">Confirmed</option>
 
-                      <option value="Delivered">Delivered</option>
+                      <option value="Delivered">Dispatch</option>
                     </select>
                   </div>
                 </div>
@@ -1477,7 +1580,15 @@ export default function BookOrders() {
                       type="text"
                       value={barcode}
                       onChange={(e) => setBarcode(e.target.value)}
-                      placeholder="Enter barcode"
+                      placeholder="Scan or Enter barcode"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !updatingBarcode) {
+                          e.preventDefault();
+                          handleBarcodeUpdate();
+                        }
+                      }}
+                      autoFocus
+                      disabled={updatingBarcode}
                       className="
                         w-full
                         px-3
@@ -1494,7 +1605,6 @@ export default function BookOrders() {
                         focus:ring-2
                         focus:ring-emerald-900/10
                       "
-                      disabled={updatingBarcode}
                     />
 
                     <button
@@ -1528,36 +1638,6 @@ export default function BookOrders() {
                       ) : (
                         "Update Barcode"
                       )}
-                    </button>
-
-                    {/* SCAN FROM MODAL */}
-
-                    <button
-                      type="button"
-                      onClick={() => handleStartBarcodeScanner(selectedOrder)}
-                      disabled={updatingBarcode}
-                      className="
-                        w-full
-                        flex
-                        items-center
-                        justify-center
-                        gap-2
-                        px-3
-                        py-2
-                        rounded-lg
-                        border
-                        border-emerald-900
-                        text-emerald-900
-                        hover:bg-emerald-50
-                        text-xs
-                        font-bold
-                        transition-colors
-                        disabled:opacity-50
-                        disabled:cursor-not-allowed
-                      "
-                    >
-                      <ScanLine className="h-3.5 w-3.5" />
-                      Scan Barcode
                     </button>
                   </div>
                 </div>
@@ -1752,137 +1832,6 @@ export default function BookOrders() {
                   </p>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================
-          BARCODE SCANNER MODAL
-      ===================================================== */}
-
-      {showBarcodeScanner && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-[70]
-            bg-black/50
-            backdrop-blur-sm
-            flex
-            items-center
-            justify-center
-            p-4
-          "
-          onClick={handleCloseBarcodeScanner}
-        >
-          <div
-            className="
-              w-full
-              max-w-lg
-              bg-white
-              rounded-2xl
-              shadow-2xl
-              overflow-hidden
-            "
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* HEADER */}
-
-            <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-stone-500 font-semibold">
-                  Scan Barcode
-                </p>
-
-                <h2 className="text-lg font-extrabold text-gray-900">
-                  Order #{scannerOrder?.orderId}
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCloseBarcodeScanner}
-                className="
-                  w-9
-                  h-9
-                  rounded-lg
-                  bg-stone-100
-                  hover:bg-stone-200
-                  flex
-                  items-center
-                  justify-center
-                  text-stone-600
-                  cursor-pointer
-                "
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* SCANNER */}
-
-            <div className="p-5">
-              <div
-                id="barcode-reader"
-                className="
-                  w-full
-                  overflow-hidden
-                  rounded-xl
-                  border
-                  border-stone-200
-                  bg-black
-                "
-              />
-
-              {/* STARTING */}
-
-              {scannerStarting && !scannerError && (
-                <div className="flex items-center justify-center gap-2 mt-4 text-sm text-stone-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Starting camera...
-                </div>
-              )}
-
-              {/* ERROR */}
-
-              {scannerError && (
-                <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-3">
-                  <p className="text-xs font-semibold text-red-700">
-                    {scannerError}
-                  </p>
-
-                  <p className="text-xs text-red-600 mt-1">
-                    Please allow camera access and try again.
-                  </p>
-                </div>
-              )}
-
-              <p className="text-xs text-stone-500 text-center mt-4">
-                Point your camera at the barcode.
-              </p>
-
-              <button
-                type="button"
-                onClick={handleCloseBarcodeScanner}
-                className="
-                  w-full
-                  mt-4
-                  px-4
-                  py-2.5
-                  rounded-xl
-                  border
-                  border-stone-200
-                  bg-stone-50
-                  hover:bg-stone-100
-                  text-sm
-                  font-semibold
-                  text-stone-700
-                  cursor-pointer
-                "
-              >
-                Cancel Scanner
-              </button>
             </div>
           </div>
         </div>
