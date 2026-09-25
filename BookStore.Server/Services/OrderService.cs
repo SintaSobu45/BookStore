@@ -12,15 +12,18 @@ namespace BookStore.Server.Services
         private readonly OrderRepository _orderRepository;
         private readonly ApplicationDbContext _context;
         private readonly CartRepository _cartRepository;
+        private readonly EmailService _emailService;
 
         public OrderService(
             OrderRepository orderRepository,
             ApplicationDbContext context,
-            CartRepository cartRepository)
+            CartRepository cartRepository,
+            EmailService emailService)
         {
             _orderRepository = orderRepository;
             _context = context;
             _cartRepository = cartRepository;
+            _emailService = emailService;
         }
 
 
@@ -609,6 +612,64 @@ namespace BookStore.Server.Services
 
 
 
+
+        // =========================================================
+        // SEND DELIVERY EMAIL
+        // =========================================================
+
+        public async Task<bool> SendDeliveryEmailAsync(
+            int orderId)
+        {
+            var order =
+                await _orderRepository
+                    .GetByIdAsync(orderId);
+
+            if (order == null)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(order.CustomerEmail))
+            {
+                throw new InvalidOperationException(
+                    "Customer email is not available.");
+            }
+
+            var subject =
+                $"The Old Library - Order {order.OrderNumber} Dispatched";
+
+            var body = $@"
+        <h2>Order Dispatched</h2>
+
+        <p>Dear {order.CustomerName},</p>
+
+        <p>
+            Your book order has been successfully Dispatched.
+        </p>
+
+        <p>
+            <strong>Order ID:</strong> {order.OrderId}<br/>
+            <strong>Order Number:</strong> {order.OrderNumber}<br/>
+          
+        </p>
+
+        <p>
+            Thank you for ordering from The Old Library.
+        </p>
+
+        <p>
+            We hope you enjoy your books.
+        </p>
+    ";
+
+            await _emailService.SendEmailAsync(
+                order.CustomerEmail,
+                subject,
+                body,
+                true);
+
+            return true;
+        }
 
 
         // =========================================================
