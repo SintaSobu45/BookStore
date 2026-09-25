@@ -612,7 +612,6 @@ namespace BookStore.Server.Services
 
 
 
-
         // =========================================================
         // SEND DELIVERY EMAIL
         // =========================================================
@@ -648,9 +647,7 @@ namespace BookStore.Server.Services
         </p>
 
         <p>
-            <strong>Order ID:</strong> {order.OrderId}<br/>
-            <strong>Order Number:</strong> {order.OrderNumber}<br/>
-          
+            <strong>Order Number:</strong> {order.OrderNumber}
         </p>
 
         <p>
