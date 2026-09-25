@@ -505,6 +505,10 @@ namespace BookStore.Server.Services
                 Barcode = order.Barcode,
 
 
+                DeliveryEmailSent = order.DeliveryEmailSent,
+                DeliveryEmailSentAt = order.DeliveryEmailSentAt,
+
+
 
                 GuestCartId = order.GuestCartId,
 
@@ -665,7 +669,17 @@ namespace BookStore.Server.Services
                 body,
                 true);
 
+
+
+            order.DeliveryEmailSent = true;
+            order.DeliveryEmailSentAt = DateTime.UtcNow;
+
+            await _orderRepository.UpdateAsync(order);
+
             return true;
+
+
+
         }
 
 
