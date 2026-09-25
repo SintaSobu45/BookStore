@@ -589,11 +589,13 @@ namespace BookStore.Server.Services
             }
 
             // -----------------------------------------------------
-            // SAVE BARCODE
+            // SAVE BARCODE + UPDATE STATUS
             // -----------------------------------------------------
 
             order.Barcode =
                 barcode.Trim();
+
+            order.OrderStatus = "Delivered";
 
             await _orderRepository
                 .UpdateAsync(order);
