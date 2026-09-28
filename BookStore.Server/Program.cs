@@ -120,6 +120,10 @@ namespace BookStore.Server
 
 
 
+            builder.Services.AddScoped<SPCourierEmailRepository>();
+
+
+
             // Helpers
             builder.Services.AddScoped<PasswordHasher>();
             builder.Services.AddScoped<JwtHelper>();
@@ -180,6 +184,9 @@ namespace BookStore.Server
 
          
             builder.Services.AddScoped<StoryPoetryCopySettingService>();
+
+
+            builder.Services.AddScoped<SPCourierEmailService>();
 
 
             // JWT Authentication
